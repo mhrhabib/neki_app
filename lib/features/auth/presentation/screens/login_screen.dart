@@ -3,27 +3,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_typography.dart';
-import '../../../../core/constants/app_spacing.dart';
 import '../cubit/auth_cubit.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _nameController = TextEditingController();
-  bool _isLogin = true;
+  void _handleContinue(BuildContext context) {
+    // Simulate login with mock user
+    context.read<AuthCubit>().login(email: 'user@example.com', password: 'password');
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.softCream,
+      backgroundColor: Colors.white,
       body: BlocListener<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is Authenticated) {
@@ -33,57 +26,65 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         },
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(AppSpacing.outerPadding * 2),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32.w),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(height: 40.h),
-                Text(
-                  '🌙',
-                  style: TextStyle(fontSize: 60.sp),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: AppSpacing.gridGap),
-                Text(
-                  'NEKI TRACKER',
-                  style: AppTypography.h1.copyWith(color: AppColors.primaryGreen),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: AppSpacing.gridGap * 3),
-                if (!_isLogin) ...[
-                  TextField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Name'),
+                // Icon Container
+                Container(
+                  width: 100.w,
+                  height: 100.w,
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(25.r), color: AppColors.goldAccent),
+                  child: Center(
+                    child: Text(
+                      '🕌',
+                      style: TextStyle(fontSize: 48.sp, color: AppColors.primaryGreen),
+                    ),
                   ),
-                  SizedBox(height: AppSpacing.gridGap),
-                ],
-                TextField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
                 ),
-                SizedBox(height: AppSpacing.gridGap),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Password'),
+                SizedBox(height: 20.h),
+
+                // Welcome Back Title
+                Text(
+                  'Welcome Back',
+                  style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.w700, color: AppColors.primaryGreen),
                 ),
-                SizedBox(height: AppSpacing.gridGap * 2),
-                BlocBuilder<AuthCubit, AuthState>(
-                  builder: (context, state) {
-                    if (state is AuthLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    return ElevatedButton(
-                      onPressed: () => _handleSubmit(context),
-                      child: Text(_isLogin ? 'Login' : 'Register', style: AppTypography.button),
-                    );
-                  },
+                SizedBox(height: 8.h),
+
+                // Subtitle
+                Text(
+                  'Continue your spiritual journey',
+                  style: TextStyle(fontSize: 14.sp, color: const Color(0xFF6B7280)),
+                  textAlign: TextAlign.center,
                 ),
-                SizedBox(height: AppSpacing.gridGap),
+                SizedBox(height: 60.h),
+
+                // Continue with Google Button
+                _buildAuthButton(
+                  context: context,
+                  icon: '🔐',
+                  label: 'Continue with Google',
+                  onPressed: () => _handleContinue(context),
+                ),
+                SizedBox(height: 12.h),
+
+                // Continue with Phone Button
+                _buildAuthButton(
+                  context: context,
+                  icon: '📱',
+                  label: 'Continue with Phone',
+                  onPressed: () => _handleContinue(context),
+                ),
+                SizedBox(height: 32.h),
+
+                // Continue as Guest
                 TextButton(
-                  onPressed: () => setState(() => _isLogin = !_isLogin),
-                  child: Text(_isLogin ? 'Don\'t have an account? Register' : 'Already have an account? Login'),
+                  onPressed: () => _handleContinue(context),
+                  child: Text(
+                    'Continue as Guest',
+                    style: TextStyle(color: const Color(0xFF6B7280), fontSize: 14.sp, fontWeight: FontWeight.w500),
+                  ),
                 ),
               ],
             ),
@@ -93,23 +94,34 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _handleSubmit(BuildContext context) {
-    if (_isLogin) {
-      context.read<AuthCubit>().login(email: _emailController.text, password: _passwordController.text);
-    } else {
-      context.read<AuthCubit>().register(
-        email: _emailController.text,
-        password: _passwordController.text,
-        name: _nameController.text,
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _nameController.dispose();
-    super.dispose();
+  Widget _buildAuthButton({
+    required BuildContext context,
+    required String icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white,
+          padding: EdgeInsets.symmetric(vertical: 16.h),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+          side: const BorderSide(color: Color(0xFFE5E7EB), width: 1.5),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(icon, style: TextStyle(fontSize: 24.sp)),
+            SizedBox(width: 12.w),
+            Text(
+              label,
+              style: TextStyle(color: const Color(0xFF1F2937), fontSize: 16.sp, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

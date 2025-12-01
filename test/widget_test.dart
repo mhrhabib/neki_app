@@ -17,7 +17,7 @@ void main() {
     // Set test screen size
     tester.view.physicalSize = const Size(375, 812);
     tester.view.devicePixelRatio = 1.0;
-    
+
     // Build our app and trigger a frame.
     await tester.pumpWidget(const NekiApp());
 
@@ -29,7 +29,7 @@ void main() {
 
     // After navigation, app should still be running
     expect(find.byType(NekiApp), findsOneWidget);
-    
+
     // Reset screen size
     addTearDown(tester.view.reset);
   });

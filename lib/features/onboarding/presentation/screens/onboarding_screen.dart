@@ -30,8 +30,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.softCream,
+      backgroundColor: isDark ? const Color(0xFF0A0E27) : AppColors.softCream,
       body: SafeArea(
         child: Column(
           children: [
@@ -98,6 +100,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildPage(OnboardingPage page) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: EdgeInsets.all(AppSpacing.outerPadding * 2),
       child: Column(
@@ -107,13 +111,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           SizedBox(height: AppSpacing.gridGap * 3),
           Text(
             page.title,
-            style: AppTypography.h1.copyWith(color: AppColors.primaryGreen),
+            style: AppTypography.h1.copyWith(color: isDark ? Colors.white : AppColors.primaryGreen),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: AppSpacing.gridGap),
           Text(
             page.description,
-            style: AppTypography.body.copyWith(color: AppColors.textGray),
+            style: AppTypography.body.copyWith(color: isDark ? Colors.white70 : AppColors.textGray),
             textAlign: TextAlign.center,
           ),
         ],

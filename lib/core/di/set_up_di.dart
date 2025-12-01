@@ -19,14 +19,18 @@ final GetIt getIt = GetIt.instance;
 class SetUpDI {
   static Future<void> init() async {
     // ========== REPOSITORIES (Lazy Singletons) ==========
-    getIt.registerLazySingleton<ThemeRepository>(() => ThemeRepositoryImpl());
+    final themeRepo = ThemeRepositoryImpl();
+    await themeRepo.loadTheme(); // Load saved theme preference
+    getIt.registerLazySingleton<ThemeRepository>(() => themeRepo);
+
     getIt.registerLazySingleton<OnboardingRepository>(() => OnboardingRepositoryImpl());
     getIt.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
     getIt.registerLazySingleton<SalahRepository>(() => SalahRepositoryImpl());
     getIt.registerLazySingleton<PointsRepository>(() => PointsRepositoryImpl());
 
     // ========== CUBITS (Factories) ==========
-    getIt.registerFactory<ThemeCubit>(() => ThemeCubit(themeRepository: getIt<ThemeRepository>()));
+    // ThemeCubit needs to be a singleton so the same instance is shared across the app
+    getIt.registerLazySingleton<ThemeCubit>(() => ThemeCubit(themeRepository: getIt<ThemeRepository>())..loadTheme());
     getIt.registerFactory<OnboardingCubit>(() => OnboardingCubit(onboardingRepository: getIt<OnboardingRepository>()));
     getIt.registerFactory<AuthCubit>(() => AuthCubit(authRepository: getIt<AuthRepository>()));
     getIt.registerFactory<SalahCubit>(

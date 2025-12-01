@@ -41,10 +41,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final data = _leaderboardData[_activeTab]!;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: isDark ? const Color(0xFF0A0E27) : const Color(0xFFF9FAFB),
       body: SafeArea(
         child: Column(
           children: [
@@ -68,23 +69,32 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   }
 
   Widget _buildHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
+        border: Border(bottom: BorderSide(color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB), width: 1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Leaderboard',
-            style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.w700, color: AppColors.primaryGreen),
+            style: TextStyle(
+              fontSize: 28.sp,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : AppColors.primaryGreen,
+            ),
           ),
           SizedBox(height: 16.h),
           Container(
             padding: EdgeInsets.all(4.w),
-            decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(10.r)),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
             child: Row(children: [_buildTabButton('Global', 'global'), _buildTabButton('Country', 'country')]),
           ),
         ],
@@ -93,6 +103,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   }
 
   Widget _buildTabButton(String label, String tab) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isActive = _activeTab == tab;
     return Expanded(
       child: GestureDetector(
@@ -100,7 +111,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         child: Container(
           padding: EdgeInsets.symmetric(vertical: 10.h),
           decoration: BoxDecoration(
-            color: isActive ? Colors.white : Colors.transparent,
+            color: isActive ? (isDark ? const Color(0xFF1F2937) : Colors.white) : Colors.transparent,
             borderRadius: BorderRadius.circular(8.r),
           ),
           alignment: Alignment.center,
@@ -109,7 +120,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             style: TextStyle(
               fontSize: 14.sp,
               fontWeight: FontWeight.w600,
-              color: isActive ? AppColors.primaryGreen : const Color(0xFF6B7280),
+              color: isActive ? (isDark ? AppColors.goldAccent : AppColors.primaryGreen) : const Color(0xFF6B7280),
             ),
           ),
         ),
@@ -275,14 +286,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   }
 
   Widget _buildUserCard(LeaderboardUser user) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: user.isYou ? const Color(0xFF0F5132).withValues(alpha: 0.1) : Colors.white,
+        color: user.isYou
+            ? (isDark ? AppColors.primaryGreen.withValues(alpha: 0.2) : const Color(0xFF0F5132).withValues(alpha: 0.1))
+            : (isDark ? const Color(0xFF1F2937) : Colors.white),
         borderRadius: BorderRadius.circular(14.r),
         border: Border.all(
-          color: user.isYou ? AppColors.primaryGreen : const Color(0xFFE5E7EB),
+          color: user.isYou ? AppColors.primaryGreen : (isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB)),
           width: user.isYou ? 2.w : 1.w,
         ),
       ),
@@ -292,7 +307,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             width: 40.w,
             height: 40.w,
             decoration: BoxDecoration(
-              color: user.rank <= 3 ? _getRankColor(user.rank).withValues(alpha: 0.2) : const Color(0xFFF3F4F6),
+              color: user.rank <= 3
+                  ? _getRankColor(user.rank).withValues(alpha: 0.2)
+                  : (isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6)),
               borderRadius: BorderRadius.circular(20.r),
             ),
             alignment: Alignment.center,
@@ -310,7 +327,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   children: [
                     Text(
                       user.name,
-                      style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w600, color: const Color(0xFF1F2937)),
+                      style: TextStyle(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : const Color(0xFF1F2937),
+                      ),
                     ),
                     if (user.isYou) ...[
                       SizedBox(width: 6.w),

@@ -15,8 +15,10 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF0A0E27) : Colors.white,
       body: BlocListener<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is Authenticated) {
@@ -48,14 +50,18 @@ class LoginScreen extends StatelessWidget {
                 // Welcome Back Title
                 Text(
                   'Welcome Back',
-                  style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.w700, color: AppColors.primaryGreen),
+                  style: TextStyle(
+                    fontSize: 24.sp,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : AppColors.primaryGreen,
+                  ),
                 ),
                 SizedBox(height: 8.h),
 
                 // Subtitle
                 Text(
                   'Continue your spiritual journey',
-                  style: TextStyle(fontSize: 14.sp, color: const Color(0xFF6B7280)),
+                  style: TextStyle(fontSize: 14.sp, color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280)),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 60.h),
@@ -83,7 +89,11 @@ class LoginScreen extends StatelessWidget {
                   onPressed: () => _handleContinue(context),
                   child: Text(
                     'Continue as Guest',
-                    style: TextStyle(color: const Color(0xFF6B7280), fontSize: 14.sp, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -100,15 +110,17 @@ class LoginScreen extends StatelessWidget {
     required String label,
     required VoidCallback onPressed,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.white,
+          backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
           padding: EdgeInsets.symmetric(vertical: 16.h),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-          side: const BorderSide(color: Color(0xFFE5E7EB), width: 1.5),
+          side: BorderSide(color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB), width: 1.5),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -117,7 +129,11 @@ class LoginScreen extends StatelessWidget {
             SizedBox(width: 12.w),
             Text(
               label,
-              style: TextStyle(color: const Color(0xFF1F2937), fontSize: 16.sp, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF1F2937),
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),

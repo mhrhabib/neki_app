@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../points/presentation/cubit/points_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../theme/theme_cubit.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
   const HomeDashboardScreen({super.key});
@@ -33,8 +34,10 @@ class HomeDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: isDark ? const Color(0xFF0A0E27) : const Color(0xFFF9FAFB),
       body: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
           if (authState is Authenticated) {
@@ -63,22 +66,54 @@ class HomeDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Salam, Habib',
-            style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.w700, color: AppColors.primaryGreen),
+    return BlocBuilder<ThemeCubit, ThemeData>(
+      builder: (context, themeData) {
+        final isDark = themeData.brightness == Brightness.dark;
+
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Salam, Habib',
+                      style: TextStyle(
+                        fontSize: 28.sp,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : AppColors.primaryGreen,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      'May your day be blessed',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => context.read<ThemeCubit>().toggleTheme(),
+                icon: Icon(
+                  isDark ? Icons.light_mode : Icons.dark_mode,
+                  color: isDark ? AppColors.goldAccent : AppColors.primaryGreen,
+                  size: 24.sp,
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
+                  padding: EdgeInsets.all(12.w),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 4.h),
-          Text(
-            'May your day be blessed',
-            style: TextStyle(fontSize: 14.sp, color: const Color(0xFF6B7280)),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -143,6 +178,8 @@ class HomeDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildPillarsSection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
@@ -150,7 +187,11 @@ class HomeDashboardScreen extends StatelessWidget {
         children: [
           Text(
             'Five Pillars',
-            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: const Color(0xFF1F2937)),
+            style: TextStyle(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : const Color(0xFF1F2937),
+            ),
           ),
           SizedBox(height: 16.h),
           ..._pillars.map((pillar) => _buildPillarCard(context, pillar)),
@@ -160,16 +201,24 @@ class HomeDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildPillarCard(BuildContext context, PillarItem pillar) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: pillar.route != null ? () => context.push(pillar.route!) : null,
       child: Container(
         margin: EdgeInsets.only(bottom: 12.h),
         padding: EdgeInsets.all(20.w),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1F2937) : Colors.white,
           borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), offset: Offset(0, 1.h), blurRadius: 2.r)],
+          border: Border.all(color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB)),
+          boxShadow: [
+            BoxShadow(
+              color: (isDark ? Colors.black : Colors.black).withValues(alpha: isDark ? 0.3 : 0.05),
+              offset: Offset(0, 1.h),
+              blurRadius: 2.r,
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -177,7 +226,7 @@ class HomeDashboardScreen extends StatelessWidget {
               width: 56.w,
               height: 56.w,
               decoration: BoxDecoration(
-                color: pillar.color.withValues(alpha: 0.15),
+                color: pillar.color.withValues(alpha: isDark ? 0.2 : 0.15),
                 borderRadius: BorderRadius.circular(14.r),
               ),
               child: Center(
@@ -191,12 +240,19 @@ class HomeDashboardScreen extends StatelessWidget {
                 children: [
                   Text(
                     pillar.title,
-                    style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w600, color: const Color(0xFF1F2937)),
+                    style: TextStyle(
+                      fontSize: 17.sp,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : const Color(0xFF1F2937),
+                    ),
                   ),
                   SizedBox(height: 2.h),
                   Text(
                     pillar.description,
-                    style: TextStyle(fontSize: 13.sp, color: const Color(0xFF6B7280)),
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+                    ),
                   ),
                 ],
               ),
@@ -205,9 +261,15 @@ class HomeDashboardScreen extends StatelessWidget {
               Container(
                 width: 32.w,
                 height: 32.w,
-                decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(8.r)),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
                 child: Center(
-                  child: Text('→', style: TextStyle(fontSize: 16.sp)),
+                  child: Text(
+                    '→',
+                    style: TextStyle(fontSize: 16.sp, color: isDark ? Colors.white : Colors.black),
+                  ),
                 ),
               ),
           ],

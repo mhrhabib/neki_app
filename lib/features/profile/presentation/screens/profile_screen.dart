@@ -22,8 +22,10 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: isDark ? const Color(0xFF0A0E27) : const Color(0xFFF9FAFB),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.only(bottom: 20.h),
@@ -33,9 +35,9 @@ class ProfileScreen extends StatelessWidget {
               _buildHeader(),
               _buildProfileSection(),
 
-              _buildStatsSection(),
-              _buildBadgesSection(),
-              _buildPrivacySection(),
+              _buildStatsSection(context),
+              _buildBadgesSection(context),
+              _buildPrivacySection(context),
             ],
           ),
         ),
@@ -108,20 +110,24 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsSection() {
+  Widget _buildStatsSection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w),
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB)),
       ),
-      child: Column(children: _stats.map((stat) => _buildStatItem(stat)).toList()),
+      child: Column(children: _stats.map((stat) => _buildStatItem(context, stat)).toList()),
     );
   }
 
-  Widget _buildStatItem(Stat stat) {
+  Widget _buildStatItem(BuildContext context, Stat stat) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
       child: Row(
@@ -130,7 +136,7 @@ class ProfileScreen extends StatelessWidget {
             width: 44.w,
             height: 44.w,
             decoration: BoxDecoration(
-              color: stat.color.withValues(alpha: 0.15),
+              color: stat.color.withValues(alpha: isDark ? 0.25 : 0.15),
               borderRadius: BorderRadius.circular(12.r),
             ),
             child: Icon(stat.icon, color: stat.color, size: 22.sp),
@@ -142,12 +148,16 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 Text(
                   stat.label,
-                  style: TextStyle(fontSize: 13.sp, color: const Color(0xFF6B7280)),
+                  style: TextStyle(fontSize: 13.sp, color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280)),
                 ),
                 SizedBox(height: 2.h),
                 Text(
                   stat.value,
-                  style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w700, color: const Color(0xFF1F2937)),
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF1F2937),
+                  ),
                 ),
               ],
             ),
@@ -157,7 +167,9 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBadgesSection() {
+  Widget _buildBadgesSection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
@@ -166,7 +178,11 @@ class ProfileScreen extends StatelessWidget {
           SizedBox(height: 24.h),
           Text(
             'Badges & Achievements',
-            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: const Color(0xFF1F2937)),
+            style: TextStyle(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : const Color(0xFF1F2937),
+            ),
           ),
           SizedBox(height: 16.h),
           GridView.builder(
@@ -179,20 +195,24 @@ class ProfileScreen extends StatelessWidget {
               childAspectRatio: 1,
             ),
             itemCount: _badges.length,
-            itemBuilder: (context, index) => _buildBadgeItem(_badges[index]),
+            itemBuilder: (ctx, index) => _buildBadgeItem(context, _badges[index]),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBadgeItem(Badge badge) {
+  Widget _buildBadgeItem(BuildContext context, Badge badge) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
         borderRadius: BorderRadius.circular(14.r),
-        border: Border.all(color: badge.unlocked ? AppColors.primaryGreen : const Color(0xFFE5E7EB)),
+        border: Border.all(
+          color: badge.unlocked ? AppColors.primaryGreen : (isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB)),
+        ),
       ),
       child: Opacity(
         opacity: badge.unlocked ? 1.0 : 0.5,
@@ -206,7 +226,7 @@ class ProfileScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10.sp,
                 fontWeight: FontWeight.w600,
-                color: badge.unlocked ? const Color(0xFF1F2937) : const Color(0xFF9CA3AF),
+                color: badge.unlocked ? (isDark ? Colors.white : const Color(0xFF1F2937)) : const Color(0xFF9CA3AF),
               ),
               textAlign: TextAlign.center,
               maxLines: 2,
@@ -218,21 +238,27 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPrivacySection() {
+  Widget _buildPrivacySection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w),
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
         borderRadius: BorderRadius.circular(14.r),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Privacy Settings',
-            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: const Color(0xFF1F2937)),
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : const Color(0xFF1F2937),
+            ),
           ),
           SizedBox(height: 12.h),
           Row(
@@ -240,7 +266,7 @@ class ProfileScreen extends StatelessWidget {
             children: [
               Text(
                 'Show on Leaderboard',
-                style: TextStyle(fontSize: 14.sp, color: const Color(0xFF6B7280)),
+                style: TextStyle(fontSize: 14.sp, color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280)),
               ),
               Container(
                 width: 50.w,

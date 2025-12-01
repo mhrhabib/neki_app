@@ -27,21 +27,23 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: widget.child,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1F2937) : Colors.white,
           border: Border(
-            top: BorderSide(color: const Color(0xFFE5E7EB), width: 1.w),
+            top: BorderSide(color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB), width: 1.w),
           ),
         ),
         child: BottomNavigationBar(
           currentIndex: _getCurrentIndex(context),
           onTap: _onItemTapped,
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.primaryGreen,
-          unselectedItemColor: const Color(0xFF6B7280),
+          backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
+          selectedItemColor: isDark ? AppColors.goldAccent : AppColors.primaryGreen,
+          unselectedItemColor: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
           selectedLabelStyle: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
           unselectedLabelStyle: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w500),
           type: BottomNavigationBarType.fixed,

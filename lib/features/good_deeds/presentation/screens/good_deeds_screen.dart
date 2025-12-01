@@ -59,8 +59,10 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: isDark ? const Color(0xFF0A0E27) : const Color(0xFFF9FAFB),
       body: SafeArea(
         child: Column(
           children: [
@@ -73,7 +75,11 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
                   children: [
                     Text(
                       'Select Good Deed',
-                      style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: const Color(0xFF1F2937)),
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : const Color(0xFF1F2937),
+                      ),
                     ),
                     SizedBox(height: 16.h),
                     _buildDeedOptions(),
@@ -91,11 +97,13 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
   }
 
   Widget _buildHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
+        border: Border(bottom: BorderSide(color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB), width: 1)),
       ),
       child: Row(
         children: [
@@ -104,14 +112,21 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
             child: Container(
               width: 40.w,
               height: 40.w,
-              decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(10.r)),
-              child: const Icon(Icons.chevron_left, color: Color(0xFF1F2937)),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: Icon(Icons.chevron_left, color: isDark ? Colors.white : const Color(0xFF1F2937)),
             ),
           ),
           SizedBox(width: 12.w),
           Text(
             'Log Good Deed',
-            style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w700, color: AppColors.primaryGreen),
+            style: TextStyle(
+              fontSize: 22.sp,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : AppColors.primaryGreen,
+            ),
           ),
         ],
       ),
@@ -123,6 +138,7 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
   }
 
   Widget _buildDeedOption(DeedOption deed) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = _selectedDeed?.id == deed.id;
 
     return GestureDetector(
@@ -131,9 +147,12 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
         margin: EdgeInsets.only(bottom: 10.h),
         padding: EdgeInsets.all(16.w),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1F2937) : Colors.white,
           borderRadius: BorderRadius.circular(14.r),
-          border: Border.all(color: isSelected ? AppColors.primaryGreen : const Color(0xFFE5E7EB), width: 2.w),
+          border: Border.all(
+            color: isSelected ? AppColors.primaryGreen : (isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB)),
+            width: 2.w,
+          ),
         ),
         child: Row(
           children: [
@@ -141,7 +160,9 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
               width: 48.w,
               height: 48.w,
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primaryGreen.withValues(alpha: 0.15) : const Color(0xFFF9FAFB),
+                color: isSelected
+                    ? AppColors.primaryGreen.withValues(alpha: isDark ? 0.3 : 0.15)
+                    : (isDark ? const Color(0xFF374151) : const Color(0xFFF9FAFB)),
                 borderRadius: BorderRadius.circular(12.r),
               ),
               child: Center(
@@ -155,7 +176,11 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
                 children: [
                   Text(
                     deed.title,
-                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: const Color(0xFF1F2937)),
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : const Color(0xFF1F2937),
+                    ),
                   ),
                   SizedBox(height: 2.h),
                   Text(
@@ -179,29 +204,36 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
   }
 
   Widget _buildNotesSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Notes (Optional)',
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: const Color(0xFF1F2937)),
+          style: TextStyle(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : const Color(0xFF1F2937),
+          ),
         ),
         SizedBox(height: 12.h),
         TextField(
           controller: _notesController,
           maxLines: 4,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
           decoration: InputDecoration(
             hintText: 'Add any details about your good deed...',
             hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: isDark ? const Color(0xFF374151) : Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.r),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+              borderSide: BorderSide(color: isDark ? const Color(0xFF4B5563) : const Color(0xFFE5E7EB)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.r),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+              borderSide: BorderSide(color: isDark ? const Color(0xFF4B5563) : const Color(0xFFE5E7EB)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.r),
@@ -215,11 +247,13 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
   }
 
   Widget _buildSubmitButton() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.all(20.w),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
+        border: Border(top: BorderSide(color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB), width: 1)),
       ),
       child: SizedBox(
         width: double.infinity,

@@ -1,23 +1,30 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:equatable/equatable.dart';
 import 'theme_repository.dart';
 
 part 'theme_state.dart';
 
-class ThemeCubit extends Cubit<ThemeState> {
+/// Cubit for handling theme switching
+class ThemeCubit extends Cubit<ThemeData> {
   final ThemeRepository themeRepository;
 
-  ThemeCubit({required this.themeRepository}) : super(ThemeInitial());
+  ThemeCubit({required this.themeRepository}) : super(ThemeData.light());
 
-  void loadTheme() {
+  void loadTheme() async {
+    await themeRepository.loadTheme();
     final isDark = themeRepository.getIsDarkMode();
-    emit(ThemeLoaded(isDarkMode: isDark));
+    debugPrint('🎨 Loading Theme: isDark=$isDark');
+    emit(isDark ? ThemeData.dark() : ThemeData.light());
   }
 
-  void toggleTheme() async {
-    if (state is ThemeLoaded) {
-      final current = (state as ThemeLoaded).isDarkMode;
-      await themeRepository.setIsDarkMode(!current);
-      emit(ThemeLoaded(isDarkMode: !current));
-    }
+  Future<void> toggleTheme() async {
+    final currentBrightness = state.brightness;
+    final newIsDark = currentBrightness == Brightness.light;
+
+    debugPrint('🎨 Theme Toggle: ${currentBrightness == Brightness.dark} -> $newIsDark');
+    await themeRepository.setIsDarkMode(newIsDark);
+    emit(newIsDark ? ThemeData.dark() : ThemeData.light());
+    debugPrint('🎨 Theme State Emitted: brightness=${state.brightness}');
   }
 }

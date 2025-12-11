@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'core/di/set_up_di.dart';
@@ -12,6 +14,8 @@ import 'features/points/presentation/cubit/points_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize Firebase before setting up DI so repositories can rely on Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await SetUpDI.init();
   runApp(const NekiApp());
 }

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/routes/route_names.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -26,21 +30,43 @@ class ProfileScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0A0E27) : const Color(0xFFF9FAFB),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.only(bottom: 20.h),
-          child: Column(
-            spacing: 12,
-            children: [
-              _buildHeader(),
-              _buildProfileSection(),
+      body: BlocBuilder<AuthCubit, AuthState>(
+        builder: (context, state) {
+          if (state is Authenticated) {
+            return SafeArea(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(bottom: 20.h),
+                child: Column(
+                  spacing: 12,
+                  children: [
+                    _buildHeader(),
+                    _buildProfileSection(state.user),
+                    _buildLogoutButton(context),
+                    _buildStatsSection(context),
+                    _buildBadgesSection(context),
+                    _buildPrivacySection(context),
+                  ],
+                ),
+              ),
+            );
+          }
 
-              _buildStatsSection(context),
-              _buildBadgesSection(context),
-              _buildPrivacySection(context),
-            ],
-          ),
-        ),
+          return SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.person_off, size: 64.sp, color: Colors.grey),
+                  SizedBox(height: 16.h),
+                  Text(
+                    'Not logged in',
+                    style: TextStyle(fontSize: 18.sp, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -70,12 +96,13 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileSection() {
+  Widget _buildProfileSection(user) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
       color: AppColors.primaryGreen,
       child: Column(
         children: [
+          // Profile Image
           Container(
             width: 100.w,
             height: 100.w,
@@ -83,29 +110,107 @@ class ProfileScreen extends StatelessWidget {
               color: const Color(0xFFD4AF37),
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 4.w),
+              image: user.photoUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(user.photoUrl!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: Center(
-              child: Text('👤', style: TextStyle(fontSize: 48.sp)),
-            ),
+            child: user.photoUrl == null
+                ? Center(
+                    child: Text(
+                      user.name.isNotEmpty ? user.name[0].toUpperCase() : '👤',
+                      style: TextStyle(fontSize: 48.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  )
+                : null,
           ),
           SizedBox(height: 16.h),
+          // User Name
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                'Habib',
-                style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.w700, color: Colors.white),
+              Flexible(
+                child: Text(
+                  user.name.isNotEmpty ? user.name : 'User',
+                  style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.w700, color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              SizedBox(width: 8.w),
-              Text('🇧🇩', style: TextStyle(fontSize: 28.sp)),
             ],
           ),
           SizedBox(height: 8.h),
+          // User Email
           Text(
-            'Member since Nov 2025',
+            user.email,
+            style: TextStyle(fontSize: 14.sp, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w400),
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: 4.h),
+          // Member Since
+          Text(
+            'Member since ${_formatDate(user.createdAt)}',
             style: TextStyle(fontSize: 14.sp, color: const Color(0xFFD4AF37), fontWeight: FontWeight.w500),
           ),
         ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[date.month - 1]} ${date.year}';
+  }
+
+  Widget _buildLogoutButton(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 20.w),
+      child: ElevatedButton(
+        onPressed: () {
+          // Show confirmation dialog
+          showDialog(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: const Text('Logout'),
+              content: const Text('Are you sure you want to logout?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    context.read<AuthCubit>().logout();
+                    context.go(RouteNames.login);
+                  },
+                  child: const Text('Logout', style: TextStyle(color: Colors.red)),
+                ),
+              ],
+            ),
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+          padding: EdgeInsets.symmetric(vertical: 16.h),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14.r),
+          ),
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.logout, size: 20.sp),
+            SizedBox(width: 8.w),
+            Text(
+              'Logout',
+              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
       ),
     );
   }

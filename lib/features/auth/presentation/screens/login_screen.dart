@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,18 @@ class LoginScreen extends StatelessWidget {
   void _handleContinue(BuildContext context) {
     // Simulate login with mock user
     context.read<AuthCubit>().login(email: 'user@example.com', password: 'password');
+  }
+
+  void _handleGoogleSignIn(BuildContext context) {
+    context.read<AuthCubit>().signInWithGoogle();
+  }
+
+  void _handleFacebookSignIn(BuildContext context) {
+    context.read<AuthCubit>().signInWithFacebook();
+  }
+
+  void _handleAppleSignIn(BuildContext context) {
+    context.read<AuthCubit>().signInWithApple();
   }
 
   @override
@@ -71,17 +84,29 @@ class LoginScreen extends StatelessWidget {
                   context: context,
                   icon: '🔐',
                   label: 'Continue with Google',
-                  onPressed: () => _handleContinue(context),
+                  onPressed: () => _handleGoogleSignIn(context),
                 ),
                 SizedBox(height: 12.h),
 
-                // Continue with Phone Button
+                // Continue with Facebook Button
                 _buildAuthButton(
                   context: context,
                   icon: '📱',
-                  label: 'Continue with Phone',
-                  onPressed: () => _handleContinue(context),
+                  label: 'Continue with Facebook',
+                  onPressed: () => _handleFacebookSignIn(context),
                 ),
+
+                // Show Apple Sign-In only on iOS
+                if (Platform.isIOS) ...[
+                  SizedBox(height: 12.h),
+                  _buildAuthButton(
+                    context: context,
+                    icon: '',
+                    label: 'Continue with Apple',
+                    onPressed: () => _handleAppleSignIn(context),
+                  ),
+                ],
+
                 SizedBox(height: 32.h),
 
                 // Continue as Guest

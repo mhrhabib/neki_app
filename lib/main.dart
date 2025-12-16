@@ -11,6 +11,7 @@ import 'features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 import 'features/salah/presentation/cubit/salah_cubit.dart';
 import 'features/points/presentation/cubit/points_cubit.dart';
+import 'features/challenge/presentation/cubit/challenge_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,7 @@ class _NekiAppState extends State<NekiApp> {
         BlocProvider(create: (context) => getIt<AuthCubit>()..checkAuthStatus()),
         BlocProvider(create: (context) => getIt<SalahCubit>()),
         BlocProvider(create: (context) => getIt<PointsCubit>()),
+        BlocProvider(create: (context) => getIt<ChallengeCubit>()..loadChallenge()),
       ],
       child: BlocBuilder<ThemeCubit, ThemeData>(
         builder: (context, themeData) {

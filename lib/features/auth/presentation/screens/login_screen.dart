@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:neki_app/core/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../cubit/auth_cubit.dart';
 
@@ -11,7 +12,8 @@ class LoginScreen extends StatelessWidget {
 
   void _handleContinue(BuildContext context) {
     // Simulate login with mock user
-    context.read<AuthCubit>().login(email: 'user@example.com', password: 'password');
+    // context.read<AuthCubit>().login(email: 'user@example.com', password: 'password');
+    context.go(RouteNames.home);
   }
 
   void _handleGoogleSignIn(BuildContext context) {

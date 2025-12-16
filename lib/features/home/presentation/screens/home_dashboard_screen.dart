@@ -3,9 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../points/presentation/cubit/points_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../theme/theme_cubit.dart';
+import '../../../challenge/presentation/cubit/challenge_cubit.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
   const HomeDashboardScreen({super.key});
@@ -30,6 +32,14 @@ class HomeDashboardScreen extends StatelessWidget {
       color: Color(0xFFEF4444),
       description: 'Log your good actions',
     ),
+    PillarItem(
+      id: 'addiction',
+      title: 'Addiction',
+      icon: '🚫',
+      route: '/addiction',
+      color: Color(0xFFEF4444),
+      description: 'Recovery plans & support',
+    ),
   ];
 
   @override
@@ -52,6 +62,8 @@ class HomeDashboardScreen extends StatelessWidget {
                     _buildHeader(),
                     SizedBox(height: 24.h),
                     _buildStreakCard(context, authState.user.id),
+                    SizedBox(height: 20.h),
+                    _buildChallengeSections(context, isDark),
                     SizedBox(height: 32.h),
                     _buildPillarsSection(context),
                   ],
@@ -62,6 +74,259 @@ class HomeDashboardScreen extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         },
       ),
+    );
+  }
+
+  Widget _buildChallengeSections(BuildContext context, bool isDark) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: Column(
+        children: [
+          _buildAddictionChallengeCard(context, isDark),
+          SizedBox(height: 12.h),
+          _buildGeneralChallengeCard(context, isDark),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddictionChallengeCard(BuildContext context, bool isDark) {
+    return BlocBuilder<ChallengeCubit, ChallengeState>(
+      builder: (context, state) {
+        final hasActive =
+            state is ChallengeLoaded &&
+            state.hasActiveChallenge &&
+            state.challenge != null &&
+            state.challenge!.challengeType != null &&
+            state.challenge!.challengeType!.startsWith('addiction_');
+
+        if (hasActive) {
+          final challenge = state.challenge!;
+          final canCompleteToday = challenge.canCompleteToday();
+
+          return InkWell(
+            onTap: () => context.push(RouteNames.habitBuilding),
+            borderRadius: BorderRadius.circular(16.r),
+            child: Container(
+              padding: EdgeInsets.all(20.w),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [const Color(0xFF9C27B0), const Color(0xFF7B1FA2)]),
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(12.w),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Text('🚫', style: TextStyle(fontSize: 28.sp)),
+                  ),
+                  SizedBox(width: 16.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${challenge.durationDays}-Day Recovery',
+                          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        SizedBox(height: 4.h),
+                        Row(
+                          children: [
+                            Text(
+                              'Day ${challenge.completedDays} of ${challenge.durationDays}',
+                              style: TextStyle(fontSize: 14.sp, color: Colors.white.withOpacity(0.9)),
+                            ),
+                            if (!canCompleteToday) ...[
+                              SizedBox(width: 8.w),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(10.r),
+                                ),
+                                child: Text(
+                                  '✓ Done',
+                                  style: TextStyle(fontSize: 10.sp, color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20.sp),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return InkWell(
+          onTap: () => context.push(RouteNames.addiction),
+          borderRadius: BorderRadius.circular(16.r),
+          child: Container(
+            padding: EdgeInsets.all(20.w),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [const Color(0xFF9C27B0).withOpacity(0.9), const Color(0xFF9C27B0).withOpacity(0.6)],
+              ),
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12.w),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Text('🚫', style: TextStyle(fontSize: 28.sp)),
+                ),
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Addiction Recovery',
+                        style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'Start a recovery plan',
+                        style: TextStyle(fontSize: 14.sp, color: Colors.white.withOpacity(0.9)),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20.sp),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGeneralChallengeCard(BuildContext context, bool isDark) {
+    return BlocBuilder<ChallengeCubit, ChallengeState>(
+      builder: (context, state) {
+        final hasActive =
+            state is ChallengeLoaded &&
+            state.hasActiveChallenge &&
+            (state.challenge?.challengeType == null || !state.challenge!.challengeType!.startsWith('addiction_'));
+
+        if (hasActive) {
+          final challenge = state.challenge!;
+          final canCompleteToday = challenge.canCompleteToday();
+
+          return InkWell(
+            onTap: () => context.push(RouteNames.habitBuilding),
+            borderRadius: BorderRadius.circular(16.r),
+            child: Container(
+              padding: EdgeInsets.all(20.w),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.primaryGreen, AppColors.primaryGreen.withOpacity(0.8)]),
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(12.w),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Text('🎯', style: TextStyle(fontSize: 28.sp)),
+                  ),
+                  SizedBox(width: 16.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${challenge.durationDays}-Day Challenge',
+                          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        SizedBox(height: 4.h),
+                        Row(
+                          children: [
+                            Text(
+                              'Day ${challenge.completedDays} of ${challenge.durationDays}',
+                              style: TextStyle(fontSize: 14.sp, color: Colors.white.withOpacity(0.9)),
+                            ),
+                            if (!canCompleteToday) ...[
+                              SizedBox(width: 8.w),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(10.r),
+                                ),
+                                child: Text(
+                                  '✓ Done',
+                                  style: TextStyle(fontSize: 10.sp, color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20.sp),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return InkWell(
+          onTap: () => context.push(RouteNames.goalSelection),
+          borderRadius: BorderRadius.circular(16.r),
+          child: Container(
+            padding: EdgeInsets.all(20.w),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [AppColors.primaryGreen, AppColors.primaryGreen.withOpacity(0.8)]),
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12.w),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Text('🎯', style: TextStyle(fontSize: 28.sp)),
+                ),
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Beat Satan Challenge',
+                        style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'Start building your daily neki habit',
+                        style: TextStyle(fontSize: 14.sp, color: Colors.white.withOpacity(0.9)),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20.sp),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -274,6 +539,123 @@ class HomeDashboardScreen extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildChallengeCard(BuildContext context, bool isDark) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: BlocBuilder<ChallengeCubit, ChallengeState>(
+        builder: (context, state) {
+          if (state is ChallengeLoaded && state.hasActiveChallenge) {
+            final challenge = state.challenge!;
+            final canCompleteToday = challenge.canCompleteToday();
+
+            return InkWell(
+              onTap: () => context.push(RouteNames.habitBuilding),
+              borderRadius: BorderRadius.circular(16.r),
+              child: Container(
+                padding: EdgeInsets.all(20.w),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [const Color(0xFF9C27B0), const Color(0xFF9C27B0).withOpacity(0.8)]),
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      child: Text('💎', style: TextStyle(fontSize: 28.sp)),
+                    ),
+                    SizedBox(width: 16.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${challenge.durationDays}-Day Challenge',
+                            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          SizedBox(height: 4.h),
+                          Row(
+                            children: [
+                              Text(
+                                'Day ${challenge.completedDays} of ${challenge.durationDays}',
+                                style: TextStyle(fontSize: 14.sp, color: Colors.white.withOpacity(0.9)),
+                              ),
+                              if (!canCompleteToday) ...[
+                                SizedBox(width: 8.w),
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(10.r),
+                                  ),
+                                  child: Text(
+                                    '✓ Done',
+                                    style: TextStyle(fontSize: 10.sp, color: Colors.white, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20.sp),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          // No active challenge - show start challenge button
+          return InkWell(
+            onTap: () => context.push(RouteNames.goalSelection),
+            borderRadius: BorderRadius.circular(16.r),
+            child: Container(
+              padding: EdgeInsets.all(20.w),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.primaryGreen, AppColors.primaryGreen.withOpacity(0.8)]),
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(12.w),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Text('🎯', style: TextStyle(fontSize: 28.sp)),
+                  ),
+                  SizedBox(width: 16.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Beat Satan Challenge',
+                          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          'Start building your habits today',
+                          style: TextStyle(fontSize: 14.sp, color: Colors.white.withOpacity(0.9)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20.sp),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

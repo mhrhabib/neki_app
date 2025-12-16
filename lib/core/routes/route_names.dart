@@ -9,4 +9,7 @@ class RouteNames {
   static const String goodDeeds = '/good-deeds';
   static const String profile = '/profile';
   static const String leaderboard = '/leaderboard';
+  static const String goalSelection = '/goal-selection';
+  static const String habitBuilding = '/habit-building';
+  static const String addiction = '/addiction';
 }

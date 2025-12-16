@@ -16,7 +16,10 @@ import '../models/user_model.dart';
 /// - Requires `Firebase.initializeApp()` to be called before using this class.
 class AuthRepositoryImpl implements AuthRepository {
   final fb_auth.FirebaseAuth _firebaseAuth = fb_auth.FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: '327642350514-4lcqmvbq71fa8ojuilcd8uklm2lua0q8.apps.googleusercontent.com',
+    scopes: ['email', 'profile'],
+  );
   final FacebookAuth _facebookAuth = FacebookAuth.instance;
 
   UserModel? _mapFirebaseUser(fb_auth.User? user) {
@@ -60,6 +63,10 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<UserEntity> signInWithGoogle() async {
     try {
       debugPrint('🔵 [GoogleSignIn] Starting sign-in flow...');
+
+      // First, try to sign out to clear any cached state
+      await _googleSignIn.signOut();
+      debugPrint('🔵 [GoogleSignIn] Signed out previous session');
 
       // Trigger the Google Sign-In flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();

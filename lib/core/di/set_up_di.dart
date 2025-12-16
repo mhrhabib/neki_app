@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/theme/theme_repository.dart';
 import '../../features/theme/theme_cubit.dart';
 import '../../features/onboarding/domain/repositories/onboarding_repository.dart';
@@ -13,11 +14,18 @@ import '../../features/salah/presentation/cubit/salah_cubit.dart';
 import '../../features/points/domain/repositories/points_repository.dart';
 import '../../features/points/data/repositories/points_repository_impl.dart';
 import '../../features/points/presentation/cubit/points_cubit.dart';
+import '../../features/challenge/domain/repositories/challenge_repository.dart';
+import '../../features/challenge/data/repositories/challenge_repository_impl.dart';
+import '../../features/challenge/presentation/cubit/challenge_cubit.dart';
 
 final GetIt getIt = GetIt.instance;
 
 class SetUpDI {
   static Future<void> init() async {
+    // ========== SHARED PREFERENCES ==========
+    final prefs = await SharedPreferences.getInstance();
+    getIt.registerLazySingleton<SharedPreferences>(() => prefs);
+
     // ========== REPOSITORIES (Lazy Singletons) ==========
     final themeRepo = ThemeRepositoryImpl();
     await themeRepo.loadTheme(); // Load saved theme preference
@@ -27,6 +35,7 @@ class SetUpDI {
     getIt.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
     getIt.registerLazySingleton<SalahRepository>(() => SalahRepositoryImpl());
     getIt.registerLazySingleton<PointsRepository>(() => PointsRepositoryImpl());
+    getIt.registerLazySingleton<ChallengeRepository>(() => ChallengeRepositoryImpl(getIt<SharedPreferences>()));
 
     // ========== CUBITS (Factories) ==========
     // ThemeCubit needs to be a singleton so the same instance is shared across the app
@@ -34,8 +43,15 @@ class SetUpDI {
     getIt.registerFactory<OnboardingCubit>(() => OnboardingCubit(onboardingRepository: getIt<OnboardingRepository>()));
     getIt.registerFactory<AuthCubit>(() => AuthCubit(authRepository: getIt<AuthRepository>()));
     getIt.registerFactory<SalahCubit>(
-      () => SalahCubit(salahRepository: getIt<SalahRepository>(), pointsRepository: getIt<PointsRepository>()),
+      () => SalahCubit(
+        salahRepository: getIt<SalahRepository>(),
+        pointsRepository: getIt<PointsRepository>(),
+        challengeRepository: getIt<ChallengeRepository>(),
+      ),
     );
     getIt.registerFactory<PointsCubit>(() => PointsCubit(pointsRepository: getIt<PointsRepository>()));
+    getIt.registerFactory<ChallengeCubit>(
+      () => ChallengeCubit(getIt<ChallengeRepository>(), getIt<PointsRepository>()),
+    );
   }
 }

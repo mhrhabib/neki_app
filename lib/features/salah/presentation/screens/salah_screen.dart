@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../cubit/salah_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../points/presentation/cubit/points_cubit.dart';
 
 class SalahScreen extends StatefulWidget {
   const SalahScreen({super.key});
@@ -49,12 +50,23 @@ class _SalahScreenState extends State<SalahScreen> {
               ),
               SizedBox(height: 24.h),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   final authState = context.read<AuthCubit>().state;
                   if (authState is Authenticated) {
-                    context.read<SalahCubit>().markSalahComplete(userId: authState.user.id, salahName: prayer['name']!);
+                    final userId = authState.user.id;
+                    final salahCubit = context.read<SalahCubit>();
+                    final pointsCubit = context.read<PointsCubit>();
+
+                    await salahCubit.markSalahComplete(userId: userId, salahName: prayer['name']!);
+                    // Refresh points to update home screen after markSalahComplete finishes
+                    await pointsCubit.refreshPoints(userId);
+
+                    if (!mounted) return;
+                    Navigator.of(this.context).pop();
+                  } else {
+                    if (!mounted) return;
+                    Navigator.of(this.context).pop();
                   }
-                  Navigator.of(context).pop();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryGreen,

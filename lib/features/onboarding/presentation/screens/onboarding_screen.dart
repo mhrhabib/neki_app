@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../cubit/onboarding_cubit.dart';
+import 'goal_selection_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -70,8 +68,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         if (_currentPage == _pages.length - 1) {
-                          context.read<OnboardingCubit>().completeOnboarding();
-                          context.go('/login');
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const GoalSelectionScreen()));
                         } else {
                           _pageController.nextPage(
                             duration: const Duration(milliseconds: 300),

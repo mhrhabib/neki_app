@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/salah_entity.dart';
 import '../../domain/repositories/salah_repository.dart';
@@ -31,14 +32,14 @@ class SalahCubit extends Cubit<SalahState> {
       // Add points for salah
       await pointsRepository.addPoints(userId: userId, points: salah.pointsEarned, source: 'salah_$salahName');
 
-      // Check if user has an active challenge and complete today's challenge
-      final hasChallenge = await challengeRepository.hasActiveChallenge();
-      if (hasChallenge) {
+      // Check if user has an active challenge and complete today's challenge progress
+      final activeChallenge = await challengeRepository.getActiveChallenge(userId);
+      if (activeChallenge != null && activeChallenge.isActive && activeChallenge.canCompleteToday()) {
         try {
-          await challengeRepository.completeTodayChallenge();
+          await challengeRepository.completeTodayChallenge(userId);
+          debugPrint('✅ [Challenge] Daily progress updated from prayer completion');
         } catch (e) {
-          // Challenge already completed today or other error, ignore
-          print('Challenge completion skipped: $e');
+          debugPrint('⚠️ [Challenge] Completion skipped: $e');
         }
       }
 

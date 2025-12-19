@@ -11,19 +11,17 @@ class ChallengeProgressWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primaryGreen, AppColors.primaryGreen.withOpacity(0.8)],
+          colors: [AppColors.primaryGreen, AppColors.primaryGreen.withValues(alpha: 0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
-          BoxShadow(color: AppColors.primaryGreen.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 6)),
+          BoxShadow(color: AppColors.primaryGreen.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 6)),
         ],
       ),
       child: Column(
@@ -41,7 +39,7 @@ class ChallengeProgressWidget extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20.r),
                   ),
                   child: Text(
@@ -64,7 +62,7 @@ class ChallengeProgressWidget extends StatelessWidget {
                   Text(
                     'Day ${challenge.completedDays} of ${challenge.durationDays}',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w500,
                     ),
@@ -81,7 +79,7 @@ class ChallengeProgressWidget extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: challenge.progress,
                   minHeight: 10.h,
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ),
@@ -114,7 +112,7 @@ class ChallengeProgressWidget extends StatelessWidget {
   Widget _buildStatCard({required String icon, required String label, required String value}) {
     return Container(
       padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(12.r)),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12.r)),
       child: Column(
         children: [
           Text(icon, style: TextStyle(fontSize: 20.sp)),
@@ -126,7 +124,7 @@ class ChallengeProgressWidget extends StatelessWidget {
           SizedBox(height: 2.h),
           Text(
             label,
-            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 10.sp),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 10.sp),
           ),
         ],
       ),

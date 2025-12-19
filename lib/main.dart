@@ -44,7 +44,7 @@ class _NekiAppState extends State<NekiApp> {
         BlocProvider(create: (context) => getIt<AuthCubit>()..checkAuthStatus()),
         BlocProvider(create: (context) => getIt<SalahCubit>()),
         BlocProvider(create: (context) => getIt<PointsCubit>()),
-        BlocProvider(create: (context) => getIt<ChallengeCubit>()..loadChallenge()),
+        BlocProvider(create: (context) => getIt<ChallengeCubit>()),
       ],
       child: BlocBuilder<ThemeCubit, ThemeData>(
         builder: (context, themeData) {

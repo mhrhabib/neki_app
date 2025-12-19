@@ -11,47 +11,40 @@ class AppTheme {
       colorScheme: const ColorScheme.light(
         primary: AppColors.primaryGreen,
         secondary: AppColors.goldAccent,
-        surface: AppColors.softCream,
-        onSurface: AppColors.textDark,
+        surface: Colors.white,
+        error: Color(0xFFFF3B30),
       ),
-      primaryColor: AppColors.primaryGreen,
-      scaffoldBackgroundColor: AppColors.softCream,
+      scaffoldBackgroundColor: const Color(0xFFF2F2F7),
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.primaryGreen,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white.withValues(alpha: 0.8),
+        foregroundColor: AppColors.textDark,
         elevation: 0,
         centerTitle: true,
+        titleTextStyle: TextStyle(
+          color: AppColors.textDark,
+          fontSize: 17.sp,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.4,
+        ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.cardWhite,
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+        color: Colors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          side: const BorderSide(color: Color(0xFFE5E5EA), width: 0.5),
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryGreen,
           foregroundColor: Colors.white,
-          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 14.h),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+          elevation: 0,
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppColors.cardWhite,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14.r),
-          borderSide: BorderSide(color: AppColors.dividerGray),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14.r),
-          borderSide: BorderSide(color: AppColors.dividerGray),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14.r),
-          borderSide: BorderSide(color: AppColors.primaryGreen, width: 2),
-        ),
-      ),
-      dividerColor: AppColors.dividerGray,
+      dividerTheme: const DividerThemeData(color: Color(0xFFC6C6C8), thickness: 0.5, space: 1),
     );
   }
 
@@ -62,51 +55,45 @@ class AppTheme {
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primaryGreen,
         secondary: AppColors.goldAccent,
-        surface: Color(0xFF1F2937),
+        surface: Color(0xFF1C1C1E),
         onSurface: Colors.white,
+        error: Color(0xFFFF453A),
       ),
-      primaryColor: AppColors.primaryGreen,
-      scaffoldBackgroundColor: const Color(0xFF0A0E27),
-      appBarTheme: AppBarThemeData(
-        backgroundColor: const Color(0xFF1F2937),
+      scaffoldBackgroundColor: Colors.black,
+      appBarTheme: AppBarTheme(
+        backgroundColor: const Color(0xFF1C1C1E).withValues(alpha: 0.8),
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        titleTextStyle: TextStyle(
+          color: Colors.white,
+          fontSize: 17.sp,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.4,
+        ),
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF1F2937),
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+        color: const Color(0xFF1C1C1E),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          side: const BorderSide(color: Color(0xFF38383A), width: 0.5),
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryGreen,
           foregroundColor: Colors.white,
-          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 14.h),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+          elevation: 0,
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: const Color(0xFF374151),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14.r),
-          borderSide: const BorderSide(color: Color(0xFF4B5563)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14.r),
-          borderSide: const BorderSide(color: Color(0xFF4B5563)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14.r),
-          borderSide: BorderSide(color: AppColors.goldAccent, width: 2),
-        ),
-      ),
-      dividerColor: const Color(0xFF374151),
+      dividerTheme: const DividerThemeData(color: Color(0xFF38383A), thickness: 0.5, space: 1),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFF1F2937),
-        selectedItemColor: Color(0xFFD4AF37),
-        unselectedItemColor: Color(0xFF9CA3AF),
+        backgroundColor: Color(0xFF1C1C1E),
+        selectedItemColor: AppColors.goldAccent,
+        unselectedItemColor: Color(0xFF8E8E93),
       ),
     );
   }

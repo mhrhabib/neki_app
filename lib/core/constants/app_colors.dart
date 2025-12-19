@@ -9,5 +9,9 @@ class AppColors {
   static const Color textDark = Color(0xFF1E1E1E);
   static const Color textGray = Color(0xFF666666);
   static const Color dividerGray = Color(0xFFEEEEEE);
-  static const Color successGreen = Color(0xFF4CAF50);
+  static const Color successGreen = Color(0xFF34C759);
+  static const Color iosBackground = Color(0xFFF2F2F7);
+  static const Color iosCardDark = Color(0xFF1C1C1E);
+  static const Color iosDivider = Color(0xFFC6C6C8);
+  static const Color iosDividerDark = Color(0xFF38383A);
 }

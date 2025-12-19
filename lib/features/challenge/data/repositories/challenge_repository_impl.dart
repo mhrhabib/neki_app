@@ -1,27 +1,26 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/services/firestore_service.dart';
 import '../../domain/entities/challenge_entity.dart';
 import '../../domain/repositories/challenge_repository.dart';
 import '../models/challenge_model.dart';
 
 class ChallengeRepositoryImpl implements ChallengeRepository {
-  final SharedPreferences _prefs;
-  static const String _activeChalllengeKey = 'active_challenge';
+  final FirestoreService _firestoreService;
+  static const String _collectionPath = 'challenges';
 
-  ChallengeRepositoryImpl(this._prefs);
+  ChallengeRepositoryImpl(this._firestoreService);
 
   @override
-  Future<ChallengeEntity?> getActiveChallenge() async {
+  Future<ChallengeEntity?> getActiveChallenge(String userId) async {
     try {
-      final data = _prefs.getString(_activeChalllengeKey);
-      if (data == null) return null;
+      final doc = await _firestoreService.getDocument(collectionPath: _collectionPath, documentId: userId);
 
-      final json = jsonDecode(data) as Map<String, dynamic>;
-      final challenge = ChallengeModel.fromJson(json);
-
-      debugPrint('📊 [Challenge] Loaded: ${challenge.toString()}');
-      return challenge;
+      if (doc != null && doc.exists) {
+        final challenge = ChallengeModel.fromJson(doc.data()!);
+        debugPrint('📊 [Challenge] Loaded from Firestore: ${challenge.toString()}');
+        return challenge;
+      }
+      return null;
     } catch (e) {
       debugPrint('❌ [Challenge] Error loading challenge: $e');
       return null;
@@ -29,7 +28,7 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   }
 
   @override
-  Future<void> saveChallenge(ChallengeEntity challenge) async {
+  Future<void> saveChallenge(String userId, ChallengeEntity challenge) async {
     try {
       final model = challenge is ChallengeModel
           ? challenge
@@ -42,10 +41,9 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
               challengeType: challenge.challengeType,
             );
 
-      final data = jsonEncode(model.toJson());
-      await _prefs.setString(_activeChalllengeKey, data);
+      await _firestoreService.setDocument(collectionPath: _collectionPath, documentId: userId, data: model.toJson());
 
-      debugPrint('✅ [Challenge] Saved: ${model.toString()}');
+      debugPrint('✅ [Challenge] Saved to Firestore: ${model.toString()}');
     } catch (e) {
       debugPrint('❌ [Challenge] Error saving challenge: $e');
       rethrow;
@@ -53,10 +51,10 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   }
 
   @override
-  Future<void> clearChallenge() async {
+  Future<void> clearChallenge(String userId) async {
     try {
-      await _prefs.remove(_activeChalllengeKey);
-      debugPrint('🗑️ [Challenge] Cleared');
+      await _firestoreService.deleteDocument(collectionPath: _collectionPath, documentId: userId);
+      debugPrint('🗑️ [Challenge] Cleared from Firestore');
     } catch (e) {
       debugPrint('❌ [Challenge] Error clearing challenge: $e');
       rethrow;
@@ -64,15 +62,16 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   }
 
   @override
-  Future<void> completeTodayChallenge() async {
+  Future<void> completeTodayChallenge(String userId) async {
     try {
-      final challenge = await getActiveChallenge();
+      final challenge = await getActiveChallenge(userId);
       if (challenge == null) {
         throw Exception('No active challenge found');
       }
 
       if (!challenge.canCompleteToday()) {
-        throw Exception('Challenge already completed today');
+        debugPrint('ℹ️ [Challenge] Already completed for today, skipping update.');
+        return;
       }
 
       final model = challenge is ChallengeModel
@@ -91,7 +90,7 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
 
       final updatedChallenge = model.copyWith(completedDays: newCompletedDays, status: newStatus);
 
-      await saveChallenge(updatedChallenge);
+      await saveChallenge(userId, updatedChallenge);
       debugPrint('✅ [Challenge] Day $newCompletedDays completed!');
     } catch (e) {
       debugPrint('❌ [Challenge] Error completing today: $e');
@@ -100,8 +99,8 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   }
 
   @override
-  Future<bool> hasActiveChallenge() async {
-    final challenge = await getActiveChallenge();
+  Future<bool> hasActiveChallenge(String userId) async {
+    final challenge = await getActiveChallenge(userId);
     return challenge != null && challenge.status == ChallengeStatus.active;
   }
 }

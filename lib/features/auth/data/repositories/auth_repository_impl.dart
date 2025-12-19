@@ -1,10 +1,12 @@
-import 'dart:convert';
-import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:crypto/crypto.dart';
+import 'dart:convert';
+import 'dart:math';
+import 'dart:io' show Platform;
 
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -152,19 +154,13 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<UserEntity> signInWithApple() async {
-    // Apple Sign-In is only available on iOS and macOS
-    // TODO: Add sign_in_with_apple package back when testing on iOS
-    throw UnimplementedError(
-      'Apple Sign-In is currently disabled to fix Android build issues. '
-      'It will be re-enabled when testing on iOS devices.',
-    );
-
-    /* Commented out until sign_in_with_apple package is added back
     if (!Platform.isIOS && !Platform.isMacOS) {
       throw Exception('Apple Sign-In is only available on iOS and macOS');
     }
 
     try {
+      debugPrint('🔵 [AppleSignIn] Starting sign-in flow...');
+
       // Generate nonce for security
       final rawNonce = _generateNonce();
       final nonce = _sha256ofString(rawNonce);
@@ -174,31 +170,38 @@ class AuthRepositoryImpl implements AuthRepository {
         scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
         nonce: nonce,
       );
+      debugPrint('🔵 [AppleSignIn] Apple ID credential received');
 
       // Create OAuth credential for Firebase
       final oauthCredential = fb_auth.OAuthProvider(
         'apple.com',
       ).credential(idToken: appleCredential.identityToken, rawNonce: rawNonce);
+      debugPrint('🔵 [AppleSignIn] Firebase OAuth credential created');
 
       // Sign in to Firebase with Apple credential
       final userCredential = await _firebaseAuth.signInWithCredential(oauthCredential);
       final user = userCredential.user;
+      debugPrint('✅ [AppleSignIn] Firebase sign-in successful!');
 
       // Update display name if provided by Apple (only on first sign-in)
       if (user != null && appleCredential.givenName != null && appleCredential.familyName != null) {
         final displayName = '${appleCredential.givenName} ${appleCredential.familyName}';
         await user.updateDisplayName(displayName);
         await user.reload();
+        debugPrint('🔵 [AppleSignIn] Updated display name: $displayName');
       }
 
       final refreshed = _firebaseAuth.currentUser;
       final mapped = _mapFirebaseUser(refreshed);
       if (mapped == null) throw Exception('Failed to sign in with Apple');
+
+      debugPrint('✅ [AppleSignIn] User mapped: ${mapped.email}');
       return mapped;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ [AppleSignIn] ERROR: $e');
+      debugPrint('❌ [AppleSignIn] Stack trace: $stackTrace');
       throw Exception('Apple sign-in failed: $e');
     }
-    */
   }
 
   /// Generates a cryptographically secure random nonce

@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../cubit/challenge_cubit.dart';
 
 class GoalSelectionScreen extends StatelessWidget {
@@ -89,9 +90,13 @@ class GoalSelectionScreen extends StatelessWidget {
               Container(
                 padding: EdgeInsets.all(16.w),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1F2937).withOpacity(0.5) : AppColors.primaryGreen.withOpacity(0.1),
+                  color: isDark
+                      ? const Color(0xFF1F2937).withValues(alpha: 0.5)
+                      : AppColors.primaryGreen.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(color: isDark ? const Color(0xFF374151) : AppColors.primaryGreen.withOpacity(0.3)),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF374151) : AppColors.primaryGreen.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -114,14 +119,20 @@ class GoalSelectionScreen extends StatelessWidget {
   }
 
   void _startChallenge(BuildContext context, int days, int points) {
-    context.read<ChallengeCubit>().startChallenge(
-      durationDays: days,
-      rewardPoints: points,
-      challengeType: 'beat_satan',
-    );
+    final authState = context.read<AuthCubit>().state;
+    if (authState is Authenticated) {
+      context.read<ChallengeCubit>().startChallenge(
+        userId: authState.user.id,
+        durationDays: days,
+        rewardPoints: points,
+        challengeType: 'beat_satan',
+      );
 
-    // Navigate to habit building screen
-    context.push(RouteNames.habitBuilding);
+      // Navigate to habit building screen
+      context.push(RouteNames.habitBuilding);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please log in first')));
+    }
   }
 }
 
@@ -157,7 +168,9 @@ class _ChallengeCard extends StatelessWidget {
           color: isDark ? const Color(0xFF1F2937) : Colors.white,
           borderRadius: BorderRadius.circular(16.r),
           border: Border.all(color: isDark ? const Color(0xFF374151) : AppColors.dividerGray),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
         ),
         child: Row(
           children: [
@@ -165,7 +178,7 @@ class _ChallengeCard extends StatelessWidget {
             Container(
               width: 60.w,
               height: 60.w,
-              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12.r)),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12.r)),
               child: Center(
                 child: Text(icon, style: TextStyle(fontSize: 32.sp)),
               ),
@@ -191,7 +204,7 @@ class _ChallengeCard extends StatelessWidget {
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.2),
+                          color: color.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6.r),
                         ),
                         child: Text(

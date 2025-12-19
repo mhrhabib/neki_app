@@ -68,9 +68,9 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
 
     // Try to complete today's challenge if active (await to ensure ordering)
     try {
-      final hasChallenge = await challengeRepository.hasActiveChallenge();
+      final hasChallenge = await challengeRepository.hasActiveChallenge(userId);
       if (hasChallenge) {
-        await challengeRepository.completeTodayChallenge();
+        await challengeRepository.completeTodayChallenge(userId);
       }
     } catch (e) {
       // Challenge already completed today or other error, ignore

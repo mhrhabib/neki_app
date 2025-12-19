@@ -1,16 +1,22 @@
+import '../../../../core/services/firestore_service.dart';
 import '../../domain/entities/neki_points_entity.dart';
 import '../../domain/repositories/points_repository.dart';
 import '../models/neki_points_model.dart';
 
 class PointsRepositoryImpl implements PointsRepository {
-  final Map<String, NekiPointsModel> _userPoints = {};
+  final FirestoreService _firestoreService;
+  static const String _collectionPath = 'users_points';
+
+  PointsRepositoryImpl(this._firestoreService);
 
   @override
   Future<NekiPointsEntity> getUserPoints(String userId) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    
-    if (!_userPoints.containsKey(userId)) {
-      _userPoints[userId] = NekiPointsModel(
+    final doc = await _firestoreService.getDocument(collectionPath: _collectionPath, documentId: userId);
+
+    if (doc != null && doc.exists) {
+      return NekiPointsModel.fromJson(doc.data()!);
+    } else {
+      final defaultPoints = NekiPointsModel(
         userId: userId,
         totalPoints: 0,
         todayPoints: 0,
@@ -19,18 +25,21 @@ class PointsRepositoryImpl implements PointsRepository {
         currentStreak: 0,
         longestStreak: 0,
       );
+      // Optional: Initialize in Firestore
+      await _firestoreService.setDocument(
+        collectionPath: _collectionPath,
+        documentId: userId,
+        data: defaultPoints.toJson(),
+      );
+      return defaultPoints;
     }
-    
-    return _userPoints[userId]!;
   }
 
   @override
   Future<void> addPoints({required String userId, required int points, required String source}) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    
     final currentPoints = await getUserPoints(userId) as NekiPointsModel;
-    
-    _userPoints[userId] = NekiPointsModel(
+
+    final updatedPoints = NekiPointsModel(
       userId: userId,
       totalPoints: currentPoints.totalPoints + points,
       todayPoints: currentPoints.todayPoints + points,
@@ -38,6 +47,12 @@ class PointsRepositoryImpl implements PointsRepository {
       monthPoints: currentPoints.monthPoints + points,
       currentStreak: currentPoints.currentStreak,
       longestStreak: currentPoints.longestStreak,
+    );
+
+    await _firestoreService.setDocument(
+      collectionPath: _collectionPath,
+      documentId: userId,
+      data: updatedPoints.toJson(),
     );
   }
 
@@ -49,12 +64,10 @@ class PointsRepositoryImpl implements PointsRepository {
 
   @override
   Future<void> updateStreak(String userId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    
     final currentPoints = await getUserPoints(userId) as NekiPointsModel;
     final newStreak = currentPoints.currentStreak + 1;
-    
-    _userPoints[userId] = NekiPointsModel(
+
+    final updatedPoints = NekiPointsModel(
       userId: userId,
       totalPoints: currentPoints.totalPoints,
       todayPoints: currentPoints.todayPoints,
@@ -62,6 +75,12 @@ class PointsRepositoryImpl implements PointsRepository {
       monthPoints: currentPoints.monthPoints,
       currentStreak: newStreak,
       longestStreak: newStreak > currentPoints.longestStreak ? newStreak : currentPoints.longestStreak,
+    );
+
+    await _firestoreService.setDocument(
+      collectionPath: _collectionPath,
+      documentId: userId,
+      data: updatedPoints.toJson(),
     );
   }
 }

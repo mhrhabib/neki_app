@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../cubit/challenge_cubit.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../widgets/challenge_progress_widget.dart';
 
 class HabitBuildingScreen extends StatelessWidget {
@@ -36,7 +37,7 @@ class HabitBuildingScreen extends StatelessWidget {
                   final id = parts[1];
                   final days = parts[2];
                   final label = _addictionLabel(id);
-                  title = '${days}-day: $label';
+                  title = '$days-day: $label';
                 }
               }
             }
@@ -133,7 +134,7 @@ class HabitBuildingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDailyTaskCard(BuildContext context, challenge, bool isDark) {
+  Widget _buildDailyTaskCard(BuildContext context, dynamic challenge, bool isDark) {
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
@@ -190,7 +191,7 @@ class HabitBuildingScreen extends StatelessWidget {
     }
   }
 
-  String _dailyTaskText(challenge) {
+  String _dailyTaskText(dynamic challenge) {
     final t = challenge.challengeType;
     if (t != null && t.startsWith('addiction_')) {
       final parts = t.split('_');
@@ -213,17 +214,17 @@ class HabitBuildingScreen extends StatelessWidget {
     return '✅ Avoid sin and bad habits\n✅ Focus on positive actions\n✅ Stay consistent and patient';
   }
 
-  Widget _buildMotivationSection(BuildContext context, challenge, bool isDark) {
+  Widget _buildMotivationSection(BuildContext context, dynamic challenge, bool isDark) {
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primaryGreen.withOpacity(0.2), AppColors.primaryGreen.withOpacity(0.1)],
+          colors: [AppColors.primaryGreen.withValues(alpha: 0.2), AppColors.primaryGreen.withValues(alpha: 0.1)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,7 +263,10 @@ class HabitBuildingScreen extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () {
-          context.read<ChallengeCubit>().completeTodayChallenge();
+          final authState = context.read<AuthCubit>().state;
+          if (authState is Authenticated) {
+            context.read<ChallengeCubit>().completeTodayChallenge(userId: authState.user.id);
+          }
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryGreen,

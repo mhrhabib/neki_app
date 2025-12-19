@@ -2,6 +2,8 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/theme/theme_repository.dart';
 import '../../features/theme/theme_cubit.dart';
+import '../services/firebase_storage_service.dart';
+import '../services/firestore_service.dart';
 import '../../features/onboarding/domain/repositories/onboarding_repository.dart';
 import '../../features/onboarding/data/repositories/onboarding_repository_impl.dart';
 import '../../features/onboarding/presentation/cubit/onboarding_cubit.dart';
@@ -11,12 +13,15 @@ import '../../features/auth/presentation/cubit/auth_cubit.dart';
 import '../../features/salah/domain/repositories/salah_repository.dart';
 import '../../features/salah/data/repositories/salah_repository_impl.dart';
 import '../../features/salah/presentation/cubit/salah_cubit.dart';
+import '../../features/profile/domain/repositories/profile_repository.dart';
+import '../../features/profile/data/repositories/profile_repository_impl.dart';
 import '../../features/points/domain/repositories/points_repository.dart';
 import '../../features/points/data/repositories/points_repository_impl.dart';
 import '../../features/points/presentation/cubit/points_cubit.dart';
 import '../../features/challenge/domain/repositories/challenge_repository.dart';
 import '../../features/challenge/data/repositories/challenge_repository_impl.dart';
 import '../../features/challenge/presentation/cubit/challenge_cubit.dart';
+import '../../features/profile/presentation/cubit/profile_cubit.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -26,6 +31,10 @@ class SetUpDI {
     final prefs = await SharedPreferences.getInstance();
     getIt.registerLazySingleton<SharedPreferences>(() => prefs);
 
+    // ========== FIREBASE SERVICES ==========
+    getIt.registerLazySingleton<FirebaseStorageService>(() => FirebaseStorageService());
+    getIt.registerLazySingleton<FirestoreService>(() => FirestoreService());
+
     // ========== REPOSITORIES (Lazy Singletons) ==========
     final themeRepo = ThemeRepositoryImpl();
     await themeRepo.loadTheme(); // Load saved theme preference
@@ -33,9 +42,12 @@ class SetUpDI {
 
     getIt.registerLazySingleton<OnboardingRepository>(() => OnboardingRepositoryImpl());
     getIt.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
-    getIt.registerLazySingleton<SalahRepository>(() => SalahRepositoryImpl());
-    getIt.registerLazySingleton<PointsRepository>(() => PointsRepositoryImpl());
-    getIt.registerLazySingleton<ChallengeRepository>(() => ChallengeRepositoryImpl(getIt<SharedPreferences>()));
+    getIt.registerLazySingleton<SalahRepository>(() => SalahRepositoryImpl(getIt<FirestoreService>()));
+    getIt.registerLazySingleton<PointsRepository>(() => PointsRepositoryImpl(getIt<FirestoreService>()));
+    getIt.registerLazySingleton<ChallengeRepository>(() => ChallengeRepositoryImpl(getIt<FirestoreService>()));
+    getIt.registerLazySingleton<ProfileRepository>(
+      () => ProfileRepositoryImpl(getIt<FirestoreService>(), getIt<FirebaseStorageService>()),
+    );
 
     // ========== CUBITS (Factories) ==========
     // ThemeCubit needs to be a singleton so the same instance is shared across the app
@@ -53,5 +65,6 @@ class SetUpDI {
     getIt.registerFactory<ChallengeCubit>(
       () => ChallengeCubit(getIt<ChallengeRepository>(), getIt<PointsRepository>()),
     );
+    getIt.registerFactory<ProfileCubit>(() => ProfileCubit(profileRepository: getIt<ProfileRepository>()));
   }
 }

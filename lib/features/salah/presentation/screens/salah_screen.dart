@@ -26,6 +26,19 @@ class _SalahScreenState extends State<SalahScreen> {
     {'id': 'tahajjud', 'name': 'Tahajjud', 'time': '2:00 AM'},
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  void _loadData() {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is Authenticated) {
+      context.read<SalahCubit>().loadTodaysSalahs(authState.user.id);
+    }
+  }
+
   void _showConfirmationModal(Map<String, String> prayer) {
     showDialog(
       context: context,
@@ -92,191 +105,198 @@ class _SalahScreenState extends State<SalahScreen> {
     return Scaffold(
       backgroundColor: AppColors.softCream,
       body: SafeArea(
-        child: BlocBuilder<AuthCubit, AuthState>(
-          builder: (context, authState) {
-            if (authState is Authenticated) {
-              context.read<SalahCubit>().loadTodaysSalahs(authState.user.id);
+        child: BlocListener<AuthCubit, AuthState>(
+          listener: (context, state) {
+            if (state is Authenticated) {
+              context.read<SalahCubit>().loadTodaysSalahs(state.user.id);
+            }
+          },
+          child: BlocBuilder<AuthCubit, AuthState>(
+            builder: (context, authState) {
+              if (authState is Authenticated) {
+                return BlocBuilder<SalahCubit, SalahState>(
+                  builder: (context, state) {
+                    if (state is SalahLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-              return BlocBuilder<SalahCubit, SalahState>(
-                builder: (context, state) {
-                  if (state is SalahLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+                    if (state is SalahLoaded) {
+                      final completedPrayers = prayers.where((prayer) {
+                        return state.salahs.any((salah) => salah.salahName == prayer['name'] && salah.isCompleted);
+                      }).length;
 
-                  if (state is SalahLoaded) {
-                    final completedPrayers = prayers.where((prayer) {
-                      return state.salahs.any((salah) => salah.salahName == prayer['name'] && salah.isCompleted);
-                    }).length;
-
-                    return Column(
-                      children: [
-                        // Header
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border(bottom: BorderSide(color: AppColors.dividerGray, width: 1)),
-                          ),
-                          child: Row(
-                            children: [
-                              IconButton(
-                                onPressed: () => context.go('/home'),
-                                icon: Icon(Icons.chevron_left, size: 24.sp, color: AppColors.textDark),
-                                style: IconButton.styleFrom(
-                                  backgroundColor: AppColors.dividerGray,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-                                ),
-                              ),
-                              SizedBox(width: 12.w),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "Today's Prayers",
-                                      style: AppTypography.h1.copyWith(color: AppColors.primaryGreen),
-                                    ),
-                                    SizedBox(height: 2.h),
-                                    Text(
-                                      '$completedPrayers of ${prayers.length} completed',
-                                      style: AppTypography.caption.copyWith(color: AppColors.textGray),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Progress Card
-                        Container(
-                          margin: EdgeInsets.all(20.w),
-                          padding: EdgeInsets.all(20.w),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryGreen,
-                            borderRadius: BorderRadius.circular(16.r),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Progress',
-                                style: AppTypography.body.copyWith(
-                                  color: AppColors.goldAccent,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              SizedBox(height: 8.h),
-                              LinearProgressIndicator(
-                                value: completedPrayers / prayers.length,
-                                backgroundColor: Colors.white.withValues(alpha: 0.2),
-                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.goldAccent),
-                              ),
-                              SizedBox(height: 12.h),
-                              Text(
-                                'Keep going! May Allah accept your prayers 🤲',
-                                style: AppTypography.caption.copyWith(color: Colors.white),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Prayers List
-                        Expanded(
-                          child: ListView.builder(
-                            padding: EdgeInsets.symmetric(horizontal: 20.w),
-                            itemCount: prayers.length,
-                            itemBuilder: (context, index) {
-                              final prayer = prayers[index];
-                              final isCompleted = state.salahs.any(
-                                (salah) => salah.salahName == prayer['name'] && salah.isCompleted,
-                              );
-
-                              return GestureDetector(
-                                onTap: isCompleted ? null : () => _showConfirmationModal(prayer),
-                                child: Container(
-                                  margin: EdgeInsets.only(bottom: 12.h),
-                                  padding: EdgeInsets.all(18.w),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(14.r),
-                                    border: Border.all(
-                                      color: isCompleted ? AppColors.primaryGreen : AppColors.dividerGray,
-                                      width: 1,
-                                    ),
+                      return Column(
+                        children: [
+                          // Header
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border(bottom: BorderSide(color: AppColors.dividerGray, width: 1)),
+                            ),
+                            child: Row(
+                              children: [
+                                IconButton(
+                                  onPressed: () => context.go('/home'),
+                                  icon: Icon(Icons.chevron_left, size: 24.sp, color: AppColors.textDark),
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: AppColors.dividerGray,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
                                   ),
-                                  child: Row(
+                                ),
+                                SizedBox(width: 12.w),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Container(
-                                        width: 28.w,
-                                        height: 28.w,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: isCompleted ? AppColors.primaryGreen : AppColors.dividerGray,
-                                            width: 2,
-                                          ),
-                                          color: isCompleted ? AppColors.primaryGreen : Colors.white,
-                                        ),
-                                        child: isCompleted ? Icon(Icons.check, size: 16.sp, color: Colors.white) : null,
+                                      Text(
+                                        "Today's Prayers",
+                                        style: AppTypography.h1.copyWith(color: AppColors.primaryGreen),
                                       ),
-                                      SizedBox(width: 16.w),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              prayer['name']!,
-                                              style: AppTypography.body.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                                color: isCompleted ? AppColors.textGray : AppColors.textDark,
-                                                decoration: isCompleted ? TextDecoration.lineThrough : null,
-                                              ),
-                                            ),
-                                            SizedBox(height: 2.h),
-                                            Text(
-                                              prayer['time']!,
-                                              style: AppTypography.caption.copyWith(color: AppColors.textGray),
-                                            ),
-                                          ],
-                                        ),
+                                      SizedBox(height: 2.h),
+                                      Text(
+                                        '$completedPrayers of ${prayers.length} completed',
+                                        style: AppTypography.caption.copyWith(color: AppColors.textGray),
                                       ),
-                                      if (isCompleted)
-                                        Container(
-                                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.goldAccent.withValues(alpha: 0.2),
-                                            borderRadius: BorderRadius.circular(6.r),
-                                          ),
-                                          child: Text(
-                                            '+25 Neki',
-                                            style: AppTypography.caption.copyWith(
-                                              color: AppColors.goldAccent,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
                                     ],
                                   ),
                                 ),
-                              );
-                            },
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    );
-                  }
 
-                  if (state is SalahError) {
-                    return Center(child: Text('Error: ${state.message}'));
-                  }
+                          // Progress Card
+                          Container(
+                            margin: EdgeInsets.all(20.w),
+                            padding: EdgeInsets.all(20.w),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryGreen,
+                              borderRadius: BorderRadius.circular(16.r),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Progress',
+                                  style: AppTypography.body.copyWith(
+                                    color: AppColors.goldAccent,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(height: 8.h),
+                                LinearProgressIndicator(
+                                  value: completedPrayers / prayers.length,
+                                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.goldAccent),
+                                ),
+                                SizedBox(height: 12.h),
+                                Text(
+                                  'Keep going! May Allah accept your prayers 🤲',
+                                  style: AppTypography.caption.copyWith(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ),
 
-                  return const SizedBox();
-                },
-              );
-            }
-            return const Center(child: CircularProgressIndicator());
-          },
+                          // Prayers List
+                          Expanded(
+                            child: ListView.builder(
+                              padding: EdgeInsets.symmetric(horizontal: 20.w),
+                              itemCount: prayers.length,
+                              itemBuilder: (context, index) {
+                                final prayer = prayers[index];
+                                final isCompleted = state.salahs.any(
+                                  (salah) => salah.salahName == prayer['name'] && salah.isCompleted,
+                                );
+
+                                return GestureDetector(
+                                  onTap: isCompleted ? null : () => _showConfirmationModal(prayer),
+                                  child: Container(
+                                    margin: EdgeInsets.only(bottom: 12.h),
+                                    padding: EdgeInsets.all(18.w),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(14.r),
+                                      border: Border.all(
+                                        color: isCompleted ? AppColors.primaryGreen : AppColors.dividerGray,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 28.w,
+                                          height: 28.w,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: isCompleted ? AppColors.primaryGreen : AppColors.dividerGray,
+                                              width: 2,
+                                            ),
+                                            color: isCompleted ? AppColors.primaryGreen : Colors.white,
+                                          ),
+                                          child: isCompleted
+                                              ? Icon(Icons.check, size: 16.sp, color: Colors.white)
+                                              : null,
+                                        ),
+                                        SizedBox(width: 16.w),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                prayer['name']!,
+                                                style: AppTypography.body.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: isCompleted ? AppColors.textGray : AppColors.textDark,
+                                                  decoration: isCompleted ? TextDecoration.lineThrough : null,
+                                                ),
+                                              ),
+                                              SizedBox(height: 2.h),
+                                              Text(
+                                                prayer['time']!,
+                                                style: AppTypography.caption.copyWith(color: AppColors.textGray),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (isCompleted)
+                                          Container(
+                                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.goldAccent.withValues(alpha: 0.2),
+                                              borderRadius: BorderRadius.circular(6.r),
+                                            ),
+                                            child: Text(
+                                              '+25 Neki',
+                                              style: AppTypography.caption.copyWith(
+                                                color: AppColors.goldAccent,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
+                    if (state is SalahError) {
+                      return Center(child: Text('Error: ${state.message}'));
+                    }
+
+                    return const SizedBox();
+                  },
+                );
+              }
+              return const Center(child: CircularProgressIndicator());
+            },
+          ),
         ),
       ),
     );

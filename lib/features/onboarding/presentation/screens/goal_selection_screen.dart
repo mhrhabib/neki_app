@@ -82,7 +82,7 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen> {
               Expanded(
                 child: ListView.separated(
                   itemCount: _goals.length,
-                  separatorBuilder: (_, __) => SizedBox(height: AppSpacing.gridGap),
+                  separatorBuilder: (context, index) => SizedBox(height: AppSpacing.gridGap),
                   itemBuilder: (context, index) {
                     final goal = _goals[index];
                     final isSelected = _selectedOptionIndex == index;
@@ -101,7 +101,7 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen> {
                           boxShadow: [
                             if (isSelected)
                               BoxShadow(
-                                color: AppColors.primaryGreen.withOpacity(0.2),
+                                color: AppColors.primaryGreen.withValues(alpha: 0.2),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -139,7 +139,7 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen> {
                                   Container(
                                     padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primaryGreen.withOpacity(0.1),
+                                      color: AppColors.primaryGreen.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8.r),
                                     ),
                                     child: Text(

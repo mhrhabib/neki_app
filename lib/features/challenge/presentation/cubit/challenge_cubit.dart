@@ -13,16 +13,16 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   ChallengeCubit(this._challengeRepository, this._pointsRepository) : super(const ChallengeInitial());
 
   /// Load the current active challenge
-  Future<void> loadChallenge() async {
+  Future<void> loadChallenge(String userId) async {
     try {
       emit(const ChallengeLoading());
 
-      final challenge = await _challengeRepository.getActiveChallenge();
+      final challenge = await _challengeRepository.getActiveChallenge(userId);
 
       if (challenge != null && challenge.hasExpired()) {
         // Challenge has expired, mark as failed
         debugPrint('⚠️ [Challenge] Challenge expired, marking as failed');
-        await _challengeRepository.clearChallenge();
+        await _challengeRepository.clearChallenge(userId);
         emit(const ChallengeLoaded(null));
         return;
       }
@@ -36,7 +36,12 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   }
 
   /// Start a new challenge
-  Future<void> startChallenge({required int durationDays, required int rewardPoints, String? challengeType}) async {
+  Future<void> startChallenge({
+    required String userId,
+    required int durationDays,
+    required int rewardPoints,
+    String? challengeType,
+  }) async {
     try {
       emit(const ChallengeLoading());
 
@@ -49,7 +54,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
         challengeType: challengeType,
       );
 
-      await _challengeRepository.saveChallenge(challenge);
+      await _challengeRepository.saveChallenge(userId, challenge);
       emit(ChallengeLoaded(challenge));
 
       debugPrint('🎯 [Challenge] Started: $durationDays days, $rewardPoints points');
@@ -60,7 +65,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   }
 
   /// Complete today's challenge task
-  Future<void> completeTodayChallenge() async {
+  Future<void> completeTodayChallenge({required String userId}) async {
     try {
       final currentState = state;
       if (currentState is! ChallengeLoaded || currentState.challenge == null) {
@@ -78,10 +83,10 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       emit(const ChallengeLoading());
 
       // Complete the day
-      await _challengeRepository.completeTodayChallenge();
+      await _challengeRepository.completeTodayChallenge(userId);
 
       // Reload to get updated challenge
-      final updatedChallenge = await _challengeRepository.getActiveChallenge();
+      final updatedChallenge = await _challengeRepository.getActiveChallenge(userId);
 
       if (updatedChallenge == null) {
         emit(const ChallengeError('Failed to load updated challenge'));
@@ -91,7 +96,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       // Award points per day completed
       final pointsPerDay = challenge.rewardPoints ~/ challenge.durationDays;
       await _pointsRepository.addPoints(
-        userId: 'current_user', // TODO: Get actual user ID
+        userId: userId,
         points: pointsPerDay,
         source: 'challenge_day_${updatedChallenge.completedDays}',
       );
@@ -111,10 +116,10 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   }
 
   /// Abandon current challenge
-  Future<void> abandonChallenge() async {
+  Future<void> abandonChallenge(String userId) async {
     try {
       emit(const ChallengeLoading());
-      await _challengeRepository.clearChallenge();
+      await _challengeRepository.clearChallenge(userId);
       emit(const ChallengeLoaded(null));
       debugPrint('🗑️ [Challenge] Abandoned');
     } catch (e) {

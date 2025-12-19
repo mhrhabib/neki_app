@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -52,6 +53,7 @@ class HomeDashboardScreen extends StatelessWidget {
         builder: (context, authState) {
           if (authState is Authenticated) {
             context.read<PointsCubit>().loadUserPoints(authState.user.id);
+            context.read<ChallengeCubit>().loadChallenge(authState.user.id);
 
             return SafeArea(
               child: SingleChildScrollView(
@@ -104,107 +106,101 @@ class HomeDashboardScreen extends StatelessWidget {
           final challenge = state.challenge!;
           final canCompleteToday = challenge.canCompleteToday();
 
-          return InkWell(
-            onTap: () => context.push(RouteNames.habitBuilding),
-            borderRadius: BorderRadius.circular(16.r),
-            child: Container(
-              padding: EdgeInsets.all(20.w),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [const Color(0xFF9C27B0), const Color(0xFF7B1FA2)]),
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(12.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12.r),
+          return Padding(
+            padding: EdgeInsets.only(bottom: 12.h),
+            child: InkWell(
+              onTap: () => context.push(RouteNames.habitBuilding),
+              borderRadius: BorderRadius.circular(12.r),
+              child: Container(
+                padding: EdgeInsets.all(16.w),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [Color(0xFF8E24AA), Color(0xFF6A1B9A)]),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(10.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Text('🚫', style: TextStyle(fontSize: 22.sp)),
                     ),
-                    child: Text('🚫', style: TextStyle(fontSize: 28.sp)),
-                  ),
-                  SizedBox(width: 16.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${challenge.durationDays}-Day Recovery',
-                          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        SizedBox(height: 4.h),
-                        Row(
-                          children: [
-                            Text(
-                              'Day ${challenge.completedDays} of ${challenge.durationDays}',
-                              style: TextStyle(fontSize: 14.sp, color: Colors.white.withOpacity(0.9)),
-                            ),
-                            if (!canCompleteToday) ...[
-                              SizedBox(width: 8.w),
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(10.r),
-                                ),
-                                child: Text(
-                                  '✓ Done',
-                                  style: TextStyle(fontSize: 10.sp, color: Colors.white, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
+                    SizedBox(width: 14.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${challenge.durationDays}-Day Plan',
+                            style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600, color: Colors.white),
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(
+                            'Day ${challenge.completedDays} of ${challenge.durationDays}',
+                            style: TextStyle(fontSize: 13.sp, color: Colors.white.withValues(alpha: 0.8)),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20.sp),
-                ],
+                    if (!canCompleteToday)
+                      Icon(CupertinoIcons.checkmark_circle_fill, color: Colors.white, size: 24.sp)
+                    else
+                      Icon(CupertinoIcons.chevron_right, color: Colors.white.withValues(alpha: 0.5), size: 16.sp),
+                  ],
+                ),
               ),
             ),
           );
         }
 
-        return InkWell(
-          onTap: () => context.push(RouteNames.addiction),
-          borderRadius: BorderRadius.circular(16.r),
-          child: Container(
-            padding: EdgeInsets.all(20.w),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [const Color(0xFF9C27B0).withOpacity(0.9), const Color(0xFF9C27B0).withOpacity(0.6)],
+        return Padding(
+          padding: EdgeInsets.only(bottom: 12.h),
+          child: InkWell(
+            onTap: () => context.push(RouteNames.addiction),
+            borderRadius: BorderRadius.circular(12.r),
+            child: Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF9C27B0).withValues(alpha: 0.9),
+                    const Color(0xFF9C27B0).withValues(alpha: 0.7),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(12.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12.r),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(10.w),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Text('🚫', style: TextStyle(fontSize: 22.sp)),
                   ),
-                  child: Text('🚫', style: TextStyle(fontSize: 28.sp)),
-                ),
-                SizedBox(width: 16.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Addiction Recovery',
-                        style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        'Start a recovery plan',
-                        style: TextStyle(fontSize: 14.sp, color: Colors.white.withOpacity(0.9)),
-                      ),
-                    ],
+                  SizedBox(width: 14.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Addiction Recovery',
+                          style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600, color: Colors.white),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          'Start a recovery plan',
+                          style: TextStyle(fontSize: 13.sp, color: Colors.white.withValues(alpha: 0.8)),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20.sp),
-              ],
+                  Icon(CupertinoIcons.chevron_right, color: Colors.white.withValues(alpha: 0.5), size: 16.sp),
+                ],
+              ),
             ),
           ),
         );
@@ -230,7 +226,9 @@ class HomeDashboardScreen extends StatelessWidget {
             child: Container(
               padding: EdgeInsets.all(20.w),
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [AppColors.primaryGreen, AppColors.primaryGreen.withOpacity(0.8)]),
+                gradient: LinearGradient(
+                  colors: [AppColors.primaryGreen, AppColors.primaryGreen.withValues(alpha: 0.8)],
+                ),
                 borderRadius: BorderRadius.circular(16.r),
               ),
               child: Row(
@@ -238,7 +236,7 @@ class HomeDashboardScreen extends StatelessWidget {
                   Container(
                     padding: EdgeInsets.all(12.w),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                     child: Text('🎯', style: TextStyle(fontSize: 28.sp)),
@@ -257,14 +255,14 @@ class HomeDashboardScreen extends StatelessWidget {
                           children: [
                             Text(
                               'Day ${challenge.completedDays} of ${challenge.durationDays}',
-                              style: TextStyle(fontSize: 14.sp, color: Colors.white.withOpacity(0.9)),
+                              style: TextStyle(fontSize: 14.sp, color: Colors.white.withValues(alpha: 0.9)),
                             ),
                             if (!canCompleteToday) ...[
                               SizedBox(width: 8.w),
                               Container(
                                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
                                 decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.3),
+                                  color: Colors.green.withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(10.r),
                                 ),
                                 child: Text(
@@ -291,7 +289,7 @@ class HomeDashboardScreen extends StatelessWidget {
           child: Container(
             padding: EdgeInsets.all(20.w),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [AppColors.primaryGreen, AppColors.primaryGreen.withOpacity(0.8)]),
+              gradient: LinearGradient(colors: [AppColors.primaryGreen, AppColors.primaryGreen.withValues(alpha: 0.8)]),
               borderRadius: BorderRadius.circular(16.r),
             ),
             child: Row(
@@ -299,7 +297,7 @@ class HomeDashboardScreen extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.all(12.w),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Text('🎯', style: TextStyle(fontSize: 28.sp)),
@@ -316,7 +314,7 @@ class HomeDashboardScreen extends StatelessWidget {
                       SizedBox(height: 4.h),
                       Text(
                         'Start building your daily neki habit',
-                        style: TextStyle(fontSize: 14.sp, color: Colors.white.withOpacity(0.9)),
+                        style: TextStyle(fontSize: 14.sp, color: Colors.white.withValues(alpha: 0.9)),
                       ),
                     ],
                   ),
@@ -336,44 +334,38 @@ class HomeDashboardScreen extends StatelessWidget {
         final isDark = themeData.brightness == Brightness.dark;
 
         return Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
-          child: Row(
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+          child: Column(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Salam, Habib',
-                      style: TextStyle(
-                        fontSize: 28.sp,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : AppColors.primaryGreen,
-                      ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SizedBox(width: 48.w), // Placeholder for balance
+                  Text(
+                    'Salam, Habib',
+                    style: TextStyle(
+                      fontSize: 17.sp,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : AppColors.textDark,
+                      letterSpacing: -0.4,
                     ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      'May your day be blessed',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
-                      ),
+                  ),
+                  IconButton(
+                    onPressed: () => context.read<ThemeCubit>().toggleTheme(),
+                    icon: Icon(
+                      isDark ? CupertinoIcons.sun_max_fill : CupertinoIcons.moon_fill,
+                      color: isDark ? AppColors.goldAccent : AppColors.primaryGreen,
+                      size: 20.sp,
                     ),
-                  ],
-                ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
               ),
-              IconButton(
-                onPressed: () => context.read<ThemeCubit>().toggleTheme(),
-                icon: Icon(
-                  isDark ? Icons.light_mode : Icons.dark_mode,
-                  color: isDark ? AppColors.goldAccent : AppColors.primaryGreen,
-                  size: 24.sp,
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
-                  padding: EdgeInsets.all(12.w),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                ),
+              SizedBox(height: 2.h),
+              Text(
+                'May your day be blessed',
+                style: TextStyle(fontSize: 13.sp, color: isDark ? const Color(0xFF8E8E93) : const Color(0xFF8E8E93)),
               ),
             ],
           ),
@@ -476,14 +468,7 @@ class HomeDashboardScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1F2937) : Colors.white,
           borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB)),
-          boxShadow: [
-            BoxShadow(
-              color: (isDark ? Colors.black : Colors.black).withValues(alpha: isDark ? 0.3 : 0.05),
-              offset: Offset(0, 1.h),
-              blurRadius: 2.r,
-            ),
-          ],
+          border: Border.all(color: isDark ? const Color(0xFF38383A) : const Color(0xFFE5E5EA), width: 0.5),
         ),
         child: Row(
           children: [
@@ -539,123 +524,6 @@ class HomeDashboardScreen extends StatelessWidget {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildChallengeCard(BuildContext context, bool isDark) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: BlocBuilder<ChallengeCubit, ChallengeState>(
-        builder: (context, state) {
-          if (state is ChallengeLoaded && state.hasActiveChallenge) {
-            final challenge = state.challenge!;
-            final canCompleteToday = challenge.canCompleteToday();
-
-            return InkWell(
-              onTap: () => context.push(RouteNames.habitBuilding),
-              borderRadius: BorderRadius.circular(16.r),
-              child: Container(
-                padding: EdgeInsets.all(20.w),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [const Color(0xFF9C27B0), const Color(0xFF9C27B0).withOpacity(0.8)]),
-                  borderRadius: BorderRadius.circular(16.r),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(12.w),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      child: Text('💎', style: TextStyle(fontSize: 28.sp)),
-                    ),
-                    SizedBox(width: 16.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${challenge.durationDays}-Day Challenge',
-                            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
-                          SizedBox(height: 4.h),
-                          Row(
-                            children: [
-                              Text(
-                                'Day ${challenge.completedDays} of ${challenge.durationDays}',
-                                style: TextStyle(fontSize: 14.sp, color: Colors.white.withOpacity(0.9)),
-                              ),
-                              if (!canCompleteToday) ...[
-                                SizedBox(width: 8.w),
-                                Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(10.r),
-                                  ),
-                                  child: Text(
-                                    '✓ Done',
-                                    style: TextStyle(fontSize: 10.sp, color: Colors.white, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20.sp),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          // No active challenge - show start challenge button
-          return InkWell(
-            onTap: () => context.push(RouteNames.goalSelection),
-            borderRadius: BorderRadius.circular(16.r),
-            child: Container(
-              padding: EdgeInsets.all(20.w),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [AppColors.primaryGreen, AppColors.primaryGreen.withOpacity(0.8)]),
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(12.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    child: Text('🎯', style: TextStyle(fontSize: 28.sp)),
-                  ),
-                  SizedBox(width: 16.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Beat Satan Challenge',
-                          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        SizedBox(height: 4.h),
-                        Text(
-                          'Start building your habits today',
-                          style: TextStyle(fontSize: 14.sp, color: Colors.white.withOpacity(0.9)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20.sp),
-                ],
-              ),
-            ),
-          );
-        },
       ),
     );
   }

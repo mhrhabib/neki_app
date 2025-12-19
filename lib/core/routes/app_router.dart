@@ -13,6 +13,9 @@ import '../../features/addiction/presentation/screens/addiction_screen.dart';
 import '../../features/splash/presentation/screens/splash_page.dart';
 import '../widgets/main_screen.dart';
 import '../widgets/not_found_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../features/profile/presentation/cubit/profile_cubit.dart';
+import '../di/set_up_di.dart';
 import 'route_names.dart';
 
 class AppRouter {
@@ -30,7 +33,11 @@ class AppRouter {
         builder: (context, state, child) => MainScreen(child: child),
         routes: [
           GoRoute(path: RouteNames.home, builder: (context, state) => const HomeDashboardScreen()),
-          GoRoute(path: RouteNames.profile, builder: (context, state) => const ProfileScreen()),
+          GoRoute(
+            path: RouteNames.profile,
+            builder: (context, state) =>
+                BlocProvider(create: (context) => getIt<ProfileCubit>(), child: const ProfileScreen()),
+          ),
           GoRoute(path: RouteNames.leaderboard, builder: (context, state) => const LeaderboardScreen()),
         ],
       ),

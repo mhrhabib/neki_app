@@ -140,6 +140,27 @@ Use `debugPrint()` with emoji prefixes for visibility:
 - ✅ Profile & Leaderboard
 - 🚧 Good Deeds, Roza, Zakat (structures exist, UI/logic incomplete)
 
+## ⚠️ CRITICAL: Firebase Dynamic Links Deprecation
+**IMMEDIATE ACTION REQUIRED**: Firebase Dynamic Links will shut down soon, breaking authentication flows that depend on it:
+- Email link authentication for mobile apps
+- Cordova OAuth support for web apps
+
+**Impact**: Authentication features using Firebase Dynamic Links will stop working. This affects:
+- Email link sign-in flows
+- OAuth redirects through Firebase Dynamic Links
+
+**Migration Status**: ✅ **COMPLETED**
+- Updated all Firebase packages to latest versions
+- Verified current auth implementation uses direct OAuth flows (no Dynamic Links dependency)
+- All authentication methods (Email/Password, Google, Facebook, Apple) use direct Firebase Auth SDK calls
+- No email link authentication currently implemented
+
+**Action Required**: 
+1. ✅ Updated Firebase packages to latest versions
+2. Monitor for any authentication issues after Dynamic Links shutdown
+3. Test all authentication providers thoroughly
+4. Update documentation and user-facing messaging if needed
+
 ## Authentication Implementation
 The app uses Firebase Authentication with multiple providers:
 - **Email/Password**: Standard Firebase email auth

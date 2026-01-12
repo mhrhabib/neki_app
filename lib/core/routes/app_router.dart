@@ -10,6 +10,8 @@ import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/salah/presentation/screens/salah_screen.dart';
 import '../../features/addiction/presentation/screens/addiction_screen.dart';
+import '../../features/roza/presentation/screens/roza_screen.dart';
+import '../../features/roza/presentation/cubit/roza_cubit.dart';
 import '../../features/splash/presentation/screens/splash_page.dart';
 import '../widgets/main_screen.dart';
 import '../widgets/not_found_page.dart';
@@ -42,6 +44,10 @@ class AppRouter {
         ],
       ),
       GoRoute(path: RouteNames.salah, builder: (context, state) => const SalahScreen()),
+      GoRoute(
+        path: RouteNames.roza,
+        builder: (context, state) => BlocProvider(create: (context) => getIt<RozaCubit>(), child: const RozaScreen()),
+      ),
       GoRoute(path: RouteNames.addiction, builder: (context, state) => const AddictionScreen()),
       GoRoute(path: RouteNames.goodDeeds, builder: (context, state) => const GoodDeedsScreen()),
     ],

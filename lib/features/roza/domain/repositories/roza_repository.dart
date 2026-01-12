@@ -8,4 +8,5 @@ abstract class RozaRepository {
     required DateTime endDate,
   });
   Future<int> getCurrentMonthFastCount(String userId);
+  Future<void> markMultipleDatesFasted({required String userId, required List<DateTime> dates, String? notes});
 }

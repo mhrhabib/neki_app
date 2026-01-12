@@ -18,6 +18,9 @@ import '../../features/profile/data/repositories/profile_repository_impl.dart';
 import '../../features/points/domain/repositories/points_repository.dart';
 import '../../features/points/data/repositories/points_repository_impl.dart';
 import '../../features/points/presentation/cubit/points_cubit.dart';
+import '../../features/roza/domain/repositories/roza_repository.dart';
+import '../../features/roza/data/repositories/roza_repository_impl.dart';
+import '../../features/roza/presentation/cubit/roza_cubit.dart';
 import '../../features/challenge/domain/repositories/challenge_repository.dart';
 import '../../features/challenge/data/repositories/challenge_repository_impl.dart';
 import '../../features/challenge/presentation/cubit/challenge_cubit.dart';
@@ -44,6 +47,7 @@ class SetUpDI {
     getIt.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
     getIt.registerLazySingleton<SalahRepository>(() => SalahRepositoryImpl(getIt<FirestoreService>()));
     getIt.registerLazySingleton<PointsRepository>(() => PointsRepositoryImpl(getIt<FirestoreService>()));
+    getIt.registerLazySingleton<RozaRepository>(() => RozaRepositoryImpl(getIt<FirestoreService>()));
     getIt.registerLazySingleton<ChallengeRepository>(() => ChallengeRepositoryImpl(getIt<FirestoreService>()));
     getIt.registerLazySingleton<ProfileRepository>(
       () => ProfileRepositoryImpl(getIt<FirestoreService>(), getIt<FirebaseStorageService>()),
@@ -62,6 +66,9 @@ class SetUpDI {
       ),
     );
     getIt.registerFactory<PointsCubit>(() => PointsCubit(pointsRepository: getIt<PointsRepository>()));
+    getIt.registerFactory<RozaCubit>(
+      () => RozaCubit(rozaRepository: getIt<RozaRepository>(), pointsRepository: getIt<PointsRepository>()),
+    );
     getIt.registerFactory<ChallengeCubit>(
       () => ChallengeCubit(getIt<ChallengeRepository>(), getIt<PointsRepository>()),
     );

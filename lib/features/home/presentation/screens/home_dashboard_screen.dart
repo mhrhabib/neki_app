@@ -31,7 +31,14 @@ class HomeDashboardScreen extends StatelessWidget {
       route: RouteNames.roza,
     ),
     PillarItem(id: 'zakat', title: 'Zakat', icon: '💰', color: Color(0xFFD4AF37), description: 'Coming soon'),
-    PillarItem(id: 'hajj', title: 'Hajj', icon: '🕋', color: Color(0xFF8B5CF6), description: 'Coming soon'),
+    PillarItem(
+      id: 'Dhikir',
+      title: 'Dhikir',
+      icon: '🕋',
+      route: RouteNames.dhikir,
+      color: Color(0xFF8B5CF6),
+      description: 'Dhikir counter for Hajj',
+    ),
     PillarItem(
       id: 'deeds',
       title: 'Good Deeds',

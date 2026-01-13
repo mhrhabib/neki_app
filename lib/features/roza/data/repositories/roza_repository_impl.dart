@@ -53,19 +53,29 @@ class RozaRepositoryImpl implements RozaRepository {
     try {
       debugPrint('🍽️ [Roza] Getting Roza history from ${startDate.toIso8601String()} to ${endDate.toIso8601String()}');
 
+      // Alternative approach: Get all user's Roza records and filter client-side
+      // This avoids the composite index requirement
       final querySnapshot = await _firestoreService.getCollection(
         collectionPath: _collectionPath,
-        queryBuilder: (query) => query
-            .where('userId', isEqualTo: userId)
-            .where('date', isGreaterThanOrEqualTo: startDate.toIso8601String())
-            .where('date', isLessThanOrEqualTo: endDate.toIso8601String())
-            .orderBy('date'),
+        queryBuilder: (query) => query.where('userId', isEqualTo: userId),
       );
 
-      final rozaRecords = querySnapshot.docs.map((doc) => RozaModel.fromJson(doc.data())).toList();
+      final allUserRecords = querySnapshot.docs
+          .map((doc) => RozaModel.fromJson(doc.data()))
+          .toList();
 
-      debugPrint('✅ [Roza] Retrieved ${rozaRecords.length} Roza records');
-      return rozaRecords;
+      // Filter by date range client-side
+      final filteredRecords = allUserRecords.where((record) {
+        final recordDate = record.date;
+        return recordDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+               recordDate.isBefore(endDate.add(const Duration(days: 1)));
+      }).toList();
+
+      // Sort by date
+      filteredRecords.sort((a, b) => a.date.compareTo(b.date));
+
+      debugPrint('✅ [Roza] Retrieved ${filteredRecords.length} Roza records (client-side filtering)');
+      return filteredRecords;
     } catch (e) {
       debugPrint('❌ [Roza] Error getting Roza history: $e');
       rethrow;

@@ -24,7 +24,6 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
     DeedOption(id: 'parents', title: 'Help Parents', icon: '👨‍👩‍👧', points: 30),
     DeedOption(id: 'charity', title: 'Charity', icon: '💝', points: 50),
     DeedOption(id: 'quran', title: 'Quran Recitation', icon: '📖', points: 40),
-    DeedOption(id: 'dhikr', title: 'Dhikr', icon: '📿', points: 20),
     DeedOption(id: 'volunteer', title: 'Volunteer', icon: '🤝', points: 60),
     DeedOption(id: 'kindness', title: 'Act of Kindness', icon: '💚', points: 25),
   ];

@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs access to location when open to show the Qibla direction.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>This app needs access to location to show the Qibla direction.</string>
 </dict>
 </plist>

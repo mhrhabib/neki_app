@@ -28,6 +28,7 @@ import '../../features/challenge/domain/repositories/challenge_repository.dart';
 import '../../features/challenge/data/repositories/challenge_repository_impl.dart';
 import '../../features/challenge/presentation/cubit/challenge_cubit.dart';
 import '../../features/profile/presentation/cubit/profile_cubit.dart';
+import '../../features/zakat/presentation/cubit/zakat_cubit.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -38,7 +39,9 @@ class SetUpDI {
     getIt.registerLazySingleton<SharedPreferences>(() => prefs);
 
     // ========== FIREBASE SERVICES ==========
-    getIt.registerLazySingleton<FirebaseStorageService>(() => FirebaseStorageService());
+    getIt.registerLazySingleton<FirebaseStorageService>(
+      () => FirebaseStorageService(),
+    );
     getIt.registerLazySingleton<FirestoreService>(() => FirestoreService());
 
     // ========== REPOSITORIES (Lazy Singletons) ==========
@@ -46,22 +49,44 @@ class SetUpDI {
     await themeRepo.loadTheme(); // Load saved theme preference
     getIt.registerLazySingleton<ThemeRepository>(() => themeRepo);
 
-    getIt.registerLazySingleton<OnboardingRepository>(() => OnboardingRepositoryImpl());
+    getIt.registerLazySingleton<OnboardingRepository>(
+      () => OnboardingRepositoryImpl(),
+    );
     getIt.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
-    getIt.registerLazySingleton<SalahRepository>(() => SalahRepositoryImpl(getIt<FirestoreService>()));
-    getIt.registerLazySingleton<PointsRepository>(() => PointsRepositoryImpl(getIt<FirestoreService>()));
-    getIt.registerLazySingleton<RozaRepository>(() => RozaRepositoryImpl(getIt<FirestoreService>()));
-    getIt.registerLazySingleton<DhikirRepository>(() => DhikirRepositoryImpl(getIt<FirestoreService>()));
-    getIt.registerLazySingleton<ChallengeRepository>(() => ChallengeRepositoryImpl(getIt<FirestoreService>()));
+    getIt.registerLazySingleton<SalahRepository>(
+      () => SalahRepositoryImpl(getIt<FirestoreService>()),
+    );
+    getIt.registerLazySingleton<PointsRepository>(
+      () => PointsRepositoryImpl(getIt<FirestoreService>()),
+    );
+    getIt.registerLazySingleton<RozaRepository>(
+      () => RozaRepositoryImpl(getIt<FirestoreService>()),
+    );
+    getIt.registerLazySingleton<DhikirRepository>(
+      () => DhikirRepositoryImpl(getIt<FirestoreService>()),
+    );
+    getIt.registerLazySingleton<ChallengeRepository>(
+      () => ChallengeRepositoryImpl(getIt<FirestoreService>()),
+    );
     getIt.registerLazySingleton<ProfileRepository>(
-      () => ProfileRepositoryImpl(getIt<FirestoreService>(), getIt<FirebaseStorageService>()),
+      () => ProfileRepositoryImpl(
+        getIt<FirestoreService>(),
+        getIt<FirebaseStorageService>(),
+      ),
     );
 
     // ========== CUBITS (Factories) ==========
     // ThemeCubit needs to be a singleton so the same instance is shared across the app
-    getIt.registerLazySingleton<ThemeCubit>(() => ThemeCubit(themeRepository: getIt<ThemeRepository>())..loadTheme());
-    getIt.registerFactory<OnboardingCubit>(() => OnboardingCubit(onboardingRepository: getIt<OnboardingRepository>()));
-    getIt.registerFactory<AuthCubit>(() => AuthCubit(authRepository: getIt<AuthRepository>()));
+    getIt.registerLazySingleton<ThemeCubit>(
+      () => ThemeCubit(themeRepository: getIt<ThemeRepository>())..loadTheme(),
+    );
+    getIt.registerFactory<OnboardingCubit>(
+      () =>
+          OnboardingCubit(onboardingRepository: getIt<OnboardingRepository>()),
+    );
+    getIt.registerFactory<AuthCubit>(
+      () => AuthCubit(authRepository: getIt<AuthRepository>()),
+    );
     getIt.registerFactory<SalahCubit>(
       () => SalahCubit(
         salahRepository: getIt<SalahRepository>(),
@@ -69,16 +94,32 @@ class SetUpDI {
         challengeRepository: getIt<ChallengeRepository>(),
       ),
     );
-    getIt.registerFactory<PointsCubit>(() => PointsCubit(pointsRepository: getIt<PointsRepository>()));
+    getIt.registerFactory<PointsCubit>(
+      () => PointsCubit(pointsRepository: getIt<PointsRepository>()),
+    );
     getIt.registerFactory<RozaCubit>(
-      () => RozaCubit(rozaRepository: getIt<RozaRepository>(), pointsRepository: getIt<PointsRepository>()),
+      () => RozaCubit(
+        rozaRepository: getIt<RozaRepository>(),
+        pointsRepository: getIt<PointsRepository>(),
+      ),
     );
     getIt.registerFactory<DhikirCubit>(
-      () => DhikirCubit(dhikirRepository: getIt<DhikirRepository>(), pointsRepository: getIt<PointsRepository>()),
+      () => DhikirCubit(
+        dhikirRepository: getIt<DhikirRepository>(),
+        pointsRepository: getIt<PointsRepository>(),
+      ),
     );
     getIt.registerFactory<ChallengeCubit>(
-      () => ChallengeCubit(getIt<ChallengeRepository>(), getIt<PointsRepository>()),
+      () => ChallengeCubit(
+        getIt<ChallengeRepository>(),
+        getIt<PointsRepository>(),
+      ),
     );
-    getIt.registerFactory<ProfileCubit>(() => ProfileCubit(profileRepository: getIt<ProfileRepository>()));
+    getIt.registerFactory<ProfileCubit>(
+      () => ProfileCubit(profileRepository: getIt<ProfileRepository>()),
+    );
+    getIt.registerFactory<ZakatCubit>(
+      () => ZakatCubit(getIt<PointsRepository>()),
+    );
   }
 }

@@ -4,7 +4,10 @@ abstract class AuthState {}
 
 class AuthInitial extends AuthState {}
 
-class AuthLoading extends AuthState {}
+class AuthLoading extends AuthState {
+  final String? loadingProvider;
+  AuthLoading({this.loadingProvider});
+}
 
 class Authenticated extends AuthState {
   final UserEntity user;

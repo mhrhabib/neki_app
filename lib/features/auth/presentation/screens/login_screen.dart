@@ -43,7 +43,8 @@ class LoginScreen extends StatelessWidget {
           }
         },
         builder: (context, state) {
-          final isLoading = state is AuthLoading;
+          final authLoading = state is AuthLoading ? state : null;
+          final isAnyLoading = authLoading != null;
 
           return SafeArea(
             child: Padding(
@@ -92,8 +93,8 @@ class LoginScreen extends StatelessWidget {
                     context: context,
                     icon: '🔐',
                     label: 'Continue with Google',
-                    onPressed: isLoading ? () {} : () => _handleGoogleSignIn(context),
-                    isLoading: isLoading,
+                    onPressed: isAnyLoading ? () {} : () => _handleGoogleSignIn(context),
+                    isLoading: authLoading?.loadingProvider == 'google',
                   ),
                   SizedBox(height: 12.h),
 
@@ -102,8 +103,8 @@ class LoginScreen extends StatelessWidget {
                     context: context,
                     icon: '📱',
                     label: 'Continue with Facebook',
-                    onPressed: isLoading ? () {} : () => _handleFacebookSignIn(context),
-                    isLoading: isLoading,
+                    onPressed: isAnyLoading ? () {} : () => _handleFacebookSignIn(context),
+                    isLoading: authLoading?.loadingProvider == 'facebook',
                   ),
 
                   // Show Apple Sign-In only on iOS or macOS
@@ -113,8 +114,8 @@ class LoginScreen extends StatelessWidget {
                       context: context,
                       icon: '',
                       label: 'Continue with Apple',
-                      onPressed: isLoading ? () {} : () => _handleAppleSignIn(context),
-                      isLoading: isLoading,
+                      onPressed: isAnyLoading ? () {} : () => _handleAppleSignIn(context),
+                      isLoading: authLoading?.loadingProvider == 'apple',
                     ),
                   ],
 
@@ -122,7 +123,7 @@ class LoginScreen extends StatelessWidget {
 
                   // Continue as Guest
                   TextButton(
-                    onPressed: isLoading ? null : () => _handleContinue(context),
+                    onPressed: isAnyLoading ? null : () => _handleContinue(context),
                     child: Text(
                       'Continue as Guest',
                       style: TextStyle(

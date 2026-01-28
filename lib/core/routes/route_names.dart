@@ -12,5 +12,6 @@ class RouteNames {
   static const String leaderboard = '/leaderboard';
   static const String goalSelection = '/goal-selection';
   static const String habitBuilding = '/habit-building';
+  static const String habitBuildingOnboarding = '/habit-building-onboarding';
   static const String addiction = '/addiction';
 }

@@ -26,7 +26,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> login({required String email, required String password}) async {
     try {
-      emit(AuthLoading());
+      emit(AuthLoading(loadingProvider: 'email'));
       final user = await authRepository.login(email: email, password: password);
       emit(Authenticated(user: user));
     } catch (e) {
@@ -36,7 +36,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> register({required String email, required String password, required String name}) async {
     try {
-      emit(AuthLoading());
+      emit(AuthLoading(loadingProvider: 'email'));
       final user = await authRepository.register(email: email, password: password, name: name);
       emit(Authenticated(user: user));
     } catch (e) {
@@ -46,7 +46,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> signInWithGoogle() async {
     try {
-      emit(AuthLoading());
+      emit(AuthLoading(loadingProvider: 'google'));
       debugPrint('🔵 Starting Google Sign-In...');
       final user = await authRepository.signInWithGoogle();
       debugPrint('✅ Google Sign-In successful: ${user.email}');
@@ -60,7 +60,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> signInWithFacebook() async {
     try {
-      emit(AuthLoading());
+      emit(AuthLoading(loadingProvider: 'facebook'));
       debugPrint('🔵 Starting Facebook Login...');
       final user = await authRepository.signInWithFacebook();
       debugPrint('✅ Facebook Login successful: ${user.email}');
@@ -74,7 +74,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> signInWithApple() async {
     try {
-      emit(AuthLoading());
+      emit(AuthLoading(loadingProvider: 'apple'));
       final user = await authRepository.signInWithApple();
       emit(Authenticated(user: user));
     } catch (e) {

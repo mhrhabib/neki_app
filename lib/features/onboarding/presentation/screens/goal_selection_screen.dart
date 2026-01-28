@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/routes/route_names.dart';
 import '../cubit/onboarding_cubit.dart';
-import 'habit_building_screen.dart';
 
 class GoalSelectionScreen extends StatefulWidget {
   const GoalSelectionScreen({super.key});
@@ -173,8 +174,8 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen> {
                     // Save goal, don't complete yet
                     cubit.saveGoal(selectedGoal['days'], selectedGoal['points']);
 
-                    // Navigate to habit building explanation
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const HabitBuildingScreen()));
+                    // Navigate to habit building explanation using go_router
+                    context.go(RouteNames.habitBuildingOnboarding);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGreen,

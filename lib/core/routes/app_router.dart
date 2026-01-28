@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
-import '../../features/challenge/presentation/screens/goal_selection_screen.dart';
 import '../../features/challenge/presentation/screens/habit_building_screen.dart';
+import '../../features/onboarding/presentation/screens/goal_selection_screen.dart' as onboarding;
+import '../../features/onboarding/presentation/screens/habit_building_screen.dart' as onboarding;
 import '../../features/good_deeds/presentation/screens/good_deeds_screen.dart';
 import '../../features/home/presentation/screens/home_dashboard_screen.dart';
 import '../../features/leaderboard/presentation/screens/leaderboard_screen.dart';
-import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/salah/presentation/screens/salah_screen.dart';
 import '../../features/addiction/presentation/screens/addiction_screen.dart';
@@ -29,9 +29,12 @@ class AppRouter {
     navigatorKey: navigatorKey,
     routes: [
       GoRoute(path: RouteNames.splash, builder: (context, state) => const SplashPage()),
-      GoRoute(path: RouteNames.onboarding, builder: (context, state) => const OnboardingScreen()),
       GoRoute(path: RouteNames.login, builder: (context, state) => const LoginScreen()),
-      GoRoute(path: RouteNames.goalSelection, builder: (context, state) => const GoalSelectionScreen()),
+      GoRoute(path: RouteNames.goalSelection, builder: (context, state) => const onboarding.GoalSelectionScreen()),
+      GoRoute(
+        path: RouteNames.habitBuildingOnboarding,
+        builder: (context, state) => const onboarding.HabitBuildingScreen(),
+      ),
       GoRoute(path: RouteNames.habitBuilding, builder: (context, state) => const HabitBuildingScreen()),
       ShellRoute(
         builder: (context, state, child) => MainScreen(child: child),
@@ -52,7 +55,8 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.dhikir,
-        builder: (context, state) => BlocProvider(create: (context) => getIt<DhikirCubit>(), child: const DhikirScreen()),
+        builder: (context, state) =>
+            BlocProvider(create: (context) => getIt<DhikirCubit>(), child: const DhikirScreen()),
       ),
       GoRoute(path: RouteNames.addiction, builder: (context, state) => const AddictionScreen()),
       GoRoute(path: RouteNames.goodDeeds, builder: (context, state) => const GoodDeedsScreen()),

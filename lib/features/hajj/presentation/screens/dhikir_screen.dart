@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -13,8 +15,7 @@ class DhikirScreen extends StatefulWidget {
   State<DhikirScreen> createState() => _DhikirScreenState();
 }
 
-class _DhikirScreenState extends State<DhikirScreen>
-    with TickerProviderStateMixin {
+class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMixin {
   late AnimationController _counterAnimationController;
   late Animation<double> _counterAnimation;
   late AnimationController _completionAnimationController;
@@ -26,29 +27,17 @@ class _DhikirScreenState extends State<DhikirScreen>
   @override
   void initState() {
     super.initState();
-    _counterAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
+    _counterAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
     _counterAnimation = Tween<double>(
       begin: 1.0,
       end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _counterAnimationController,
-      curve: Curves.elasticOut,
-    ));
+    ).animate(CurvedAnimation(parent: _counterAnimationController, curve: Curves.elasticOut));
 
-    _completionAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
+    _completionAnimationController = AnimationController(duration: const Duration(milliseconds: 1000), vsync: this);
     _completionAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _completionAnimationController,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _completionAnimationController, curve: Curves.easeOut));
 
     // Load current session if exists
     final authState = context.read<AuthCubit>().state;
@@ -110,11 +99,7 @@ class _DhikirScreenState extends State<DhikirScreen>
                 builder: (context) => AlertDialog(
                   title: Text(
                     '🎉 Dhikir Completed!',
-                    style: TextStyle(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primaryGreen,
-                    ),
+                    style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
                   ),
                   content: Text(
                     'You earned ${state.pointsEarned} points for completing "${state.dhikirText}"!',
@@ -125,10 +110,7 @@ class _DhikirScreenState extends State<DhikirScreen>
                       onPressed: () => Navigator.of(context).pop(),
                       child: Text(
                         'Continue',
-                        style: TextStyle(
-                          color: AppColors.primaryGreen,
-                          fontSize: 16.sp,
-                        ),
+                        style: TextStyle(color: AppColors.primaryGreen, fontSize: 16.sp),
                       ),
                     ),
                   ],
@@ -148,8 +130,15 @@ class _DhikirScreenState extends State<DhikirScreen>
           if (state is DhikirLoading) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is DhikirSessionActive) {
-            return _buildActiveSessionView(userId, state.sessionId, state.dhikirText,
-                state.targetCount, state.currentCount, state.pointsEarned, state.isCompleted);
+            return _buildActiveSessionView(
+              userId,
+              state.sessionId,
+              state.dhikirText,
+              state.targetCount,
+              state.currentCount,
+              state.pointsEarned,
+              state.isCompleted,
+            );
           } else if (state is DhikirSessionCompleted) {
             return _buildCompletionView(state.dhikirText, state.pointsEarned);
           } else if (state is DhikirHistoryLoaded) {
@@ -173,27 +162,16 @@ class _DhikirScreenState extends State<DhikirScreen>
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(height: 40.h),
-          Icon(
-            Icons.mosque,
-            size: 80.w,
-            color: AppColors.primaryGreen,
-          ),
+          Icon(Icons.mosque, size: 80.w, color: AppColors.primaryGreen),
           SizedBox(height: 24.h),
           Text(
             'Dhikir Counter',
-            style: TextStyle(
-              fontSize: 28.sp,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primaryGreen,
-            ),
+            style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
           ),
           SizedBox(height: 16.h),
           Text(
             'Choose a dhikir and set your target',
-            style: TextStyle(
-              fontSize: 16.sp,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 16.sp, color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 32.h),
@@ -202,15 +180,12 @@ class _DhikirScreenState extends State<DhikirScreen>
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+              border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
               borderRadius: BorderRadius.circular(12.r),
             ),
             child: DropdownButton<String>(
               value: _selectedDhikir,
-              hint: Text(
-                'Select Dhikir',
-                style: TextStyle(fontSize: 16.sp),
-              ),
+              hint: Text('Select Dhikir', style: TextStyle(fontSize: 16.sp)),
               isExpanded: true,
               underline: const SizedBox(),
               items: suggestions.map((dhikir) {
@@ -237,11 +212,7 @@ class _DhikirScreenState extends State<DhikirScreen>
           // Target Count Slider
           Text(
             'Target Count: $_targetCount',
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryGreen,
-            ),
+            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600, color: AppColors.primaryGreen),
           ),
           SizedBox(height: 16.h),
           Slider(
@@ -250,7 +221,7 @@ class _DhikirScreenState extends State<DhikirScreen>
             max: 100,
             divisions: 9,
             activeColor: AppColors.primaryGreen,
-            inactiveColor: AppColors.primaryGreen.withOpacity(0.3),
+            inactiveColor: AppColors.primaryGreen.withValues(alpha: 0.3),
             onChanged: (value) {
               setState(() {
                 _targetCount = value.toInt();
@@ -266,17 +237,11 @@ class _DhikirScreenState extends State<DhikirScreen>
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryGreen,
               padding: EdgeInsets.symmetric(horizontal: 48.w, vertical: 16.h),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.r),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
             ),
             child: Text(
               'Start Dhikir Session',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),
 
@@ -286,18 +251,22 @@ class _DhikirScreenState extends State<DhikirScreen>
           TextButton.icon(
             onPressed: () => context.read<DhikirCubit>().loadDhikirHistory(userId),
             icon: Icon(Icons.history, size: 20.w),
-            label: Text(
-              'View History',
-              style: TextStyle(fontSize: 16.sp),
-            ),
+            label: Text('View History', style: TextStyle(fontSize: 16.sp)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActiveSessionView(String userId, String sessionId, String dhikirText,
-      int targetCount, int currentCount, int pointsEarned, bool isCompleted) {
+  Widget _buildActiveSessionView(
+    String userId,
+    String sessionId,
+    String dhikirText,
+    int targetCount,
+    int currentCount,
+    int pointsEarned,
+    bool isCompleted,
+  ) {
     final progress = currentCount / targetCount;
 
     return Padding(
@@ -310,20 +279,13 @@ class _DhikirScreenState extends State<DhikirScreen>
           Container(
             padding: EdgeInsets.all(24.w),
             decoration: BoxDecoration(
-              color: AppColors.primaryGreen.withOpacity(0.1),
+              color: AppColors.primaryGreen.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(
-                color: AppColors.primaryGreen.withOpacity(0.3),
-                width: 2.w,
-              ),
+              border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3), width: 2.w),
             ),
             child: Text(
               dhikirText,
-              style: TextStyle(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryGreen,
-              ),
+              style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
               textAlign: TextAlign.center,
             ),
           ),
@@ -344,16 +306,13 @@ class _DhikirScreenState extends State<DhikirScreen>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
-                        colors: [
-                          AppColors.primaryGreen,
-                          AppColors.primaryGreen.withOpacity(0.8),
-                        ],
+                        colors: [AppColors.primaryGreen, AppColors.primaryGreen.withValues(alpha: 0.8)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primaryGreen.withOpacity(0.3),
+                          color: AppColors.primaryGreen.withValues(alpha: 0.3),
                           blurRadius: 20,
                           spreadRadius: 5,
                         ),
@@ -364,18 +323,11 @@ class _DhikirScreenState extends State<DhikirScreen>
                       children: [
                         Text(
                           '$currentCount',
-                          style: TextStyle(
-                            fontSize: 48.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                          style: TextStyle(fontSize: 48.sp, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                         Text(
                           '/ $targetCount',
-                          style: TextStyle(
-                            fontSize: 20.sp,
-                            color: Colors.white.withOpacity(0.8),
-                          ),
+                          style: TextStyle(fontSize: 20.sp, color: Colors.white.withValues(alpha: 0.8)),
                         ),
                       ],
                     ),
@@ -390,18 +342,12 @@ class _DhikirScreenState extends State<DhikirScreen>
           // Progress Bar
           Container(
             height: 8.h,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(4.r),
-            ),
+            decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(4.r)),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
               widthFactor: progress,
               child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.primaryGreen,
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
+                decoration: BoxDecoration(color: AppColors.primaryGreen, borderRadius: BorderRadius.circular(4.r)),
               ),
             ),
           ),
@@ -411,11 +357,7 @@ class _DhikirScreenState extends State<DhikirScreen>
           // Progress Text
           Text(
             '${(progress * 100).toInt()}% Complete',
-            style: TextStyle(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryGreen,
-            ),
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: AppColors.primaryGreen),
           ),
 
           SizedBox(height: 16.h),
@@ -425,16 +367,12 @@ class _DhikirScreenState extends State<DhikirScreen>
             Container(
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
               decoration: BoxDecoration(
-                color: AppColors.goldAccent.withOpacity(0.2),
+                color: AppColors.goldAccent.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20.r),
               ),
               child: Text(
                 'Points Earned: $pointsEarned',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.goldAccent,
-                ),
+                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: AppColors.goldAccent),
               ),
             ),
 
@@ -447,10 +385,7 @@ class _DhikirScreenState extends State<DhikirScreen>
               ElevatedButton.icon(
                 onPressed: () => context.read<DhikirCubit>().completeSession(sessionId),
                 icon: Icon(Icons.check, size: 20.w),
-                label: Text(
-                  'Complete',
-                  style: TextStyle(fontSize: 16.sp),
-                ),
+                label: Text('Complete', style: TextStyle(fontSize: 16.sp)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryGreen,
                   padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
@@ -459,10 +394,7 @@ class _DhikirScreenState extends State<DhikirScreen>
               ElevatedButton.icon(
                 onPressed: () => context.read<DhikirCubit>().deleteSession(sessionId),
                 icon: Icon(Icons.delete, size: 20.w),
-                label: Text(
-                  'Delete',
-                  style: TextStyle(fontSize: 16.sp),
-                ),
+                label: Text('Delete', style: TextStyle(fontSize: 16.sp)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
@@ -486,47 +418,31 @@ class _DhikirScreenState extends State<DhikirScreen>
             builder: (context, child) {
               return Transform.scale(
                 scale: _completionAnimation.value,
-                child: Icon(
-                  Icons.celebration,
-                  size: 120.w,
-                  color: AppColors.primaryGreen,
-                ),
+                child: Icon(Icons.celebration, size: 120.w, color: AppColors.primaryGreen),
               );
             },
           ),
           SizedBox(height: 32.h),
           Text(
             'Dhikir Completed!',
-            style: TextStyle(
-              fontSize: 28.sp,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primaryGreen,
-            ),
+            style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
           ),
           SizedBox(height: 16.h),
           Text(
             '"$dhikirText"',
-            style: TextStyle(
-              fontSize: 20.sp,
-              fontStyle: FontStyle.italic,
-              color: Colors.grey[700],
-            ),
+            style: TextStyle(fontSize: 20.sp, fontStyle: FontStyle.italic, color: Colors.grey[700]),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 24.h),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
             decoration: BoxDecoration(
-              color: AppColors.goldAccent.withOpacity(0.2),
+              color: AppColors.goldAccent.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(16.r),
             ),
             child: Text(
               '+$pointsEarned Points Earned!',
-              style: TextStyle(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.bold,
-                color: AppColors.goldAccent,
-              ),
+              style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold, color: AppColors.goldAccent),
             ),
           ),
           SizedBox(height: 40.h),
@@ -542,10 +458,7 @@ class _DhikirScreenState extends State<DhikirScreen>
             ),
             child: Text(
               'View History',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -571,11 +484,7 @@ class _DhikirScreenState extends State<DhikirScreen>
               SizedBox(width: 16.w),
               Text(
                 'Dhikir History',
-                style: TextStyle(
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryGreen,
-                ),
+                style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
               ),
             ],
           ),
@@ -585,10 +494,7 @@ class _DhikirScreenState extends State<DhikirScreen>
                 ? Center(
                     child: Text(
                       'No dhikir sessions yet',
-                      style: TextStyle(
-                        fontSize: 18.sp,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 18.sp, color: Colors.grey[600]),
                     ),
                   )
                 : ListView.builder(
@@ -600,10 +506,7 @@ class _DhikirScreenState extends State<DhikirScreen>
                         child: ListTile(
                           title: Text(
                             session['dhikirText'],
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -613,9 +516,7 @@ class _DhikirScreenState extends State<DhikirScreen>
                           ),
                           trailing: Icon(
                             session['isCompleted'] ? Icons.check_circle : Icons.pending,
-                            color: session['isCompleted']
-                                ? AppColors.primaryGreen
-                                : Colors.orange,
+                            color: session['isCompleted'] ? AppColors.primaryGreen : Colors.orange,
                           ),
                         ),
                       );
@@ -634,36 +535,22 @@ class _DhikirScreenState extends State<DhikirScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64.w,
-              color: Colors.red,
-            ),
+            Icon(Icons.error_outline, size: 64.w, color: Colors.red),
             SizedBox(height: 16.h),
             Text(
               'Error',
-              style: TextStyle(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
+              style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold, color: Colors.red),
             ),
             SizedBox(height: 8.h),
             Text(
               message,
-              style: TextStyle(
-                fontSize: 16.sp,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 16.sp, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 24.h),
             ElevatedButton(
               onPressed: () => context.read<DhikirCubit>().loadCurrentSession(userId),
-              child: Text(
-                'Retry',
-                style: TextStyle(fontSize: 16.sp),
-              ),
+              child: Text('Retry', style: TextStyle(fontSize: 16.sp)),
             ),
           ],
         ),

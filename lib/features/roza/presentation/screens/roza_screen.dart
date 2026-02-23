@@ -85,7 +85,7 @@ class _RozaScreenState extends State<RozaScreen> {
         ),
         if (state is RozaLoading)
           Container(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             child: const Center(child: CircularProgressIndicator()),
           ),
       ],
@@ -98,9 +98,9 @@ class _RozaScreenState extends State<RozaScreen> {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: AppColors.primaryGreen.withOpacity(0.1),
+        color: AppColors.primaryGreen.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -141,7 +141,7 @@ class _RozaScreenState extends State<RozaScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: TableCalendar(
         firstDay: DateTime.utc(2020, 1, 1),
@@ -179,7 +179,7 @@ class _RozaScreenState extends State<RozaScreen> {
         },
         calendarStyle: CalendarStyle(
           selectedDecoration: BoxDecoration(color: AppColors.primaryGreen, shape: BoxShape.circle),
-          todayDecoration: BoxDecoration(color: AppColors.primaryGreen.withOpacity(0.3), shape: BoxShape.circle),
+          todayDecoration: BoxDecoration(color: AppColors.primaryGreen.withValues(alpha: 0.3), shape: BoxShape.circle),
           markerDecoration: BoxDecoration(color: AppColors.goldAccent, shape: BoxShape.circle),
         ),
         headerStyle: HeaderStyle(
@@ -197,7 +197,7 @@ class _RozaScreenState extends State<RozaScreen> {
             if (isBrokenFast) {
               return Container(
                 margin: EdgeInsets.all(4.w),
-                decoration: BoxDecoration(color: Colors.red.withOpacity(0.2), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.2), shape: BoxShape.circle),
                 child: Center(
                   child: Text(
                     '${day.day}',
@@ -277,9 +277,9 @@ class _RozaScreenState extends State<RozaScreen> {
             return Container(
               padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
               decoration: BoxDecoration(
-                color: AppColors.primaryGreen.withOpacity(0.1),
+                color: AppColors.primaryGreen.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20.r),
-                border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+                border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
               ),
               child: Text(
                 '${date.day}/${date.month}',

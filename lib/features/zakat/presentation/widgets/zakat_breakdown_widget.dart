@@ -25,21 +25,12 @@ class ZakatBreakdownWidget extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: AppColors.dividerGray),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Calculation Summary",
-            style: AppTypography.h2.copyWith(color: AppColors.primaryGreen),
-          ),
+          Text("Calculation Summary", style: AppTypography.h2.copyWith(color: AppColors.primaryGreen)),
           SizedBox(height: 16.h),
           _buildRow("Total Assets", totalAssets),
           _buildRow("Total Debts", debts, isSubtracted: true),
@@ -48,19 +39,13 @@ class ZakatBreakdownWidget extends StatelessWidget {
           SizedBox(height: 20.h),
           Container(
             padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              color: AppColors.primaryGreen,
-              borderRadius: BorderRadius.circular(12.r),
-            ),
+            decoration: BoxDecoration(color: AppColors.primaryGreen, borderRadius: BorderRadius.circular(12.r)),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   "Zakat (2.5%)",
-                  style: AppTypography.body.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppTypography.body.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   "\$${zakatAmount.toStringAsFixed(2)}",
@@ -78,12 +63,7 @@ class ZakatBreakdownWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildRow(
-    String label,
-    double value, {
-    bool isSubtracted = false,
-    bool isBold = false,
-  }) {
+  Widget _buildRow(String label, double value, {bool isSubtracted = false, bool isBold = false}) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4.h),
       child: Row(

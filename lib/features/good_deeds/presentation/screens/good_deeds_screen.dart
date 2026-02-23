@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/set_up_di.dart';
+import '../../../points/domain/repositories/points_repository.dart';
+import '../../../points/presentation/cubit/points_cubit.dart';
+import '../../../challenge/domain/repositories/challenge_repository.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 
 class GoodDeedsScreen extends StatefulWidget {
   const GoodDeedsScreen({super.key});
@@ -18,7 +24,6 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
     DeedOption(id: 'parents', title: 'Help Parents', icon: '👨‍👩‍👧', points: 30),
     DeedOption(id: 'charity', title: 'Charity', icon: '💝', points: 50),
     DeedOption(id: 'quran', title: 'Quran Recitation', icon: '📖', points: 40),
-    DeedOption(id: 'dhikr', title: 'Dhikr', icon: '📿', points: 20),
     DeedOption(id: 'volunteer', title: 'Volunteer', icon: '🤝', points: 60),
     DeedOption(id: 'kindness', title: 'Act of Kindness', icon: '💚', points: 25),
   ];
@@ -29,17 +34,58 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
     super.dispose();
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     if (_selectedDeed == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a good deed')));
       return;
     }
 
+    // Get repositories
+    final pointsRepository = getIt<PointsRepository>();
+    final challengeRepository = getIt<ChallengeRepository>();
+
+    // Get current user ID - with null safety
+    final authCubit = context.read<AuthCubit>();
+    final authState = authCubit.state;
+    if (authState is! Authenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please log in first')));
+      return;
+    }
+    final userId = authState.user.id;
+
+    // Capture selected deed locally to avoid null-safety issues inside async builders
+    final deed = _selectedDeed!;
+
+    // Capture PointsCubit to avoid using BuildContext across async gaps
+    final pointsCubit = context.read<PointsCubit>();
+
+    // Add points for the good deed and await completion
+    await pointsRepository.addPoints(userId: userId, points: deed.points, source: 'good_deed_${deed.id}');
+
+    // Refresh points to update UI after addPoints completes
+    await pointsCubit.refreshPoints(userId);
+
+    // Try to complete today's challenge if active (await to ensure ordering)
+    try {
+      final hasChallenge = await challengeRepository.hasActiveChallenge(userId);
+      if (hasChallenge) {
+        await challengeRepository.completeTodayChallenge(userId);
+      }
+    } catch (e) {
+      // Challenge already completed today or other error, ignore
+      debugPrint('Challenge completion skipped: $e');
+    }
+
+    // Refresh points again to pick up any challenge-awarded points
+    await pointsCubit.refreshPoints(userId);
+
+    if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Barakallah! 🌟'),
-        content: Text('Your ${_selectedDeed!.title} has been recorded.\n+${_selectedDeed!.points} Neki points'),
+        content: Text('Your ${deed.title} has been recorded.\n+${deed.points} Neki points'),
         actions: [
           TextButton(
             onPressed: () {

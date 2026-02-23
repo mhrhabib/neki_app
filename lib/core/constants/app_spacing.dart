@@ -5,4 +5,5 @@ class AppSpacing {
   static double get cardPadding => 12.w;
   static double get cornerRadius => 14.r;
   static double get gridGap => 12.w;
+  static double get sectionSpacing => 24.h;
 }

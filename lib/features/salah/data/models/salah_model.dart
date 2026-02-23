@@ -11,11 +11,23 @@ class SalahModel extends SalahEntity {
   });
 
   factory SalahModel.fromJson(Map<String, dynamic> json) {
+    DateTime parseTimestamp(dynamic timestamp) {
+      if (timestamp == null) return DateTime.now();
+      if (timestamp is String) return DateTime.parse(timestamp);
+      if (timestamp is DateTime) return timestamp;
+      // Handle Firestore Timestamp if it exists
+      try {
+        return (timestamp as dynamic).toDate();
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+
     return SalahModel(
       id: json['_id'] ?? json['id'] ?? '',
       userId: json['userId'] ?? '',
       salahName: json['salahName'] ?? '',
-      timestamp: json['timestamp'] != null ? DateTime.parse(json['timestamp']) : DateTime.now(),
+      timestamp: parseTimestamp(json['timestamp']),
       isCompleted: json['isCompleted'] ?? false,
       pointsEarned: json['pointsEarned'] ?? 10,
     );

@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "327642350514",
+    "project_id": "nekiapp-52446",
+    "storage_bucket": "nekiapp-52446.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:327642350514:android:c344e9d50c718a40ad5aab",
+        "android_client_info": {
+          "package_name": "com.example.neki_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "327642350514-cm6v8dnv23lco9rksoonas7msq5nkd8u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.neki_app",
+            "certificate_hash": "e29c66fb6a13a9f8c914cf472a21a6dbde355fd1"
+          }
+        },
+        {
+          "client_id": "327642350514-4lcqmvbq71fa8ojuilcd8uklm2lua0q8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxVai6C944stx2xQeQsJ56Yd_RK6Cz1cc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "327642350514-4lcqmvbq71fa8ojuilcd8uklm2lua0q8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "327642350514-krd0s9jo4bp5ukjo2u6vv72db3knaqkk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.nekiApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

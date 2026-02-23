@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
@@ -30,33 +32,47 @@ class _MainScreenState extends State<MainScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      extendBody: true,
       body: widget.child,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1F2937) : Colors.white,
-          border: Border(
-            top: BorderSide(color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB), width: 1.w),
-          ),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _getCurrentIndex(context),
-          onTap: _onItemTapped,
-          backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
-          selectedItemColor: isDark ? AppColors.goldAccent : AppColors.primaryGreen,
-          unselectedItemColor: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
-          selectedLabelStyle: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
-          unselectedLabelStyle: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w500),
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.emoji_events_outlined),
-              activeIcon: Icon(Icons.emoji_events),
-              label: 'Leaderboard',
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: (isDark ? const Color(0xFF1C1C1E) : Colors.white).withValues(alpha: 0.8),
+              border: Border(
+                top: BorderSide(color: isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8), width: 0.5),
+              ),
             ),
-          ],
+            child: BottomNavigationBar(
+              currentIndex: _getCurrentIndex(context),
+              onTap: _onItemTapped,
+              backgroundColor: Colors.transparent,
+              selectedItemColor: isDark ? AppColors.goldAccent : AppColors.primaryGreen,
+              unselectedItemColor: isDark ? const Color(0xFF8E8E93) : const Color(0xFF999999),
+              selectedLabelStyle: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w500),
+              unselectedLabelStyle: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w500),
+              type: BottomNavigationBarType.fixed,
+              elevation: 0,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(CupertinoIcons.house),
+                  activeIcon: Icon(CupertinoIcons.house_fill),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(CupertinoIcons.person),
+                  activeIcon: Icon(CupertinoIcons.person_fill),
+                  label: 'Profile',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(CupertinoIcons.graph_square),
+                  activeIcon: Icon(CupertinoIcons.graph_square_fill),
+                  label: 'Leaderboard',
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

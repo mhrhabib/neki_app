@@ -1,21 +1,30 @@
+import '../../../../core/services/firestore_service.dart';
 import '../../domain/entities/salah_entity.dart';
 import '../../domain/repositories/salah_repository.dart';
 import '../models/salah_model.dart';
 
 class SalahRepositoryImpl implements SalahRepository {
-  final List<SalahEntity> _salahs = [];
+  final FirestoreService _firestoreService;
+  static const String _collectionPath = 'users_salahs';
+
+  SalahRepositoryImpl(this._firestoreService);
 
   @override
   Future<List<SalahEntity>> getTodaysSalahs(String userId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final todayStr = DateTime(now.year, now.month, now.day).toIso8601String().split('T')[0];
 
-    // Return today's salahs or create default ones
-    final todaysSalahs = _salahs.where((s) {
-      final salahDate = DateTime(s.timestamp.year, s.timestamp.month, s.timestamp.day);
-      return s.userId == userId && salahDate.isAtSameMomentAs(today);
+    // Fetch all salahs for the user and filter in memory to avoid needing a composite index
+    final snapshot = await _firestoreService.getCollection(
+      collectionPath: _collectionPath,
+      queryBuilder: (query) => query.where('userId', isEqualTo: userId),
+    );
+
+    final List<SalahEntity> allUserSalahs = snapshot.docs.map((doc) => SalahModel.fromJson(doc.data())).toList();
+
+    final todaysSalahs = allUserSalahs.where((salah) {
+      final salahDateStr = salah.timestamp.toIso8601String().split('T')[0];
+      return salahDateStr == todayStr;
     }).toList();
 
     if (todaysSalahs.isEmpty) {
@@ -27,18 +36,18 @@ class SalahRepositoryImpl implements SalahRepository {
 
   @override
   Future<SalahEntity> markSalahComplete({required String userId, required String salahName}) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-
+    final id = 'salah_${userId}_${salahName}_${DateTime.now().millisecondsSinceEpoch}';
     final salah = SalahModel(
-      id: 'salah_${DateTime.now().millisecondsSinceEpoch}',
+      id: id,
       userId: userId,
       salahName: salahName,
       timestamp: DateTime.now(),
       isCompleted: true,
-      pointsEarned: 10,
+      pointsEarned: 25, // Updated to 25 as per UI modal
     );
 
-    _salahs.add(salah);
+    await _firestoreService.setDocument(collectionPath: _collectionPath, documentId: id, data: salah.toJson());
+
     return salah;
   }
 
@@ -48,10 +57,14 @@ class SalahRepositoryImpl implements SalahRepository {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    final snapshot = await _firestoreService.getCollection(
+      collectionPath: _collectionPath,
+      queryBuilder: (query) => query.where('userId', isEqualTo: userId),
+    );
 
-    return _salahs
-        .where((s) => s.userId == userId && s.timestamp.isAfter(startDate) && s.timestamp.isBefore(endDate))
+    return snapshot.docs
+        .map((doc) => SalahModel.fromJson(doc.data()))
+        .where((salah) => salah.timestamp.isAfter(startDate) && salah.timestamp.isBefore(endDate))
         .toList();
   }
 

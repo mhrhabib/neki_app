@@ -29,4 +29,12 @@ class OnboardingCubit extends Cubit<OnboardingState> {
       emit(OnboardingError(message: e.toString()));
     }
   }
+
+  Future<void> saveGoal(int days, int points) async {
+    try {
+      await onboardingRepository.saveChallengeGoal(days, points);
+    } catch (e) {
+      emit(OnboardingError(message: e.toString()));
+    }
+  }
 }

@@ -55,13 +55,17 @@ class _SalahScreenState extends State<SalahScreen> {
               SizedBox(height: 16.h),
               Text(
                 'May Allah Accept',
-                style: AppTypography.h2.copyWith(color: AppColors.primaryGreen),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: AppColors.primaryGreen,
+                ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 8.h),
               Text(
                 'Your ${prayer['name']} prayer',
-                style: AppTypography.body.copyWith(color: AppColors.textGray),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppColors.textGray),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 24.h),
@@ -107,7 +111,9 @@ class _SalahScreenState extends State<SalahScreen> {
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
                   'Cancel',
-                  style: AppTypography.body.copyWith(color: AppColors.textGray),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppColors.textGray),
                 ),
               ),
             ],
@@ -187,16 +193,19 @@ class _SalahScreenState extends State<SalahScreen> {
                                     children: [
                                       Text(
                                         "Today's Prayers",
-                                        style: AppTypography.h1.copyWith(
-                                          color: AppColors.primaryGreen,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .displayLarge
+                                            ?.copyWith(
+                                              color: AppColors.primaryGreen,
+                                            ),
                                       ),
                                       SizedBox(height: 2.h),
                                       Text(
                                         '$completedPrayers of ${prayers.length} completed',
-                                        style: AppTypography.caption.copyWith(
-                                          color: AppColors.textGray,
-                                        ),
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
                                       ),
                                     ],
                                   ),

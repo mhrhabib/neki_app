@@ -2,89 +2,105 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_typography.dart';
 import '../cubit/onboarding_cubit.dart';
+import '../../../../components/app_background_widget.dart';
 
 class HabitBuildingScreen extends StatelessWidget {
   const HabitBuildingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark ? const Color(0xFF0A0E27) : AppColors.softCream;
-    final textColor = isDark ? Colors.white : AppColors.textDark;
-
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: textColor),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(AppSpacing.outerPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'The Path to\nSuccess',
-                style: AppTypography.h1.copyWith(color: AppColors.primaryGreen, fontSize: 32.sp, height: 1.2),
-              ),
-              SizedBox(height: AppSpacing.sectionSpacing),
-              _buildMethodologyItem(
-                context,
-                icon: '🕌',
-                title: 'Establish Salah',
-                description: 'The foundation of your connection with Allah. Make it your priority.',
-                isDark: isDark,
-              ),
-              SizedBox(height: AppSpacing.gridGap * 2),
-              _buildMethodologyItem(
-                context,
-                icon: '🛡️',
-                title: 'Avoid Sins',
-                description: 'Build the shield of Taqwa against Shaytan\'s whispers.',
-                isDark: isDark,
-              ),
-              SizedBox(height: AppSpacing.gridGap * 2),
-              _buildMethodologyItem(
-                context,
-                icon: '💧',
-                title: 'Consistency',
-                description: '"The most beloved of deeds to Allah are those that are most consistent."',
-                isDark: isDark,
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final cubit = context.read<OnboardingCubit>();
-                    cubit.completeOnboarding();
-                    context.go('/login');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
-                    padding: EdgeInsets.all(16.w),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.cornerRadius)),
-                    elevation: 4,
+      body: Stack(
+        children: [
+          appBackgroundWidget(),
+          SafeArea(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.outerPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'The Path to\nSuccess',
+                    style: GoogleFonts.sanchez(
+                      color: AppColors.goldAccent,
+                      fontSize: 32.sp,
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
+                      letterSpacing: 2,
+                    ),
                   ),
-                  child: Text(
-                    'Bismillah / Start Journey',
-                    style: AppTypography.button.copyWith(color: Colors.white, fontSize: 16.sp),
+                  SizedBox(height: AppSpacing.sectionSpacing),
+                  _buildMethodologyItem(
+                    context,
+                    icon: '🕌',
+                    title: 'Establish Salah',
+                    description:
+                        'The foundation of your connection with Allah. Make it your priority.',
                   ),
-                ),
+                  SizedBox(height: AppSpacing.gridGap * 2),
+                  _buildMethodologyItem(
+                    context,
+                    icon: '🛡️',
+                    title: 'Avoid Sins',
+                    description:
+                        'Build the shield of Taqwa against Shaytan\'s whispers.',
+                  ),
+                  SizedBox(height: AppSpacing.gridGap * 2),
+                  _buildMethodologyItem(
+                    context,
+                    icon: '💧',
+                    title: 'Consistency',
+                    description:
+                        '"The most beloved of deeds to Allah are those that are most consistent."',
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final cubit = context.read<OnboardingCubit>();
+                        cubit.completeOnboarding();
+                        context.go('/login');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.goldAccent,
+                        foregroundColor: Colors.black,
+                        padding: EdgeInsets.all(16.w),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.cornerRadius,
+                          ),
+                        ),
+                        elevation: 4,
+                      ),
+                      child: Text(
+                        'Bismillah / Start Journey',
+                        style: GoogleFonts.sanchez(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: AppSpacing.gridGap),
+                ],
               ),
-              SizedBox(height: AppSpacing.gridGap),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -94,7 +110,6 @@ class HabitBuildingScreen extends StatelessWidget {
     required String icon,
     required String title,
     required String description,
-    required bool isDark,
   }) {
     return Row(
       children: [
@@ -102,8 +117,11 @@ class HabitBuildingScreen extends StatelessWidget {
           width: 50.w,
           height: 50.w,
           decoration: BoxDecoration(
-            color: AppColors.primaryGreen.withValues(alpha: 0.1),
+            color: AppColors.goldAccent.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(
+              color: AppColors.goldAccent.withValues(alpha: 0.3),
+            ),
           ),
           alignment: Alignment.center,
           child: Text(icon, style: TextStyle(fontSize: 24.sp)),
@@ -115,13 +133,17 @@ class HabitBuildingScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: AppTypography.h2.copyWith(color: isDark ? Colors.white : AppColors.textDark, fontSize: 18.sp),
+                style: GoogleFonts.sanchez(
+                  color: AppColors.goldAccent,
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               SizedBox(height: 4.h),
               Text(
                 description,
-                style: AppTypography.body.copyWith(
-                  color: isDark ? Colors.white70 : AppColors.textGray,
+                style: GoogleFonts.sanchez(
+                  color: Colors.white70,
                   fontSize: 14.sp,
                   height: 1.4,
                 ),

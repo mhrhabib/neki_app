@@ -27,7 +27,11 @@ class _RozaScreenState extends State<RozaScreen> {
   void _loadInitialData() {
     final authState = context.read<AuthCubit>().state;
     if (authState is Authenticated) {
-      context.read<RozaCubit>().loadMonthlyRozaData(authState.user.id, _focusedDay.year, _focusedDay.month);
+      context.read<RozaCubit>().loadMonthlyRozaData(
+        authState.user.id,
+        _focusedDay.year,
+        _focusedDay.month,
+      );
     }
   }
 
@@ -37,7 +41,9 @@ class _RozaScreenState extends State<RozaScreen> {
       appBar: AppBar(
         title: Text(
           'Roza Tracker',
-          style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
+          style: Theme.of(
+            context,
+          ).textTheme.displaySmall?.copyWith(color: AppColors.primaryGreen),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -112,21 +118,30 @@ class _RozaScreenState extends State<RozaScreen> {
               children: [
                 Text(
                   'Monthly Fast Count',
-                  style: TextStyle(fontSize: 14.sp, color: AppColors.textDark, fontWeight: FontWeight.w500),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
                 Text(
                   '$fastCount days',
-                  style: TextStyle(fontSize: 24.sp, color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    color: AppColors.primaryGreen,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
           ),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-            decoration: BoxDecoration(color: AppColors.primaryGreen, borderRadius: BorderRadius.circular(20.r)),
+            decoration: BoxDecoration(
+              color: AppColors.primaryGreen,
+              borderRadius: BorderRadius.circular(20.r),
+            ),
             child: Text(
               '${fastCount * 100} pts',
-              style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -141,7 +156,13 @@ class _RozaScreenState extends State<RozaScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: TableCalendar(
         firstDay: DateTime.utc(2020, 1, 1),
@@ -151,7 +172,9 @@ class _RozaScreenState extends State<RozaScreen> {
         selectedDayPredicate: (day) {
           return _selectedDates.any(
             (selectedDate) =>
-                selectedDate.year == day.year && selectedDate.month == day.month && selectedDate.day == day.day,
+                selectedDate.year == day.year &&
+                selectedDate.month == day.month &&
+                selectedDate.day == day.day,
           );
         },
         onDaySelected: (selectedDay, focusedDay) {
@@ -178,26 +201,45 @@ class _RozaScreenState extends State<RozaScreen> {
           _loadInitialData();
         },
         calendarStyle: CalendarStyle(
-          selectedDecoration: BoxDecoration(color: AppColors.primaryGreen, shape: BoxShape.circle),
-          todayDecoration: BoxDecoration(color: AppColors.primaryGreen.withOpacity(0.3), shape: BoxShape.circle),
-          markerDecoration: BoxDecoration(color: AppColors.goldAccent, shape: BoxShape.circle),
+          selectedDecoration: BoxDecoration(
+            color: AppColors.primaryGreen,
+            shape: BoxShape.circle,
+          ),
+          todayDecoration: BoxDecoration(
+            color: AppColors.primaryGreen.withOpacity(0.3),
+            shape: BoxShape.circle,
+          ),
+          markerDecoration: BoxDecoration(
+            color: AppColors.goldAccent,
+            shape: BoxShape.circle,
+          ),
         ),
         headerStyle: HeaderStyle(
           formatButtonVisible: false,
           titleCentered: true,
-          titleTextStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: AppColors.textDark),
+          titleTextStyle: TextStyle(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textDark,
+          ),
         ),
         calendarBuilders: CalendarBuilders(
           defaultBuilder: (context, day, focusedDay) {
             // Check if this date is a broken fast
             final isBrokenFast = brokenFastDates.any(
-              (brokenDate) => brokenDate.year == day.year && brokenDate.month == day.month && brokenDate.day == day.day,
+              (brokenDate) =>
+                  brokenDate.year == day.year &&
+                  brokenDate.month == day.month &&
+                  brokenDate.day == day.day,
             );
 
             if (isBrokenFast) {
               return Container(
                 margin: EdgeInsets.all(4.w),
-                decoration: BoxDecoration(color: Colors.red.withOpacity(0.2), shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
                 child: Center(
                   child: Text(
                     '${day.day}',
@@ -221,20 +263,39 @@ class _RozaScreenState extends State<RozaScreen> {
   Widget _buildInstructions() {
     return Container(
       padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(color: AppColors.softCream, borderRadius: BorderRadius.circular(12.r)),
+      decoration: BoxDecoration(
+        color: AppColors.softCream,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'How it works:',
-            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: AppColors.textDark),
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textDark,
+            ),
           ),
           SizedBox(height: 12.h),
-          _buildInstructionItem('✅', 'Tap dates to mark as fasted (100 points each)', AppColors.primaryGreen),
+          _buildInstructionItem(
+            '✅',
+            'Tap dates to mark as fasted (100 points each)',
+            AppColors.primaryGreen,
+          ),
           SizedBox(height: 8.h),
-          _buildInstructionItem('❌', 'Skipped dates between fasts are marked as broken', Colors.red),
+          _buildInstructionItem(
+            '❌',
+            'Skipped dates between fasts are marked as broken',
+            Colors.red,
+          ),
           SizedBox(height: 8.h),
-          _buildInstructionItem('📅', 'View your monthly fasting progress', AppColors.goldAccent),
+          _buildInstructionItem(
+            '📅',
+            'View your monthly fasting progress',
+            AppColors.goldAccent,
+          ),
         ],
       ),
     );
@@ -267,7 +328,11 @@ class _RozaScreenState extends State<RozaScreen> {
       children: [
         Text(
           'Fasted Dates This Month:',
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: AppColors.textDark),
+          style: TextStyle(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textDark,
+          ),
         ),
         SizedBox(height: 12.h),
         Wrap(
@@ -279,11 +344,17 @@ class _RozaScreenState extends State<RozaScreen> {
               decoration: BoxDecoration(
                 color: AppColors.primaryGreen.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20.r),
-                border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+                border: Border.all(
+                  color: AppColors.primaryGreen.withOpacity(0.3),
+                ),
               ),
               child: Text(
                 '${date.day}/${date.month}',
-                style: TextStyle(fontSize: 12.sp, color: AppColors.primaryGreen, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: AppColors.primaryGreen,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             );
           }).toList(),

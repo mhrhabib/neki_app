@@ -31,6 +31,11 @@ import '../../features/challenge/data/repositories/challenge_repository_impl.dar
 import '../../features/challenge/presentation/cubit/challenge_cubit.dart';
 import '../../features/profile/presentation/cubit/profile_cubit.dart';
 import '../../features/zakat/presentation/cubit/zakat_cubit.dart';
+import '../../features/salah_lock/data/services/salah_device_lock_service.dart';
+import '../../features/salah_lock/data/services/salah_notification_service.dart';
+import '../../features/salah_lock/domain/repositories/salah_lock_repository.dart';
+import '../../features/salah_lock/data/repositories/salah_lock_repository_impl.dart';
+import '../../features/salah_lock/presentation/cubit/salah_lock_cubit.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -46,6 +51,16 @@ class SetUpDI {
     );
     getIt.registerLazySingleton<FirestoreService>(() => FirestoreService());
     getIt.registerLazySingleton<LocationService>(() => LocationService());
+
+    // ========== SALAH LOCK SERVICES ==========
+    final notificationService = SalahNotificationService();
+    await notificationService.initialize();
+    getIt.registerLazySingleton<SalahNotificationService>(
+      () => notificationService,
+    );
+    getIt.registerLazySingleton<SalahDeviceLockService>(
+      () => SalahDeviceLockService(),
+    );
 
     // ========== REPOSITORIES (Lazy Singletons) ==========
     final themeRepo = ThemeRepositoryImpl();
@@ -76,6 +91,9 @@ class SetUpDI {
         getIt<FirestoreService>(),
         getIt<FirebaseStorageService>(),
       ),
+    );
+    getIt.registerLazySingleton<SalahLockRepository>(
+      () => SalahLockRepositoryImpl(getIt<SharedPreferences>()),
     );
 
     // ========== CUBITS (Factories) ==========
@@ -126,6 +144,15 @@ class SetUpDI {
     );
     getIt.registerFactory<LocationCubit>(
       () => LocationCubit(getIt<LocationService>()),
+    );
+    getIt.registerFactory<SalahLockCubit>(
+      () => SalahLockCubit(
+        repository: getIt<SalahLockRepository>(),
+        notificationService: getIt<SalahNotificationService>(),
+        deviceLockService: getIt<SalahDeviceLockService>(),
+        salahCubit: getIt<SalahCubit>(),
+        locationCubit: getIt<LocationCubit>(),
+      ),
     );
   }
 }

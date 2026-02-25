@@ -13,10 +13,11 @@ import 'features/salah/presentation/cubit/salah_cubit.dart';
 import 'features/points/presentation/cubit/points_cubit.dart';
 import 'features/challenge/presentation/cubit/challenge_cubit.dart';
 import 'core/location/cubit/location_cubit.dart';
+import 'features/salah_lock/presentation/cubit/salah_lock_cubit.dart';
+import 'features/salah_lock/presentation/widgets/salah_lock_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialize Firebase before setting up DI so repositories can rely on Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await SetUpDI.init();
   runApp(const NekiApp());
@@ -33,7 +34,10 @@ class _NekiAppState extends State<NekiApp> {
   @override
   void initState() {
     super.initState();
-    // Router will be initialized after BLoC providers are available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<SalahLockCubit>().init();
+    });
   }
 
   @override
@@ -53,10 +57,10 @@ class _NekiAppState extends State<NekiApp> {
         BlocProvider(
           create: (context) => getIt<LocationCubit>()..fetchLocation(),
         ),
+        BlocProvider(create: (context) => getIt<SalahLockCubit>()),
       ],
       child: BlocBuilder<ThemeCubit, ThemeData>(
         builder: (context, themeData) {
-          debugPrint('🎨 Theme changed to: ${themeData.brightness}');
           return ScreenUtilInit(
             designSize: const Size(375, 812),
             minTextAdapt: true,
@@ -71,6 +75,14 @@ class _NekiAppState extends State<NekiApp> {
                     : ThemeMode.light,
                 routerConfig: AppRouter.router,
                 debugShowCheckedModeBanner: false,
+                builder: (context, child) {
+                  return Stack(
+                    children: [
+                      if (child != null) child,
+                      const SalahLockOverlay(),
+                    ],
+                  );
+                },
               );
             },
           );

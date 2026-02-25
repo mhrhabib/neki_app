@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:neki_app/core/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../cubit/auth_cubit.dart';
+import '../../../../components/app_background_widget.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
   void _handleContinue(BuildContext context) {
-    // Simulate login with mock user
-    // context.read<AuthCubit>().login(email: 'user@example.com', password: 'password');
     context.go(RouteNames.home);
   }
 
@@ -30,112 +30,116 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0A0E27) : Colors.white,
+      backgroundColor: Colors.black,
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is Authenticated) {
             context.go('/home');
           } else if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         builder: (context, state) {
           final authLoading = state is AuthLoading ? state : null;
           final isAnyLoading = authLoading != null;
 
-          return SafeArea(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 32.w),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Icon Container
-                  Container(
-                    width: 100.w,
-                    height: 100.w,
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(25.r), color: AppColors.goldAccent),
-                    child: Center(
-                      child: Text(
-                        '🕌',
-                        style: TextStyle(fontSize: 48.sp, color: AppColors.primaryGreen),
+          return Stack(
+            children: [
+              appBackgroundWidget(),
+              SafeArea(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 32.w),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Icon Container
+                      Image.asset('assets/kabba_1.png', height: 200.h),
+                      // Welcome Back Title
+                      Text(
+                        'Welcome Back',
+                        style: GoogleFonts.sanchez(
+                          fontSize: 28.sp,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.goldAccent,
+                          letterSpacing: 1,
+                        ),
                       ),
-                    ),
-                  ),
-                  SizedBox(height: 20.h),
+                      SizedBox(height: 12.h),
 
-                  // Welcome Back Title
-                  Text(
-                    'Welcome Back',
-                    style: TextStyle(
-                      fontSize: 24.sp,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : AppColors.primaryGreen,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-
-                  // Subtitle
-                  Text(
-                    'Continue your spiritual journey',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 60.h),
-
-                  // Continue with Google Button
-                  _buildAuthButton(
-                    context: context,
-                    icon: '🔐',
-                    label: 'Continue with Google',
-                    onPressed: isAnyLoading ? () {} : () => _handleGoogleSignIn(context),
-                    isLoading: authLoading?.loadingProvider == 'google',
-                  ),
-                  SizedBox(height: 12.h),
-
-                  // Continue with Facebook Button
-                  _buildAuthButton(
-                    context: context,
-                    icon: '📱',
-                    label: 'Continue with Facebook',
-                    onPressed: isAnyLoading ? () {} : () => _handleFacebookSignIn(context),
-                    isLoading: authLoading?.loadingProvider == 'facebook',
-                  ),
-
-                  // Show Apple Sign-In only on iOS or macOS
-                  if (Platform.isIOS || Platform.isMacOS) ...[
-                    SizedBox(height: 12.h),
-                    _buildAuthButton(
-                      context: context,
-                      icon: '',
-                      label: 'Continue with Apple',
-                      onPressed: isAnyLoading ? () {} : () => _handleAppleSignIn(context),
-                      isLoading: authLoading?.loadingProvider == 'apple',
-                    ),
-                  ],
-
-                  SizedBox(height: 32.h),
-
-                  // Continue as Guest
-                  TextButton(
-                    onPressed: isAnyLoading ? null : () => _handleContinue(context),
-                    child: Text(
-                      'Continue as Guest',
-                      style: TextStyle(
-                        color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w500,
+                      // Subtitle
+                      Text(
+                        'Continue your spiritual journey',
+                        style: GoogleFonts.sanchez(
+                          fontSize: 14.sp,
+                          color: Colors.white70,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
+                      SizedBox(height: 60.h),
+
+                      // Continue with Google Button
+                      _buildAuthButton(
+                        context: context,
+                        icon: '🔐',
+                        label: 'Continue with Google',
+                        onPressed: isAnyLoading
+                            ? () {}
+                            : () => _handleGoogleSignIn(context),
+                        isLoading: authLoading?.loadingProvider == 'google',
+                      ),
+                      SizedBox(height: 16.h),
+
+                      // Continue with Facebook Button
+                      _buildAuthButton(
+                        context: context,
+                        icon: '📱',
+                        label: 'Continue with Facebook',
+                        onPressed: isAnyLoading
+                            ? () {}
+                            : () => _handleFacebookSignIn(context),
+                        isLoading: authLoading?.loadingProvider == 'facebook',
+                      ),
+
+                      // Show Apple Sign-In only on iOS or macOS
+                      if (Platform.isIOS || Platform.isMacOS) ...[
+                        SizedBox(height: 16.h),
+                        _buildAuthButton(
+                          context: context,
+                          icon: '',
+                          label: 'Continue with Apple',
+                          onPressed: isAnyLoading
+                              ? () {}
+                              : () => _handleAppleSignIn(context),
+                          isLoading: authLoading?.loadingProvider == 'apple',
+                        ),
+                      ],
+
+                      SizedBox(height: 40.h),
+
+                      // Continue as Guest
+                      TextButton(
+                        onPressed: isAnyLoading
+                            ? null
+                            : () => _handleContinue(context),
+                        child: Text(
+                          'Continue as Guest',
+                          style: GoogleFonts.sanchez(
+                            color: Colors.white60,
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w500,
+                            decoration: TextDecoration.underline,
+                            decorationColor: Colors.white30,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           );
         },
       ),
@@ -149,36 +153,39 @@ class LoginScreen extends StatelessWidget {
     required VoidCallback onPressed,
     bool isLoading = false,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
+          backgroundColor: Colors.white.withValues(alpha: 0.05),
           padding: EdgeInsets.symmetric(vertical: 16.h),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-          side: BorderSide(color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB), width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
+          ),
+          side: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1.5,
+          ),
         ),
         child: isLoading
             ? SizedBox(
                 height: 24.h,
                 width: 24.h,
-                child: CircularProgressIndicator(
+                child: const CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(isDark ? Colors.white : AppColors.primaryGreen),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(icon, style: TextStyle(fontSize: 24.sp)),
-                  SizedBox(width: 12.w),
+                  SizedBox(width: 16.w),
                   Text(
                     label,
-                    style: TextStyle(
-                      color: isDark ? Colors.white : const Color(0xFF1F2937),
+                    style: GoogleFonts.sanchez(
+                      color: Colors.white,
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w600,
                     ),

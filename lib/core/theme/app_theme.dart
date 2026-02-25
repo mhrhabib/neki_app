@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_typography.dart';
 
 /// Central place for app themes
 class AppTheme {
@@ -40,11 +41,18 @@ class AppTheme {
           backgroundColor: AppColors.primaryGreen,
           foregroundColor: Colors.white,
           padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 14.h),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
           elevation: 0,
         ),
       ),
-      dividerTheme: const DividerThemeData(color: Color(0xFFC6C6C8), thickness: 0.5, space: 1),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFFC6C6C8),
+        thickness: 0.5,
+        space: 1,
+      ),
+      textTheme: _buildTextTheme(Brightness.light),
     );
   }
 
@@ -85,11 +93,18 @@ class AppTheme {
           backgroundColor: AppColors.primaryGreen,
           foregroundColor: Colors.white,
           padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 14.h),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
           elevation: 0,
         ),
       ),
-      dividerTheme: const DividerThemeData(color: Color(0xFF38383A), thickness: 0.5, space: 1),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFF38383A),
+        thickness: 0.5,
+        space: 1,
+      ),
+      textTheme: _buildTextTheme(Brightness.dark),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Color(0xFF1C1C1E),
         selectedItemColor: AppColors.goldAccent,
@@ -100,5 +115,29 @@ class AppTheme {
 
   static ThemeData getTheme(Brightness brightness) {
     return brightness == Brightness.dark ? darkTheme() : lightTheme();
+  }
+
+  static TextTheme _buildTextTheme(Brightness brightness) {
+    final bool isDark = brightness == Brightness.dark;
+    final Color textColor = isDark ? Colors.white : AppColors.textDark;
+    final Color secondaryTextColor = isDark
+        ? const Color(0xFF8E8E93)
+        : AppColors.textGray;
+
+    return TextTheme(
+      displayLarge: AppTypography.h1.copyWith(color: textColor),
+      displayMedium: AppTypography.h2.copyWith(color: textColor),
+      displaySmall: AppTypography.h3.copyWith(color: textColor),
+      headlineMedium: AppTypography.h2.copyWith(color: textColor),
+      headlineSmall: AppTypography.h3.copyWith(color: textColor),
+      titleLarge: AppTypography.h3.copyWith(color: textColor),
+      bodyLarge: AppTypography.bodyLarge.copyWith(color: textColor),
+      bodyMedium: AppTypography.bodyMedium.copyWith(color: textColor),
+      bodySmall: AppTypography.bodySmall.copyWith(color: secondaryTextColor),
+      labelLarge: AppTypography.labelLarge.copyWith(color: textColor),
+      labelMedium: AppTypography.labelMedium.copyWith(
+        color: secondaryTextColor,
+      ),
+    );
   }
 }

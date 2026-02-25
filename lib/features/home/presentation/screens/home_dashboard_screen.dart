@@ -184,7 +184,10 @@ class HomeDashboardScreen extends StatelessWidget {
                           SizedBox(height: 2.h),
                           Text(
                             'Day ${challenge.completedDays} of ${challenge.durationDays}',
-                            style: TextStyle(fontSize: 13.sp, color: Colors.white.withValues(alpha: 0.8)),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                ),
                           ),
                         ],
                       ),
@@ -233,12 +236,17 @@ class HomeDashboardScreen extends StatelessWidget {
                       children: [
                         Text(
                           'Addiction Recovery',
-                          style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600, color: Colors.white),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelLarge?.copyWith(color: Colors.white),
                         ),
                         SizedBox(height: 2.h),
                         Text(
                           'Start a recovery plan',
-                          style: TextStyle(fontSize: 13.sp, color: Colors.white.withValues(alpha: 0.8)),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.8),
+                              ),
                         ),
                       ],
                     ),
@@ -293,14 +301,21 @@ class HomeDashboardScreen extends StatelessWidget {
                       children: [
                         Text(
                           '${challenge.durationDays}-Day Challenge',
-                          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                         SizedBox(height: 4.h),
                         Row(
                           children: [
                             Text(
                               'Day ${challenge.completedDays} of ${challenge.durationDays}',
-                              style: TextStyle(fontSize: 14.sp, color: Colors.white.withValues(alpha: 0.9)),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
                             ),
                             if (!canCompleteToday) ...[
                               SizedBox(width: 8.w),
@@ -354,12 +369,18 @@ class HomeDashboardScreen extends StatelessWidget {
                     children: [
                       Text(
                         'Beat Satan Challenge',
-                        style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       SizedBox(height: 4.h),
                       Text(
                         'Start building your daily neki habit',
-                        style: TextStyle(fontSize: 14.sp, color: Colors.white.withValues(alpha: 0.9)),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
                       ),
                     ],
                   ),
@@ -388,10 +409,8 @@ class HomeDashboardScreen extends StatelessWidget {
                   SizedBox(width: 48.w), // Placeholder for balance
                   Text(
                     'Salam, Habib',
-                    style: TextStyle(
-                      fontSize: 17.sp,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : AppColors.textDark,
                       letterSpacing: -0.4,
                     ),
                   ),
@@ -410,7 +429,7 @@ class HomeDashboardScreen extends StatelessWidget {
               SizedBox(height: 2.h),
               Text(
                 'May your day be blessed',
-                style: TextStyle(fontSize: 13.sp, color: isDark ? const Color(0xFF8E8E93) : const Color(0xFF8E8E93)),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
           ),
@@ -436,19 +455,26 @@ class HomeDashboardScreen extends StatelessWidget {
                       SizedBox(width: 8.w),
                       Text(
                         'Current Streak',
-                        style: TextStyle(fontSize: 14.sp, color: AppColors.goldAccent, fontWeight: FontWeight.w600),
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: AppColors.goldAccent,
+                        ),
                       ),
                     ],
                   ),
                   SizedBox(height: 16.h),
                   Text(
                     '${state.points.todayPoints}',
-                    style: TextStyle(fontSize: 48.sp, fontWeight: FontWeight.w800, color: Colors.white),
+                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   SizedBox(height: 4.h),
                   Text(
                     'Neki Points Today',
-                    style: TextStyle(fontSize: 16.sp, color: AppColors.goldAccent, fontWeight: FontWeight.w600),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: AppColors.goldAccent,
+                    ),
                   ),
                   SizedBox(height: 16.h),
                   Container(
@@ -464,7 +490,9 @@ class HomeDashboardScreen extends StatelessWidget {
                         SizedBox(width: 8.w),
                         Text(
                           '${state.points.currentStreak} Day Streak',
-                          style: TextStyle(fontSize: 14.sp, color: Colors.white, fontWeight: FontWeight.w600),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelLarge?.copyWith(color: Colors.white),
                         ),
                       ],
                     ),
@@ -480,8 +508,6 @@ class HomeDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildPillarsSection(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
@@ -489,11 +515,9 @@ class HomeDashboardScreen extends StatelessWidget {
         children: [
           Text(
             'Five Pillars',
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : const Color(0xFF1F2937),
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           SizedBox(height: 16.h),
           ..._pillars.map((pillar) => _buildPillarCard(context, pillar)),
@@ -504,7 +528,6 @@ class HomeDashboardScreen extends StatelessWidget {
 
   Widget _buildPillarCard(BuildContext context, PillarItem pillar) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return GestureDetector(
       onTap: pillar.route != null ? () => context.push(pillar.route!) : null,
       child: Container(
@@ -535,19 +558,14 @@ class HomeDashboardScreen extends StatelessWidget {
                 children: [
                   Text(
                     pillar.title,
-                    style: TextStyle(
-                      fontSize: 17.sp,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : const Color(0xFF1F2937),
                     ),
                   ),
                   SizedBox(height: 2.h),
                   Text(
                     pillar.description,
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
               ),

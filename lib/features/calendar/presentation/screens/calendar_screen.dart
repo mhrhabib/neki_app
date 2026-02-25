@@ -60,10 +60,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Text(
-          "Islamic Calendar",
-          style: AppTypography.h1.copyWith(color: AppColors.primaryGreen),
-        ),
+        title: Text("Islamic Calendar", style: AppTypography.h1.copyWith(color: AppColors.primaryGreen)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -87,13 +84,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: TableCalendar(
         firstDay: DateTime.utc(2020, 1, 1),
@@ -107,22 +98,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
           });
         },
         calendarStyle: CalendarStyle(
-          todayDecoration: BoxDecoration(
-            color: AppColors.primaryGreen.withOpacity(0.2),
-            shape: BoxShape.circle,
-          ),
-          selectedDecoration: const BoxDecoration(
-            color: AppColors.primaryGreen,
-            shape: BoxShape.circle,
-          ),
+          todayDecoration: BoxDecoration(color: AppColors.primaryGreen.withValues(alpha: 0.2), shape: BoxShape.circle),
+          selectedDecoration: const BoxDecoration(color: AppColors.primaryGreen, shape: BoxShape.circle),
           markersMaxCount: 1,
         ),
         headerStyle: HeaderStyle(
           formatButtonVisible: false,
           titleCentered: true,
-          titleTextStyle: AppTypography.h3.copyWith(
-            color: AppColors.primaryGreen,
-          ),
+          titleTextStyle: AppTypography.h3.copyWith(color: AppColors.primaryGreen),
         ),
         calendarBuilders: CalendarBuilders(
           defaultBuilder: (context, day, focusedDay) {
@@ -134,10 +117,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   border: Border.all(color: AppColors.goldAccent, width: 1),
                   shape: BoxShape.circle,
                 ),
-                child: Text(
-                  day.day.toString(),
-                  style: const TextStyle(color: AppColors.textDark),
-                ),
+                child: Text(day.day.toString(), style: const TextStyle(color: AppColors.textDark)),
               );
             }
             return null;
@@ -156,10 +136,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Container(
       padding: EdgeInsets.all(20.w),
       margin: EdgeInsets.symmetric(horizontal: 16.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16.r)),
       child: Column(
         children: [
           Row(
@@ -168,37 +145,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    DateFormat('EEEE, MMMM d').format(_selectedDay!),
-                    style: AppTypography.h3,
-                  ),
+                  Text(DateFormat('EEEE, MMMM d').format(_selectedDay!), style: AppTypography.h3),
                   Text(
                     "${hj.hDay} ${hj.longMonthName} ${hj.hYear} AH",
-                    style: AppTypography.body.copyWith(
-                      color: AppColors.goldAccent,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppTypography.body.copyWith(color: AppColors.goldAccent, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
               if (isFast)
                 Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 6.h,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
-                    color: AppColors.goldAccent.withOpacity(0.1),
+                    color: AppColors.goldAccent.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20.r),
                     border: Border.all(color: AppColors.goldAccent),
                   ),
                   child: Text(
                     "Sunnah Fast",
-                    style: TextStyle(
-                      fontSize: 10.sp,
-                      color: AppColors.goldAccent,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 10.sp, color: AppColors.goldAccent, fontWeight: FontWeight.bold),
                   ),
                 ),
             ],
@@ -207,10 +171,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             SizedBox(height: 16.h),
             Container(
               padding: EdgeInsets.all(12.w),
-              decoration: BoxDecoration(
-                color: AppColors.softCream,
-                borderRadius: BorderRadius.circular(12.r),
-              ),
+              decoration: BoxDecoration(color: AppColors.softCream, borderRadius: BorderRadius.circular(12.r)),
               child: Row(
                 children: [
                   const Icon(Icons.info_outline, color: AppColors.primaryGreen),
@@ -235,23 +196,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
       padding: EdgeInsets.all(20.w),
       margin: EdgeInsets.symmetric(horizontal: 16.w),
       decoration: BoxDecoration(
-        color: AppColors.primaryGreen.withOpacity(0.05),
+        color: AppColors.primaryGreen.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: AppColors.primaryGreen.withOpacity(0.2)),
+        border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Sunnah Fasting Guide",
-            style: AppTypography.h3.copyWith(color: AppColors.primaryGreen),
-          ),
+          Text("Sunnah Fasting Guide", style: AppTypography.h3.copyWith(color: AppColors.primaryGreen)),
           SizedBox(height: 12.h),
-          _buildInfoRow(
-            Icons.calendar_view_week,
-            "Mondays & Thursdays",
-            "The Prophet (ﷺ) used to fast on these days.",
-          ),
+          _buildInfoRow(Icons.calendar_view_week, "Mondays & Thursdays", "The Prophet (ﷺ) used to fast on these days."),
           SizedBox(height: 8.h),
           _buildInfoRow(
             Icons.brightness_5,
@@ -259,11 +213,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             "13th, 14th, and 15th of every Islamic month.",
           ),
           SizedBox(height: 8.h),
-          _buildInfoRow(
-            Icons.star_outline,
-            "Other Key Days",
-            "Day of Arafah, Ashura, etc. (Check specific dates)",
-          ),
+          _buildInfoRow(Icons.star_outline, "Other Key Days", "Day of Arafah, Ashura, etc. (Check specific dates)"),
         ],
       ),
     );
@@ -279,16 +229,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: AppTypography.body.copyWith(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                subtitle,
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textGray,
-                ),
-              ),
+              Text(title, style: AppTypography.body.copyWith(fontWeight: FontWeight.bold)),
+              Text(subtitle, style: AppTypography.caption.copyWith(color: AppColors.textGray)),
             ],
           ),
         ),

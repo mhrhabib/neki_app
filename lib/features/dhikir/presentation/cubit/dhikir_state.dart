@@ -25,12 +25,20 @@ class DhikirSessionActive extends DhikirState {
 }
 
 class DhikirSessionCompleted extends DhikirState {
+  final String sessionId;
   final String dhikirText;
+  final int targetCount;
+  final int currentCount;
   final int pointsEarned;
+  final bool isCompleted;
 
   DhikirSessionCompleted({
+    required this.sessionId,
     required this.dhikirText,
+    required this.targetCount,
+    required this.currentCount,
     required this.pointsEarned,
+    this.isCompleted = true,
   });
 }
 

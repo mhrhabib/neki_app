@@ -19,9 +19,7 @@ class _NamesScreenState extends State<NamesScreen> {
       _filteredNames = namesOfAllahData
           .where(
             (name) =>
-                name.transliteration.toLowerCase().contains(
-                  query.toLowerCase(),
-                ) ||
+                name.transliteration.toLowerCase().contains(query.toLowerCase()) ||
                 name.meaning.toLowerCase().contains(query.toLowerCase()) ||
                 name.arabic.contains(query),
           )
@@ -36,10 +34,7 @@ class _NamesScreenState extends State<NamesScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Text(
-          "99 Names of Allah",
-          style: AppTypography.h1.copyWith(color: AppColors.primaryGreen),
-        ),
+        title: Text("99 Names of Allah", style: AppTypography.h1.copyWith(color: AppColors.primaryGreen)),
         centerTitle: true,
       ),
       body: Column(
@@ -77,10 +72,7 @@ class _NamesScreenState extends State<NamesScreen> {
           prefixIcon: const Icon(Icons.search, color: AppColors.primaryGreen),
           filled: true,
           fillColor: AppColors.softCream,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12.r),
-            borderSide: BorderSide.none,
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
           contentPadding: EdgeInsets.symmetric(vertical: 0.h),
         ),
       ),
@@ -95,11 +87,7 @@ class _NamesScreenState extends State<NamesScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
         child: Column(
@@ -107,10 +95,7 @@ class _NamesScreenState extends State<NamesScreen> {
           children: [
             Text(
               name.id.toString(),
-              style: AppTypography.caption.copyWith(
-                color: AppColors.goldAccent,
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTypography.caption.copyWith(color: AppColors.goldAccent, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8.h),
             Text(
@@ -119,8 +104,7 @@ class _NamesScreenState extends State<NamesScreen> {
                 fontSize: 24.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.primaryGreen,
-                fontFamily:
-                    'Arabic', // Assuming you have an Arabic font or default handles it
+                fontFamily: 'Arabic', // Assuming you have an Arabic font or default handles it
               ),
               textAlign: TextAlign.center,
             ),
@@ -134,9 +118,7 @@ class _NamesScreenState extends State<NamesScreen> {
               padding: EdgeInsets.symmetric(horizontal: 8.w),
               child: Text(
                 name.meaning,
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textGray,
-                ),
+                style: AppTypography.caption.copyWith(color: AppColors.textGray),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -152,9 +134,7 @@ class _NamesScreenState extends State<NamesScreen> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.r),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         child: Container(
           padding: EdgeInsets.all(24.w),
           child: Column(
@@ -162,47 +142,27 @@ class _NamesScreenState extends State<NamesScreen> {
             children: [
               Text(
                 "#${name.id}",
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.goldAccent,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: AppTypography.caption.copyWith(color: AppColors.goldAccent, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 16.h),
               Text(
                 name.arabic,
-                style: TextStyle(
-                  fontSize: 48.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryGreen,
-                ),
+                style: TextStyle(fontSize: 48.sp, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
               ),
               SizedBox(height: 8.h),
-              Text(
-                name.transliteration,
-                style: AppTypography.h2.copyWith(fontWeight: FontWeight.bold),
-              ),
+              Text(name.transliteration, style: AppTypography.h2.copyWith(fontWeight: FontWeight.bold)),
               SizedBox(height: 16.h),
               const Divider(),
               SizedBox(height: 16.h),
               Text(
                 "Meaning",
-                style: AppTypography.body.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.goldAccent,
-                ),
+                style: AppTypography.body.copyWith(fontWeight: FontWeight.bold, color: AppColors.goldAccent),
               ),
-              Text(
-                name.meaning,
-                style: AppTypography.h3,
-                textAlign: TextAlign.center,
-              ),
+              Text(name.meaning, style: AppTypography.h3, textAlign: TextAlign.center),
               SizedBox(height: 20.h),
               Text(
                 "Description",
-                style: AppTypography.body.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.goldAccent,
-                ),
+                style: AppTypography.body.copyWith(fontWeight: FontWeight.bold, color: AppColors.goldAccent),
               ),
               Text(
                 name.description,
@@ -215,14 +175,9 @@ class _NamesScreenState extends State<NamesScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryGreen,
                   minimumSize: Size(double.infinity, 45.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
                 ),
-                child: const Text(
-                  "Close",
-                  style: TextStyle(color: Colors.white),
-                ),
+                child: const Text("Close", style: TextStyle(color: Colors.white)),
               ),
             ],
           ),

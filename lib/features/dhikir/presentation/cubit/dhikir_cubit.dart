@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 import '../../domain/repositories/dhikir_repository.dart';
 import '../../../points/domain/repositories/points_repository.dart';
 
@@ -41,6 +42,25 @@ class DhikirCubit extends Cubit<DhikirState> {
 
   Future<void> incrementCount(String userId, String sessionId) async {
     try {
+      // Optimistic update: if we have an active session in state, update it immediately
+      if (state is DhikirSessionActive) {
+        final current = state as DhikirSessionActive;
+        if (current.sessionId == sessionId) {
+          final optimisticCount = current.currentCount + 1;
+          final optimisticCompleted = optimisticCount >= current.targetCount;
+          // Keep pointsEarned unchanged until confirmed by backend
+          emit(DhikirSessionActive(
+            sessionId: current.sessionId,
+            dhikirText: current.dhikirText,
+            targetCount: current.targetCount,
+            currentCount: optimisticCount,
+            pointsEarned: current.pointsEarned,
+            isCompleted: optimisticCompleted,
+          ));
+        }
+      }
+
+      // Persist increment (may be network-backed); update state from response
       final session = await dhikirRepository.incrementDhikirCount(sessionId);
 
       if (session.isCompleted && session.pointsEarned > 0) {
@@ -52,8 +72,12 @@ class DhikirCubit extends Cubit<DhikirState> {
         );
 
         emit(DhikirSessionCompleted(
+          sessionId: session.id,
           dhikirText: session.dhikirText,
+          targetCount: session.targetCount,
+          currentCount: session.currentCount,
           pointsEarned: session.pointsEarned,
+          isCompleted: session.isCompleted,
         ));
       } else {
         emit(DhikirSessionActive(
@@ -66,6 +90,8 @@ class DhikirCubit extends Cubit<DhikirState> {
         ));
       }
     } catch (e) {
+      // On failure, try to surface an error and (optionally) refresh session
+      debugPrint('❌ [DhikirCubit] incrementCount failed: $e');
       emit(DhikirError(message: e.toString()));
     }
   }

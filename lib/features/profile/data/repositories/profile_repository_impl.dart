@@ -61,6 +61,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   /// Helper method to upload profile picture and update profile
+  @override
   Future<String?> uploadProfilePicture(String userId, File file) async {
     final path = 'profiles/$userId/profile_pic.jpg';
     final downloadUrl = await _storageService.uploadFile(file: file, path: path);

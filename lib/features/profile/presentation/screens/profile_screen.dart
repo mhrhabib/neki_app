@@ -378,7 +378,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             Transform.scale(
               scale: 0.8,
-              child: CupertinoSwitch(value: true, activeColor: AppColors.primaryGreen, onChanged: (val) {}),
+              child: CupertinoSwitch(value: true, activeTrackColor: AppColors.primaryGreen, onChanged: (val) {}),
             ),
           ],
         ),

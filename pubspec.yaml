@@ -61,6 +61,9 @@ dependencies:
   flutter_svg: ^2.0.10+1
   hijri: ^3.0.0
   google_fonts: ^8.0.2
+  quran: ^1.4.1
+  audioplayers: ^6.5.1
+  al_quran: ^0.2.0
 
 dev_dependencies:
   flutter_test:

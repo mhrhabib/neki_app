@@ -5,6 +5,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../cubit/roza_cubit.dart';
+import '../../../../components/app_background_widget.dart';
 
 class RozaScreen extends StatefulWidget {
   const RozaScreen({super.key});
@@ -38,30 +39,35 @@ class _RozaScreenState extends State<RozaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
         title: Text(
           'Roza Tracker',
           style: Theme.of(
             context,
-          ).textTheme.displaySmall?.copyWith(color: AppColors.primaryGreen),
+          ).textTheme.displaySmall?.copyWith(color: AppColors.goldAccent),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primaryGreen),
+        iconTheme: const IconThemeData(color: AppColors.goldAccent),
       ),
-      body: BlocConsumer<RozaCubit, RozaState>(
-        listener: (context, state) {
-          if (state is RozaLoaded) {
-            // Update selected dates from loaded state
-            setState(() {
-              _selectedDates.clear();
-              _selectedDates.addAll(state.selectedDates);
-            });
-          }
-        },
-        builder: (context, state) {
-          return _buildContent(state);
-        },
+      body: Stack(
+        children: [
+          appBackgroundWidget(),
+          BlocConsumer<RozaCubit, RozaState>(
+            listener: (context, state) {
+              if (state is RozaLoaded) {
+                setState(() {
+                  _selectedDates.clear();
+                  _selectedDates.addAll(state.selectedDates);
+                });
+              }
+            },
+            builder: (context, state) {
+              return _buildContent(state);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -106,7 +112,9 @@ class _RozaScreenState extends State<RozaScreen> {
       decoration: BoxDecoration(
         color: AppColors.primaryGreen.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: AppColors.primaryGreen.withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [
@@ -158,7 +166,7 @@ class _RozaScreenState extends State<RozaScreen> {
         borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -201,9 +209,18 @@ class _RozaScreenState extends State<RozaScreen> {
           _loadInitialData();
         },
         calendarStyle: CalendarStyle(
-          selectedDecoration: BoxDecoration(color: AppColors.primaryGreen, shape: BoxShape.circle),
-          todayDecoration: BoxDecoration(color: AppColors.primaryGreen.withValues(alpha: 0.3), shape: BoxShape.circle),
-          markerDecoration: BoxDecoration(color: AppColors.goldAccent, shape: BoxShape.circle),
+          selectedDecoration: BoxDecoration(
+            color: AppColors.primaryGreen,
+            shape: BoxShape.circle,
+          ),
+          todayDecoration: BoxDecoration(
+            color: AppColors.primaryGreen.withValues(alpha: 0.3),
+            shape: BoxShape.circle,
+          ),
+          markerDecoration: BoxDecoration(
+            color: AppColors.goldAccent,
+            shape: BoxShape.circle,
+          ),
         ),
         headerStyle: HeaderStyle(
           formatButtonVisible: false,
@@ -227,7 +244,10 @@ class _RozaScreenState extends State<RozaScreen> {
             if (isBrokenFast) {
               return Container(
                 margin: EdgeInsets.all(4.w),
-                decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.2), shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
                 child: Center(
                   child: Text(
                     '${day.day}',
@@ -333,7 +353,7 @@ class _RozaScreenState extends State<RozaScreen> {
                 color: AppColors.primaryGreen.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20.r),
                 border: Border.all(
-                  color: AppColors.primaryGreen.withOpacity(0.3),
+                  color: AppColors.primaryGreen.withValues(alpha: 0.3),
                 ),
               ),
               child: Text(

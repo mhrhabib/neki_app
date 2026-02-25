@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../widgets/qibla_compass_widget.dart';
+import '../../../../components/app_background_widget.dart';
 
 class QiblaCompassScreen extends StatefulWidget {
   const QiblaCompassScreen({super.key});
@@ -74,19 +75,15 @@ class _QiblaCompassScreenState extends State<QiblaCompassScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.softCream,
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: Icon(
-            Icons.chevron_left,
-            size: 24.sp,
-            color: AppColors.textDark,
-          ),
+          icon: Icon(Icons.chevron_left, size: 24.sp, color: Colors.white),
           style: IconButton.styleFrom(
-            backgroundColor: AppColors.dividerGray,
+            backgroundColor: Colors.white.withValues(alpha: 0.1),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.r),
             ),
@@ -94,63 +91,70 @@ class _QiblaCompassScreenState extends State<QiblaCompassScreen> {
         ),
         title: Text(
           "Qibla Compass",
-          style: AppTypography.h1.copyWith(color: AppColors.primaryGreen),
+          style: AppTypography.h1.copyWith(color: AppColors.goldAccent),
         ),
         centerTitle: true,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _hasPermission
-          ? FutureBuilder(
-              future: FlutterQiblah.androidDeviceSensorSupport(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text("Error: ${snapshot.error}"));
-                }
-                if (snapshot.data == false) {
-                  return const Center(
-                    child: Text("Your device does not support compass sensors"),
-                  );
-                }
-                return const QiblaCompassWidget();
-              },
-            )
-          : Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.location_off,
-                    size: 64.sp,
-                    color: AppColors.textGray,
-                  ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    "Location permission required",
-                    style: AppTypography.body.copyWith(
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  SizedBox(height: 24.h),
-                  ElevatedButton(
-                    onPressed: _checkLocationPermission,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryGreen,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
+      body: Stack(
+        children: [
+          appBackgroundWidget(),
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _hasPermission
+              ? FutureBuilder(
+                  future: FlutterQiblah.androidDeviceSensorSupport(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(child: Text("Error: ${snapshot.error}"));
+                    }
+                    if (snapshot.data == false) {
+                      return const Center(
+                        child: Text(
+                          "Your device does not support compass sensors",
+                        ),
+                      );
+                    }
+                    return const QiblaCompassWidget();
+                  },
+                )
+              : Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.location_off,
+                        size: 64.sp,
+                        color: Colors.white54,
                       ),
-                    ),
-                    child: const Text(
-                      "Grant Permission",
-                      style: TextStyle(color: Colors.white),
-                    ),
+                      SizedBox(height: 16.h),
+                      Text(
+                        "Location permission required",
+                        style: AppTypography.body.copyWith(
+                          color: Colors.white70,
+                        ),
+                      ),
+                      SizedBox(height: 24.h),
+                      ElevatedButton(
+                        onPressed: _checkLocationPermission,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryGreen,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        child: const Text(
+                          "Grant Permission",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
+        ],
+      ),
     );
   }
 }

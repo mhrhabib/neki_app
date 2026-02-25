@@ -1,9 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key, required this.child});
@@ -15,7 +14,8 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  static const List<String> _routes = ['/home', '/profile', '/leaderboard'];
+  static const List<String> _routes = ['/home', '/leaderboard', '/profile'];
+  bool _isBottomNavVisible = true;
 
   int _getCurrentIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
@@ -24,55 +24,113 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onItemTapped(int index) {
-    context.go(_routes[index]);
+    if (_getCurrentIndex(context) != index) {
+      context.go(_routes[index]);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentIndex = _getCurrentIndex(context);
 
     return Scaffold(
       extendBody: true,
-      body: widget.child,
-      bottomNavigationBar: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: (isDark ? const Color(0xFF1C1C1E) : Colors.white).withValues(alpha: 0.8),
-              border: Border(
-                top: BorderSide(color: isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8), width: 0.5),
+      body: NotificationListener<UserScrollNotification>(
+        onNotification: (notification) {
+          if (notification.direction == ScrollDirection.reverse) {
+            if (_isBottomNavVisible) {
+              setState(() => _isBottomNavVisible = false);
+            }
+          } else if (notification.direction == ScrollDirection.forward) {
+            if (!_isBottomNavVisible) {
+              setState(() => _isBottomNavVisible = true);
+            }
+          }
+          return false;
+        },
+        child: Stack(
+          children: [
+            widget.child,
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: AnimatedSlide(
+                offset: _isBottomNavVisible
+                    ? Offset.zero
+                    : const Offset(0, 1.5),
+                duration: const Duration(milliseconds: 300),
+                child: SafeArea(child: _buildBottomNav(currentIndex)),
               ),
             ),
-            child: BottomNavigationBar(
-              currentIndex: _getCurrentIndex(context),
-              onTap: _onItemTapped,
-              backgroundColor: Colors.transparent,
-              selectedItemColor: isDark ? AppColors.goldAccent : AppColors.primaryGreen,
-              unselectedItemColor: isDark ? const Color(0xFF8E8E93) : const Color(0xFF999999),
-              selectedLabelStyle: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w500),
-              unselectedLabelStyle: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w500),
-              type: BottomNavigationBarType.fixed,
-              elevation: 0,
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(CupertinoIcons.house),
-                  activeIcon: Icon(CupertinoIcons.house_fill),
-                  label: 'Home',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(CupertinoIcons.person),
-                  activeIcon: Icon(CupertinoIcons.person_fill),
-                  label: 'Profile',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(CupertinoIcons.graph_square),
-                  activeIcon: Icon(CupertinoIcons.graph_square_fill),
-                  label: 'Leaderboard',
-                ),
-              ],
-            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNav(int currentIndex) {
+    return Container(
+      height: 64.h,
+      margin: EdgeInsets.symmetric(
+        horizontal: 40.w,
+        vertical: 8.h,
+      ).copyWith(bottom: 20.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A3D26),
+        borderRadius: BorderRadius.circular(32.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildNavItem(
+            icon: CupertinoIcons.house_fill,
+            isActive: currentIndex == 0,
+            onTap: () => _onItemTapped(0),
+          ),
+          _buildNavItem(
+            icon: CupertinoIcons.chart_bar_fill,
+            isActive: currentIndex == 1,
+            onTap: () => _onItemTapped(1),
+          ),
+          _buildNavItem(
+            icon: CupertinoIcons.person_fill,
+            isActive: currentIndex == 2,
+            onTap: () => _onItemTapped(2),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44.w,
+        height: 44.w,
+        decoration: BoxDecoration(
+          color: isActive
+              ? const Color(0xFF4ADE80).withValues(alpha: 0.15)
+              : Colors.transparent,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          icon,
+          color: isActive ? const Color(0xFF4ADE80) : Colors.white38,
+          size: 22.sp,
         ),
       ),
     );

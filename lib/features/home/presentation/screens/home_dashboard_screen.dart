@@ -3,119 +3,78 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../core/constants/app_colors.dart';
+import 'package:adhan/adhan.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../points/presentation/cubit/points_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
-import '../../../theme/theme_cubit.dart';
 import '../../../challenge/presentation/cubit/challenge_cubit.dart';
+import '../../../../core/location/cubit/location_cubit.dart';
+import '../../../../core/location/cubit/location_state.dart';
+import '../../../../components/app_background_widget.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
   const HomeDashboardScreen({super.key});
 
-  final List<PillarItem> _pillars = const [
-    PillarItem(
-      id: 'salah',
-      title: 'Salah',
-      icon: '🕌',
-      route: RouteNames.salah,
-      color: Color(0xFF0F5132),
-      description: 'Track your daily prayers',
-    ),
-    PillarItem(
-      id: 'roza',
-      title: 'Roza',
-      icon: '🌙',
-      color: Color(0xFF6366F1),
-      description: 'Track your fasting days',
-      route: RouteNames.roza,
-    ),
-    PillarItem(
-      id: 'names',
-      title: '99 Names',
-      icon: '✨',
-      color: Color(0xFF10B981),
-      description: 'Learn the Names of Allah',
-      route: RouteNames.namesOfAllah,
-    ),
-    PillarItem(
-      id: 'calendar',
-      title: 'Calendar',
-      icon: '📅',
-      color: Color(0xFF3B82F6),
-      description: 'Hijri dates & Sunnah Fasts',
-      route: RouteNames.calendar,
-    ),
-    PillarItem(
-      id: 'zakat',
-      title: 'Zakat',
-      icon: '💰',
-      color: Color(0xFFD4AF37),
-      description: 'Calculate and log your Zakat',
-      route: RouteNames.zakat,
-    ),
-    PillarItem(
-      id: 'Dhikir',
-      title: 'Dhikir',
-      icon: '🕋',
-      route: RouteNames.dhikir,
-      color: Color(0xFF8B5CF6),
-      description: 'Dhikir counter for Hajj',
-    ),
-    PillarItem(
-      id: 'deeds',
-      title: 'Good Deeds',
-      icon: '❤️',
-      route: RouteNames.goodDeeds,
-      color: Color(0xFFEF4444),
-      description: 'Log your good actions',
-    ),
-    PillarItem(
-      id: 'addiction',
-      title: 'Addiction',
-      icon: '🚫',
-      route: RouteNames.addiction,
-      color: Color(0xFFEF4444),
-      description: 'Recovery plans & support',
-    ),
-    PillarItem(
-      id: 'quran',
-      title: 'Qur\'an',
-      icon: '📖',
-      route: RouteNames.quran,
-      color: Color(0xFF0F5132),
-      description: 'Read the Holy Qur\'an',
-    ),
+  static const List<Map<String, dynamic>> _menuItems = [
+    {'title': 'Habit Tracker', 'icon': '📋', 'route': RouteNames.habitBuilding},
+    {'title': 'Dallu Dua', 'icon': '🤲', 'route': RouteNames.salah},
+    {'title': 'Quran', 'icon': '📖', 'route': RouteNames.quran},
+    {'title': 'Tasbeeh', 'icon': '📿', 'route': RouteNames.dhikir},
   ];
+
+  PrayerTimes? _calculatePrayerTimes(LocationLoaded state) {
+    final coordinates = Coordinates(state.latitude, state.longitude);
+    final params = CalculationMethod.karachi.getParameters();
+    params.madhab = Madhab.hanafi;
+    final date = DateComponents.from(DateTime.now());
+    return PrayerTimes(coordinates, date, params);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0A0E27) : const Color(0xFFF9FAFB),
+      backgroundColor: const Color(0xFF0D2818),
       body: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
           if (authState is Authenticated) {
             context.read<PointsCubit>().loadUserPoints(authState.user.id);
             context.read<ChallengeCubit>().loadChallenge(authState.user.id);
 
-            return SafeArea(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(bottom: 20.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            return BlocBuilder<LocationCubit, LocationState>(
+              builder: (context, locationState) {
+                PrayerTimes? prayerTimes;
+                if (locationState is LocationLoaded) {
+                  prayerTimes = _calculatePrayerTimes(locationState);
+                }
+
+                return Stack(
                   children: [
-                    _buildHeader(),
-                    SizedBox(height: 24.h),
-                    _buildStreakCard(context, authState.user.id),
-                    SizedBox(height: 20.h),
-                    _buildChallengeSections(context, isDark),
-                    SizedBox(height: 32.h),
-                    _buildPillarsSection(context),
+                    appBackgroundWidget(),
+                    SafeArea(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.only(bottom: 100.h),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildTopBar(context),
+                            SizedBox(height: 8.h),
+                            _buildCurrentPrayerSection(context, prayerTimes),
+                            SizedBox(height: 16.h),
+                            _buildPrayerTimesRow(context, prayerTimes),
+                            SizedBox(height: 16.h),
+                            _buildJohuurCard(context, prayerTimes),
+                            SizedBox(height: 20.h),
+                            _buildAllMenuSection(context),
+                            SizedBox(height: 20.h),
+                            _buildFeatureCards(context, authState.user.id),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
-                ),
-              ),
+                );
+              },
             );
           }
           return const Center(child: CircularProgressIndicator());
@@ -124,488 +83,582 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildChallengeSections(BuildContext context, bool isDark) {
+  Widget _buildTopBar(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: Column(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildAddictionChallengeCard(context, isDark),
-          SizedBox(height: 12.h),
-          _buildGeneralChallengeCard(context, isDark),
+          // Location pill
+          BlocBuilder<LocationCubit, LocationState>(
+            builder: (context, state) {
+              String locationText = 'Fetching...';
+              if (state is LocationLoaded) {
+                locationText = state.address;
+              } else if (state is LocationError) {
+                locationText = 'Location Error';
+              }
+
+              return Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20.r),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      CupertinoIcons.location_fill,
+                      color: Colors.white70,
+                      size: 12.sp,
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      locationText,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          // Profile icon
+          Container(
+            width: 36.w,
+            height: 36.w,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+            child: Icon(
+              CupertinoIcons.person_fill,
+              color: Colors.white70,
+              size: 18.sp,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAddictionChallengeCard(BuildContext context, bool isDark) {
-    return BlocBuilder<ChallengeCubit, ChallengeState>(
-      builder: (context, state) {
-        final hasActive =
-            state is ChallengeLoaded &&
-            state.hasActiveChallenge &&
-            state.challenge != null &&
-            state.challenge!.challengeType != null &&
-            state.challenge!.challengeType!.startsWith('addiction_');
+  Widget _buildCurrentPrayerSection(
+    BuildContext context,
+    PrayerTimes? prayerTimes,
+  ) {
+    String currentPrayerName = '--';
+    String currentTime = '--:--';
+    String nextPrayerName = '--';
+    String nextTime = '--:--';
 
-        if (hasActive) {
-          final challenge = state.challenge!;
-          final canCompleteToday = challenge.canCompleteToday();
+    if (prayerTimes != null) {
+      final current = prayerTimes.currentPrayer();
+      final next = prayerTimes.nextPrayer();
 
-          return Padding(
-            padding: EdgeInsets.only(bottom: 12.h),
-            child: InkWell(
-              onTap: () => context.push(RouteNames.habitBuilding),
-              borderRadius: BorderRadius.circular(12.r),
-              child: Container(
-                padding: EdgeInsets.all(16.w),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFF8E24AA), Color(0xFF6A1B9A)]),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(10.w),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10.r),
-                      ),
-                      child: Text('🚫', style: TextStyle(fontSize: 22.sp)),
-                    ),
-                    SizedBox(width: 14.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${challenge.durationDays}-Day Plan',
-                            style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600, color: Colors.white),
-                          ),
-                          SizedBox(height: 2.h),
-                          Text(
-                            'Day ${challenge.completedDays} of ${challenge.durationDays}',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!canCompleteToday)
-                      Icon(CupertinoIcons.checkmark_circle_fill, color: Colors.white, size: 24.sp)
-                    else
-                      Icon(CupertinoIcons.chevron_right, color: Colors.white.withValues(alpha: 0.5), size: 16.sp),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
+      currentPrayerName = _getPrayerName(current).toLowerCase();
+      currentTime = _formatTimeOnly(prayerTimes.timeForPrayer(current));
 
-        return Padding(
-          padding: EdgeInsets.only(bottom: 12.h),
-          child: InkWell(
-            onTap: () => context.push(RouteNames.addiction),
-            borderRadius: BorderRadius.circular(12.r),
-            child: Container(
-              padding: EdgeInsets.all(16.w),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF9C27B0).withValues(alpha: 0.9),
-                    const Color(0xFF9C27B0).withValues(alpha: 0.7),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(10.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                    child: Text('🚫', style: TextStyle(fontSize: 22.sp)),
-                  ),
-                  SizedBox(width: 14.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Addiction Recovery',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.labelLarge?.copyWith(color: Colors.white),
-                        ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          'Start a recovery plan',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.8),
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(CupertinoIcons.chevron_right, color: Colors.white.withValues(alpha: 0.5), size: 16.sp),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+      nextPrayerName = _getNextPrayerLabel(next);
+      nextTime = _formatTimeOnly(prayerTimes.timeForPrayer(next));
+    }
 
-  Widget _buildGeneralChallengeCard(BuildContext context, bool isDark) {
-    return BlocBuilder<ChallengeCubit, ChallengeState>(
-      builder: (context, state) {
-        final hasActive =
-            state is ChallengeLoaded &&
-            state.hasActiveChallenge &&
-            (state.challenge?.challengeType == null || !state.challenge!.challengeType!.startsWith('addiction_'));
-
-        if (hasActive) {
-          final challenge = state.challenge!;
-          final canCompleteToday = challenge.canCompleteToday();
-
-          return InkWell(
-            onTap: () => context.push(RouteNames.habitBuilding),
-            borderRadius: BorderRadius.circular(16.r),
-            child: Container(
-              padding: EdgeInsets.all(20.w),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primaryGreen, AppColors.primaryGreen.withValues(alpha: 0.8)],
-                ),
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(12.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    child: Text('🎯', style: TextStyle(fontSize: 28.sp)),
-                  ),
-                  SizedBox(width: 16.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${challenge.durationDays}-Day Challenge',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        SizedBox(height: 4.h),
-                        Row(
-                          children: [
-                            Text(
-                              'Day ${challenge.completedDays} of ${challenge.durationDays}',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                  ),
-                            ),
-                            if (!canCompleteToday) ...[
-                              SizedBox(width: 8.w),
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(10.r),
-                                ),
-                                child: Text(
-                                  '✓ Done',
-                                  style: TextStyle(fontSize: 10.sp, color: Colors.white, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20.sp),
-                ],
-              ),
-            ),
-          );
-        }
-
-        return InkWell(
-          onTap: () => context.push(RouteNames.goalSelection),
-          borderRadius: BorderRadius.circular(16.r),
-          child: Container(
-            padding: EdgeInsets.all(20.w),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [AppColors.primaryGreen, AppColors.primaryGreen.withValues(alpha: 0.8)]),
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(12.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Text('🎯', style: TextStyle(fontSize: 28.sp)),
-                ),
-                SizedBox(width: 16.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Beat Satan Challenge',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        'Start building your daily neki habit',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20.sp),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildHeader() {
-    return BlocBuilder<ThemeCubit, ThemeData>(
-      builder: (context, themeData) {
-        final isDark = themeData.brightness == Brightness.dark;
-
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  SizedBox(width: 48.w), // Placeholder for balance
-                  Text(
-                    'Salam, Habib',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => context.read<ThemeCubit>().toggleTheme(),
-                    icon: Icon(
-                      isDark ? CupertinoIcons.sun_max_fill : CupertinoIcons.moon_fill,
-                      color: isDark ? AppColors.goldAccent : AppColors.primaryGreen,
-                      size: 20.sp,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              SizedBox(height: 2.h),
-              Text(
-                'May your day be blessed',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStreakCard(BuildContext context, String userId) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: BlocBuilder<PointsCubit, PointsState>(
-        builder: (context, state) {
-          if (state is PointsLoaded) {
-            return Container(
-              padding: EdgeInsets.all(24.w),
-              decoration: BoxDecoration(color: AppColors.primaryGreen, borderRadius: BorderRadius.circular(20.r)),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.local_fire_department, color: AppColors.goldAccent, size: 24.sp),
-                      SizedBox(width: 8.w),
-                      Text(
-                        'Current Streak',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: AppColors.goldAccent,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    '${state.points.todayPoints}',
-                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    'Neki Points Today',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppColors.goldAccent,
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                    decoration: BoxDecoration(
-                      color: AppColors.goldAccent.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('🔥', style: TextStyle(fontSize: 20.sp)),
-                        SizedBox(width: 8.w),
-                        Text(
-                          '${state.points.currentStreak} Day Streak',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.labelLarge?.copyWith(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-          return const SizedBox();
-        },
-      ),
-    );
-  }
-
-  Widget _buildPillarsSection(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Five Pillars',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+            currentPrayerName,
+            style: TextStyle(color: Colors.white70, fontSize: 16.sp),
           ),
-          SizedBox(height: 16.h),
-          ..._pillars.map((pillar) => _buildPillarCard(context, pillar)),
+          SizedBox(height: 4.h),
+          Text(
+            currentTime,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 56.sp,
+              fontWeight: FontWeight.w700,
+              height: 1.0,
+              letterSpacing: -2,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            'Next prayer: $nextPrayerName',
+            style: TextStyle(color: Colors.white60, fontSize: 12.sp),
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            nextTime,
+            style: TextStyle(
+              color: const Color(0xFF4ADE80),
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildPillarCard(BuildContext context, PillarItem pillar) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
-      onTap: pillar.route != null ? () => context.push(pillar.route!) : null,
+  String _formatTimeOnly(DateTime? time) {
+    if (time == null) return '--:--';
+    return DateFormat('HH:mm').format(time);
+  }
+
+  String _getPrayerName(Prayer prayer) {
+    switch (prayer) {
+      case Prayer.fajr:
+        return 'Fazr';
+      case Prayer.sunrise:
+        return 'Sunrise';
+      case Prayer.dhuhr:
+        return 'Johuur';
+      case Prayer.asr:
+        return 'Asr';
+      case Prayer.maghrib:
+        return 'Maghrib';
+      case Prayer.isha:
+        return 'Isha';
+      case Prayer.none:
+        return 'Isha';
+    }
+  }
+
+  String _getNextPrayerLabel(Prayer prayer) {
+    switch (prayer) {
+      case Prayer.fajr:
+        return 'Fazr (dawn prayer)';
+      case Prayer.sunrise:
+        return 'Sunrise';
+      case Prayer.dhuhr:
+        return 'Johuur (noon prayer)';
+      case Prayer.asr:
+        return 'Asr (afternoon prayer)';
+      case Prayer.maghrib:
+        return 'Maghrib (sunset prayer)';
+      case Prayer.isha:
+        return 'Isha (night prayer)';
+      default:
+        return 'Isha (night prayer)';
+    }
+  }
+
+  Widget _buildPrayerTimesRow(BuildContext context, PrayerTimes? prayerTimes) {
+    final List<Map<String, dynamic>> prayers = [
+      {'name': 'Fazr', 'prayer': Prayer.fajr, 'icon': '⭐'},
+      {'name': 'Sunrise', 'prayer': Prayer.sunrise, 'icon': '🌄'},
+      {'name': 'Johuur', 'prayer': Prayer.dhuhr, 'icon': '🌞'},
+      {'name': 'Asr', 'prayer': Prayer.asr, 'icon': '☀️'},
+      {'name': 'Maghrib', 'prayer': Prayer.maghrib, 'icon': '🌅'},
+      {'name': 'Isha', 'prayer': Prayer.isha, 'icon': '🌙'},
+    ];
+
+    final currentPrayer = prayerTimes?.currentPrayer();
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
       child: Container(
-        margin: EdgeInsets.only(bottom: 12.h),
-        padding: EdgeInsets.all(20.w),
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 12.h),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1F2937) : Colors.white,
+          color: Colors.white.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: isDark ? const Color(0xFF38383A) : const Color(0xFFE5E5EA), width: 0.5),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: prayers.map((p) {
+            final time = prayerTimes != null
+                ? _formatTimeOnly(
+                    prayerTimes.timeForPrayer(p['prayer'] as Prayer),
+                  )
+                : '--:--';
+            final isActive = currentPrayer == p['prayer'];
+            return _buildPrayerTimeItem(
+              context,
+              name: p['name'] as String,
+              time: time,
+              icon: p['icon'] as String,
+              isActive: isActive,
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrayerTimeItem(
+    BuildContext context, {
+    required String name,
+    required String time,
+    required String icon,
+    bool isActive = false,
+  }) {
+    return Column(
+      children: [
+        Text(
+          name,
+          style: TextStyle(
+            color: isActive ? Colors.white : Colors.white54,
+            fontSize: 9.sp,
+          ),
+        ),
+        SizedBox(height: 4.h),
+        Text(icon, style: TextStyle(fontSize: 16.sp)),
+        SizedBox(height: 4.h),
+        Text(
+          time,
+          style: TextStyle(
+            color: isActive ? Colors.white : Colors.white60,
+            fontSize: 11.sp,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+          ),
+        ),
+        SizedBox(height: 4.h),
+        Container(
+          width: 6.w,
+          height: 6.w,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isActive
+                ? const Color(0xFF4ADE80)
+                : Colors.white.withValues(alpha: 0.2),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildJohuurCard(BuildContext context, PrayerTimes? prayerTimes) {
+    String johuurTime = '--:--';
+    String asrTime = '--:--';
+
+    if (prayerTimes != null) {
+      johuurTime = DateFormat.jm().format(prayerTimes.dhuhr);
+      asrTime = DateFormat.jm().format(prayerTimes.asr);
+    }
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      child: Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A3D26),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: Row(
           children: [
-            Container(
-              width: 56.w,
-              height: 56.w,
-              decoration: BoxDecoration(
-                color: pillar.color.withValues(alpha: isDark ? 0.2 : 0.15),
-                borderRadius: BorderRadius.circular(14.r),
-              ),
-              child: Center(
-                child: Text(pillar.icon, style: TextStyle(fontSize: 28.sp)),
-              ),
-            ),
-            SizedBox(width: 16.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    pillar.title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    'Johuur',
+                    style: TextStyle(color: Colors.white54, fontSize: 12.sp),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    johuurTime,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28.sp,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -1,
                     ),
                   ),
-                  SizedBox(height: 2.h),
+                  SizedBox(height: 4.h),
                   Text(
-                    pillar.description,
-                    style: Theme.of(context).textTheme.bodySmall,
+                    'Next Pray: Asr',
+                    style: TextStyle(color: Colors.white54, fontSize: 11.sp),
+                  ),
+                  Text(
+                    asrTime,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
             ),
-            if (pillar.route != null)
-              Container(
-                width: 32.w,
-                height: 32.w,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Center(
-                  child: Text(
-                    '→',
-                    style: TextStyle(fontSize: 16.sp, color: isDark ? Colors.white : Colors.black),
-                  ),
-                ),
+            // Quran illustration placeholder
+            Container(
+              width: 80.w,
+              height: 80.w,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12.r),
               ),
+              child: Center(
+                child: Text('📖', style: TextStyle(fontSize: 40.sp)),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
-}
 
-class PillarItem {
-  const PillarItem({
-    required this.id,
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.description,
-    this.route,
-  });
+  Widget _buildAllMenuSection(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'All Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              GestureDetector(
+                onTap: () {},
+                child: Text(
+                  'See More',
+                  style: TextStyle(
+                    color: const Color(0xFF4ADE80),
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 14.h),
+        SizedBox(
+          height: 90.h,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            itemCount: _menuItems.length,
+            itemBuilder: (context, index) {
+              final item = _menuItems[index];
+              return GestureDetector(
+                onTap: () => context.push(item['route'] as String),
+                child: Container(
+                  width: 72.w,
+                  margin: EdgeInsets.only(right: 12.w),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 56.w,
+                        height: 56.w,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A3D26),
+                          borderRadius: BorderRadius.circular(14.r),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            item['icon'] as String,
+                            style: TextStyle(fontSize: 26.sp),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      Text(
+                        item['title'] as String,
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 10.sp,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
 
-  final String id;
-  final String title;
-  final String icon;
-  final Color color;
-  final String description;
-  final String? route;
+  Widget _buildFeatureCards(BuildContext context, String userId) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      child: BlocBuilder<ChallengeCubit, ChallengeState>(
+        builder: (context, state) {
+          return Row(
+            children: [
+              Expanded(child: _buildAddictionCard(context, state)),
+              SizedBox(width: 12.w),
+              Expanded(child: _buildChallengeCard(context, state)),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildAddictionCard(BuildContext context, ChallengeState state) {
+    final hasActive =
+        state is ChallengeLoaded &&
+        state.hasActiveChallenge &&
+        state.challenge != null &&
+        state.challenge!.challengeType != null &&
+        state.challenge!.challengeType!.startsWith('addiction_');
+
+    return GestureDetector(
+      onTap: () => context.push(
+        hasActive ? RouteNames.habitBuilding : RouteNames.addiction,
+      ),
+      child: Container(
+        height: 140.h,
+        padding: EdgeInsets.all(14.w),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1E4D35), Color(0xFF0D2818)],
+          ),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        child: Stack(
+          children: [
+            // 3D mosque icon placeholder
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Text('🕌', style: TextStyle(fontSize: 40.sp)),
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Addiction Recover',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    hasActive ? 'View your plan' : 'Start a recover plan',
+                    style: TextStyle(color: Colors.white60, fontSize: 10.sp),
+                  ),
+                  SizedBox(height: 8.h),
+                  Container(
+                    padding: EdgeInsets.all(6.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4ADE80).withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward,
+                      color: const Color(0xFF4ADE80),
+                      size: 12.sp,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChallengeCard(BuildContext context, ChallengeState state) {
+    final hasActive =
+        state is ChallengeLoaded &&
+        state.hasActiveChallenge &&
+        (state.challenge?.challengeType == null ||
+            !state.challenge!.challengeType!.startsWith('addiction_'));
+
+    return GestureDetector(
+      onTap: () => context.push(
+        hasActive ? RouteNames.habitBuilding : RouteNames.goalSelection,
+      ),
+      child: Container(
+        height: 140.h,
+        padding: EdgeInsets.all(14.w),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A3D50), Color(0xFF0D2030)],
+          ),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        child: Stack(
+          children: [
+            // Kaaba / dome icon placeholder
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Text('🕋', style: TextStyle(fontSize: 40.sp)),
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Best Satan Challeng',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    hasActive
+                        ? 'Continue your journey'
+                        : 'Start buiding you daily neki',
+                    style: TextStyle(color: Colors.white60, fontSize: 10.sp),
+                  ),
+                  SizedBox(height: 8.h),
+                  Container(
+                    padding: EdgeInsets.all(6.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4ADE80).withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward,
+                      color: const Color(0xFF4ADE80),
+                      size: 12.sp,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../components/app_background_widget.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -14,7 +15,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   final Map<String, List<LeaderboardUser>> _leaderboardData = {
     'global': [
-      LeaderboardUser(rank: 1, name: 'Abdullah', country: '🇸🇦', points: 12500),
+      LeaderboardUser(
+        rank: 1,
+        name: 'Abdullah',
+        country: '🇸🇦',
+        points: 12500,
+      ),
       LeaderboardUser(rank: 2, name: 'Hasan', country: '🇧🇩', points: 9420),
       LeaderboardUser(rank: 3, name: 'Umar', country: '🇮🇩', points: 8900),
       LeaderboardUser(rank: 4, name: 'Fatima', country: '🇵🇰', points: 8200),
@@ -25,7 +31,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     ],
     'country': [
       LeaderboardUser(rank: 1, name: 'Hasan', country: '🇧🇩', points: 9420),
-      LeaderboardUser(rank: 2, name: 'Habib', country: '🇧🇩', points: 4582, isYou: true),
+      LeaderboardUser(
+        rank: 2,
+        name: 'Habib',
+        country: '🇧🇩',
+        points: 4582,
+        isYou: true,
+      ),
       LeaderboardUser(rank: 3, name: 'Karim', country: '🇧🇩', points: 3890),
       LeaderboardUser(rank: 4, name: 'Nadia', country: '🇧🇩', points: 3200),
       LeaderboardUser(rank: 5, name: 'Rashid', country: '🇧🇩', points: 2950),
@@ -41,29 +53,33 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final data = _leaderboardData[_activeTab]!;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0A0E27) : const Color(0xFFF9FAFB),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(20.w),
-                child: Column(
-                  children: [
-                    if (data.isNotEmpty) _buildTopPerformerCard(data[0]),
-                    SizedBox(height: 20.h),
-                    _buildLeaderboardList(data.sublist(1)),
-                  ],
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          appBackgroundWidget(),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(20.w),
+                    child: Column(
+                      children: [
+                        if (data.isNotEmpty) _buildTopPerformerCard(data[0]),
+                        SizedBox(height: 20.h),
+                        _buildLeaderboardList(data.sublist(1)),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -75,7 +91,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1F2937) : Colors.white,
-        border: Border(bottom: BorderSide(color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB), width: 1)),
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB),
+            width: 1,
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,7 +116,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               color: isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6),
               borderRadius: BorderRadius.circular(10.r),
             ),
-            child: Row(children: [_buildTabButton('Global', 'global'), _buildTabButton('Country', 'country')]),
+            child: Row(
+              children: [
+                _buildTabButton('Global', 'global'),
+                _buildTabButton('Country', 'country'),
+              ],
+            ),
           ),
         ],
       ),
@@ -111,7 +137,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         child: Container(
           padding: EdgeInsets.symmetric(vertical: 10.h),
           decoration: BoxDecoration(
-            color: isActive ? (isDark ? const Color(0xFF1F2937) : Colors.white) : Colors.transparent,
+            color: isActive
+                ? (isDark ? const Color(0xFF1F2937) : Colors.white)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(8.r),
           ),
           alignment: Alignment.center,
@@ -120,7 +148,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             style: TextStyle(
               fontSize: 14.sp,
               fontWeight: FontWeight.w600,
-              color: isActive ? (isDark ? AppColors.goldAccent : AppColors.primaryGreen) : const Color(0xFF6B7280),
+              color: isActive
+                  ? (isDark ? AppColors.goldAccent : AppColors.primaryGreen)
+                  : const Color(0xFF6B7280),
             ),
           ),
         ),
@@ -168,10 +198,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(color: const Color(0xFFD4AF37).withValues(alpha: 0.3), blurRadius: 15.r, spreadRadius: 2.r),
+                BoxShadow(
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                  blurRadius: 15.r,
+                  spreadRadius: 2.r,
+                ),
               ],
             ),
-            child: Icon(Icons.emoji_events, size: 36.sp, color: const Color(0xFFD4AF37)),
+            child: Icon(
+              Icons.emoji_events,
+              size: 36.sp,
+              color: const Color(0xFFD4AF37),
+            ),
           ),
           SizedBox(height: 12.h),
 
@@ -181,7 +219,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.1),
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.w),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1.w,
+              ),
             ),
             child: Text('👑', style: TextStyle(fontSize: 40.sp)),
           ),
@@ -195,7 +236,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               fontWeight: FontWeight.w800,
               color: Colors.white,
               letterSpacing: 0.5,
-              shadows: [Shadow(color: Colors.black.withValues(alpha: 0.3), offset: Offset(0, 2.h), blurRadius: 4.r)],
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  offset: Offset(0, 2.h),
+                  blurRadius: 4.r,
+                ),
+              ],
             ),
             textAlign: TextAlign.center,
           ),
@@ -207,7 +254,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.w),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1.w,
+              ),
             ),
             child: Text(
               '${user.country} Top Performer',
@@ -228,7 +278,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12.r),
               boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10.r, offset: Offset(0, 4.h)),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 10.r,
+                  offset: Offset(0, 4.h),
+                ),
               ],
             ),
             child: Column(
@@ -293,11 +347,15 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: user.isYou
-            ? (isDark ? AppColors.primaryGreen.withValues(alpha: 0.2) : const Color(0xFF0F5132).withValues(alpha: 0.1))
+            ? (isDark
+                  ? AppColors.primaryGreen.withValues(alpha: 0.2)
+                  : const Color(0xFF0F5132).withValues(alpha: 0.1))
             : (isDark ? const Color(0xFF1F2937) : Colors.white),
         borderRadius: BorderRadius.circular(14.r),
         border: Border.all(
-          color: user.isYou ? AppColors.primaryGreen : (isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB)),
+          color: user.isYou
+              ? AppColors.primaryGreen
+              : (isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB)),
           width: user.isYou ? 2.w : 1.w,
         ),
       ),
@@ -309,13 +367,19 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             decoration: BoxDecoration(
               color: user.rank <= 3
                   ? _getRankColor(user.rank).withValues(alpha: 0.2)
-                  : (isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6)),
+                  : (isDark
+                        ? const Color(0xFF374151)
+                        : const Color(0xFFF3F4F6)),
               borderRadius: BorderRadius.circular(20.r),
             ),
             alignment: Alignment.center,
             child: Text(
               '#${user.rank}',
-              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700, color: _getRankColor(user.rank)),
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w700,
+                color: _getRankColor(user.rank),
+              ),
             ),
           ),
           SizedBox(width: 14.w),
@@ -336,14 +400,21 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     if (user.isYou) ...[
                       SizedBox(width: 6.w),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8.w,
+                          vertical: 2.h,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryGreen,
                           borderRadius: BorderRadius.circular(6.r),
                         ),
                         child: Text(
                           'YOU',
-                          style: TextStyle(fontSize: 10.sp, color: Colors.white, fontWeight: FontWeight.w700),
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
@@ -352,12 +423,20 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 SizedBox(height: 2.h),
                 Text(
                   '${user.country} ${user.points.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} points',
-                  style: TextStyle(fontSize: 13.sp, color: const Color(0xFF6B7280)),
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: const Color(0xFF6B7280),
+                  ),
                 ),
               ],
             ),
           ),
-          if (user.rank <= 3) Icon(Icons.military_tech, size: 24.sp, color: _getRankColor(user.rank)),
+          if (user.rank <= 3)
+            Icon(
+              Icons.military_tech,
+              size: 24.sp,
+              color: _getRankColor(user.rank),
+            ),
         ],
       ),
     );

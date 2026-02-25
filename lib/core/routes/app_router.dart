@@ -40,7 +40,14 @@ class AppRouter {
       GoRoute(path: RouteNames.goalSelection, builder: (context, state) => const onboarding.GoalSelectionScreen()),
       GoRoute(
         path: RouteNames.habitBuildingOnboarding,
-        builder: (context, state) => const onboarding.HabitBuildingScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const onboarding.HabitBuildingScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
       ),
       GoRoute(path: RouteNames.habitBuilding, builder: (context, state) => const HabitBuildingScreen()),
       ShellRoute(

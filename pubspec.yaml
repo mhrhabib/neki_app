@@ -64,6 +64,8 @@ dependencies:
   quran: ^1.4.1
   audioplayers: ^6.5.1
   al_quran: ^0.2.0
+  geocoding: ^4.0.0
+  adhan: ^2.0.0+1
 
 dev_dependencies:
   flutter_test:

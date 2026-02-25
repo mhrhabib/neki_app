@@ -30,16 +30,19 @@ class _BeadPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-  // Arc geometry — position the bead arc so it sweeps from
-  // slightly bottom-left to top-right with a gentler, more straight appearance.
-  final cx = size.width * 0.5; // center horizontally
-  final cy = size.height * 0.45; // slightly lower so the arc starts from bottom-left
-  final radius = math.min(size.width, size.height) * 0.45; // slightly larger responsive radius
+    // Arc geometry — position the bead arc so it sweeps from
+    // slightly bottom-left to top-right with a gentler, more straight appearance.
+    final cx = size.width * 0.5; // center horizontally
+    final cy =
+        size.height * 0.45; // slightly lower so the arc starts from bottom-left
+    final radius =
+        math.min(size.width, size.height) *
+        0.45; // slightly larger responsive radius
 
-  // Make the arc cover 90% of a circle (324°) so beads form a nearly-full
-  // circular arc. Start at ~220° (slightly bottom-left) and sweep 324°.
-  final startAngle = 220.0 * math.pi / 80;
-  final span = 324.0 * math.pi / 180; // 90% of 360°
+    // Make the arc cover 90% of a circle (324°) so beads form a nearly-full
+    // circular arc. Start at ~220° (slightly bottom-left) and sweep 324°.
+    final startAngle = 220.0 * math.pi / 80;
+    final span = 324.0 * math.pi / 180; // 90% of 360°
 
     // Thread
     final threadPaint = Paint()
@@ -73,24 +76,42 @@ class _BeadPainter extends CustomPainter {
         scale = 1.0 + 0.38 * math.sin(animProgress * math.pi);
       }
 
-  // Increase bead sizes slightly so they are more visible when centered
-  final beadRadius = (total > 50 ? 12.0 : total > 33 ? 14.0 : 16.0) * scale;
+      // Increase bead sizes slightly so they are more visible when centered
+      final beadRadius =
+          (total > 50
+              ? 12.0
+              : total > 33
+              ? 14.0
+              : 16.0) *
+          scale;
 
       if (isCounted) {
-        _drawFilledBead(canvas, Offset(bx, by), beadRadius, isAnimating, beadColor);
+        _drawFilledBead(
+          canvas,
+          Offset(bx, by),
+          beadRadius,
+          isAnimating,
+          beadColor,
+        );
       } else {
         _drawGhostBead(canvas, Offset(bx, by), beadRadius, beadColor);
       }
     }
   }
 
-  void _drawFilledBead(Canvas canvas, Offset center, double r, bool glowing, Color color) {
+  void _drawFilledBead(
+    Canvas canvas,
+    Offset center,
+    double r,
+    bool glowing,
+    Color color,
+  ) {
     // Drop shadow
     canvas.drawCircle(
       center + const Offset(1.5, 3),
       r,
       Paint()
-        ..color = Colors.black.withValues(alpha:  0.22)
+        ..color = Colors.black.withValues(alpha: 0.22)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
     );
 
@@ -107,8 +128,12 @@ class _BeadPainter extends CustomPainter {
 
     // Bead body — radial gradient for 3D look
     final hsl = HSLColor.fromColor(color);
-    final highlight = hsl.withLightness((hsl.lightness + 0.25).clamp(0.0, 1.0)).toColor();
-    final shadow = hsl.withLightness((hsl.lightness - 0.20).clamp(0.0, 1.0)).toColor();
+    final highlight = hsl
+        .withLightness((hsl.lightness + 0.25).clamp(0.0, 1.0))
+        .toColor();
+    final shadow = hsl
+        .withLightness((hsl.lightness - 0.20).clamp(0.0, 1.0))
+        .toColor();
 
     canvas.drawCircle(
       center,
@@ -199,7 +224,11 @@ class _PouchPainter extends CustomPainter {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color.lerp(const Color(0xFFD4A574), const Color(0xFF8B6240), 1 - fillRatio)!,
+            Color.lerp(
+              const Color(0xFFD4A574),
+              const Color(0xFF8B6240),
+              1 - fillRatio,
+            )!,
             const Color(0xFF5C3317),
           ],
         ).createShader(Rect.fromLTWH(0, 0, w, h)),
@@ -221,7 +250,7 @@ class _PouchPainter extends CustomPainter {
       canvas.clipPath(pouchPath);
       canvas.drawRect(
         Rect.fromLTWH(0, 0, w, h),
-        Paint()..color = Colors.black.withOpacity(0.28 * (1 - fillRatio)),
+        Paint()..color = Colors.black.withValues(alpha: 0.28 * (1 - fillRatio)),
       );
       canvas.restore();
     }
@@ -283,7 +312,11 @@ class _BgPatternPainter extends CustomPainter {
       for (double y = 0; y < size.height + spacing; y += spacing) {
         canvas.drawCircle(Offset(x, y), 3.5, paint);
         if (x + spacing < size.width && y + spacing < size.height) {
-          canvas.drawLine(Offset(x, y), Offset(x + spacing, y + spacing), paint);
+          canvas.drawLine(
+            Offset(x, y),
+            Offset(x + spacing, y + spacing),
+            paint,
+          );
         }
       }
     }
@@ -314,7 +347,8 @@ class DhikirScreen extends StatefulWidget {
   State<DhikirScreen> createState() => _DhikirScreenState();
 }
 
-class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMixin {
+class _DhikirScreenState extends State<DhikirScreen>
+    with TickerProviderStateMixin {
   // Bead pop animation
   late AnimationController _beadController;
   // Pouch pulse animation
@@ -409,10 +443,16 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
           await showDialog(
             context: context,
             builder: (ctx) => AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.r),
+              ),
               title: Text(
                 '🎉 Dhikir Completed!',
-                style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
+                style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryGreen,
+                ),
               ),
               content: Text(
                 'You earned ${state.pointsEarned} points for completing "${state.dhikirText}"!',
@@ -421,8 +461,14 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(),
-                  child: Text('Continue',
-                      style: TextStyle(color: AppColors.primaryGreen, fontSize: 15.sp, fontWeight: FontWeight.w600)),
+                  child: Text(
+                    'Continue',
+                    style: TextStyle(
+                      color: AppColors.primaryGreen,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -444,7 +490,9 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
         }
 
         if (state is DhikirLoading) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         } else if (state is DhikirSessionActive) {
           return _buildTasbihScreen(
             userId: userId,
@@ -488,7 +536,10 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
     required int pointsEarned,
     required bool isCompleted,
   }) {
-    final fillRatio = ((targetCount - currentCount) / targetCount).clamp(0.0, 1.0);
+    final fillRatio = ((targetCount - currentCount) / targetCount).clamp(
+      0.0,
+      1.0,
+    );
     final roundsComplete = currentCount ~/ targetCount;
     final totalCount = currentCount;
 
@@ -501,17 +552,28 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
             _buildTopBar(userId),
 
             // ── DHIKR INFO CARD ──────────────────────────────────
-            _buildDhikrCard(dhikirText, currentCount, targetCount, roundsComplete, totalCount),
+            _buildDhikrCard(
+              dhikirText,
+              currentCount,
+              targetCount,
+              roundsComplete,
+              totalCount,
+            ),
 
             SizedBox(height: 6.h),
 
             // ── ARC + POUCH AREA ─────────────────────────────────
             Expanded(
               child: GestureDetector(
-                onTap: isCompleted ? null : () => _onCounterTap(userId, sessionId, currentCount),
+                onTap: isCompleted
+                    ? null
+                    : () => _onCounterTap(userId, sessionId, currentCount),
                 behavior: HitTestBehavior.opaque,
                 child: AnimatedBuilder(
-                  animation: Listenable.merge([_beadController, _pouchController]),
+                  animation: Listenable.merge([
+                    _beadController,
+                    _pouchController,
+                  ]),
                   builder: (context, _) {
                     return Stack(
                       children: [
@@ -555,14 +617,20 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
                             right: 100.w,
                             child: Center(
                               child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 14.w,
+                                  vertical: 6.h,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.08),
+                                  color: Colors.black.withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(20.r),
                                 ),
                                 child: Text(
                                   'Tap anywhere to count',
-                                  style: TextStyle(fontSize: 12.sp, color: Colors.brown[400]),
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    color: Colors.brown[400],
+                                  ),
                                 ),
                               ),
                             ),
@@ -574,11 +642,20 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
                             top: 12.h,
                             right: 12.w,
                             child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10.w,
+                                vertical: 5.h,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFB8860B).withOpacity(0.15),
+                                color: const Color(
+                                  0xFFB8860B,
+                                ).withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(20.r),
-                                border: Border.all(color: const Color(0xFFB8860B).withOpacity(0.3)),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFFB8860B,
+                                  ).withValues(alpha: 0.3),
+                                ),
                               ),
                               child: Text(
                                 '⭐ $pointsEarned pts',
@@ -597,15 +674,21 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
                             child: AnimatedBuilder(
                               animation: _completionAnimation,
                               builder: (_, __) => Opacity(
-                                opacity: _completionAnimation.value.clamp(0.0, 1.0),
+                                opacity: _completionAnimation.value.clamp(
+                                  0.0,
+                                  1.0,
+                                ),
                                 child: Container(
-                                  color: Colors.white.withOpacity(0.88),
+                                  color: Colors.white.withValues(alpha: 0.88),
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Transform.scale(
                                         scale: _completionAnimation.value,
-                                        child: const Text('🎉', style: TextStyle(fontSize: 72)),
+                                        child: const Text(
+                                          '🎉',
+                                          style: TextStyle(fontSize: 72),
+                                        ),
                                       ),
                                       SizedBox(height: 12.h),
                                       Text(
@@ -618,10 +701,17 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
                                       ),
                                       SizedBox(height: 8.h),
                                       Container(
-                                        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 20.w,
+                                          vertical: 8.h,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFB8860B).withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(16.r),
+                                          color: const Color(
+                                            0xFFB8860B,
+                                          ).withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(
+                                            16.r,
+                                          ),
                                         ),
                                         child: Text(
                                           '+$pointsEarned Points Earned!',
@@ -686,7 +776,12 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
   }
 
   Widget _buildDhikrCard(
-      String dhikirText, int currentCount, int targetCount, int roundsComplete, int totalCount) {
+    String dhikirText,
+    int currentCount,
+    int targetCount,
+    int roundsComplete,
+    int totalCount,
+  ) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16.w),
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
@@ -694,7 +789,11 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.07), blurRadius: 10, offset: const Offset(0, 3))
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.07),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
         ],
       ),
       child: Row(
@@ -703,12 +802,22 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Durood',
-                    style: TextStyle(fontSize: 11.sp, color: Colors.grey[500], letterSpacing: 0.3)),
+                Text(
+                  'Durood',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: Colors.grey[500],
+                    letterSpacing: 0.3,
+                  ),
+                ),
                 SizedBox(height: 2.h),
                 Text(
                   dhikirText,
-                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700, color: const Color(0xFF1A1A2E)),
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1A1A2E),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -719,7 +828,9 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
                     AnimatedBuilder(
                       animation: _beadController,
                       builder: (_, __) {
-                        final scale = 1.0 + 0.18 * math.sin(_beadController.value * math.pi);
+                        final scale =
+                            1.0 +
+                            0.18 * math.sin(_beadController.value * math.pi);
                         return Transform.scale(
                           scale: scale,
                           child: Row(
@@ -739,7 +850,10 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
                                     ),
                                     TextSpan(
                                       text: ' /$targetCount',
-                                      style: TextStyle(fontSize: 13.sp, color: Colors.grey[500]),
+                                      style: TextStyle(
+                                        fontSize: 13.sp,
+                                        color: Colors.grey[500],
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -752,7 +866,10 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
                     SizedBox(width: 14.w),
                     Text(
                       'Round: ${roundsComplete + 1}  Total: $totalCount',
-                      style: TextStyle(fontSize: 11.sp, color: Colors.grey[500]),
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: Colors.grey[500],
+                      ),
                     ),
                   ],
                 ),
@@ -789,7 +906,7 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
                       : null,
                   boxShadow: [
                     BoxShadow(
-                      color: color.withOpacity(isSelected ? 0.5 : 0.25),
+                      color: color.withValues(alpha: isSelected ? 0.5 : 0.25),
                       blurRadius: isSelected ? 10 : 5,
                       offset: const Offset(0, 2),
                     ),
@@ -819,39 +936,65 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, String sessionId, String userId) {
+  Widget _buildActionButtons(
+    BuildContext context,
+    String sessionId,
+    String userId,
+  ) {
     return Padding(
       padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
       child: Row(
         children: [
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: () => context.read<DhikirCubit>().completeSession(sessionId),
-              icon: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
+              onPressed: () =>
+                  context.read<DhikirCubit>().completeSession(sessionId),
+              icon: const Icon(
+                Icons.check_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
               label: Text(
                 'Complete',
-                style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
                 padding: EdgeInsets.symmetric(vertical: 14.h),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14.r),
+                ),
                 elevation: 0,
               ),
             ),
           ),
           SizedBox(width: 12.w),
           ElevatedButton.icon(
-            onPressed: () => context.read<DhikirCubit>().deleteSession(sessionId),
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 20),
+            onPressed: () =>
+                context.read<DhikirCubit>().deleteSession(sessionId),
+            icon: const Icon(
+              Icons.refresh_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
             label: Text(
               'Reset',
-              style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700, color: Colors.white),
+              style: TextStyle(
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14.r),
+              ),
               elevation: 0,
             ),
           ),
@@ -869,8 +1012,14 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
     return Scaffold(
       backgroundColor: const Color(0xFFF5EFE6),
       appBar: AppBar(
-        title: Text('Tashbih',
-            style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w800, color: const Color(0xFF1A1A2E))),
+        title: Text(
+          'Tashbih',
+          style: TextStyle(
+            fontSize: 20.sp,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF1A1A2E),
+          ),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primaryGreen),
@@ -894,21 +1043,33 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFC49A6C).withOpacity(0.4),
+                    color: const Color(0xFFC49A6C).withValues(alpha: 0.4),
                     blurRadius: 20,
                     spreadRadius: 4,
-                  )
+                  ),
                 ],
               ),
-              child: Icon(Icons.brightness_5_rounded, size: 44.w, color: Colors.white),
+              child: Icon(
+                Icons.brightness_5_rounded,
+                size: 44.w,
+                color: Colors.white,
+              ),
             ),
             SizedBox(height: 20.h),
-            Text('Dhikir Counter',
-                style: TextStyle(fontSize: 26.sp, fontWeight: FontWeight.w800, color: const Color(0xFF1A1A2E))),
+            Text(
+              'Dhikir Counter',
+              style: TextStyle(
+                fontSize: 26.sp,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1A1A2E),
+              ),
+            ),
             SizedBox(height: 8.h),
-            Text('Choose a dhikir and set your target',
-                style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
-                textAlign: TextAlign.center),
+            Text(
+              'Choose a dhikir and set your target',
+              style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
             SizedBox(height: 32.h),
 
             // Dhikir Dropdown
@@ -918,21 +1079,30 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14.r),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2))
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
                 ],
               ),
               child: DropdownButton<String>(
                 value: _selectedDhikir,
-                hint: Text('Select Dhikir', style: TextStyle(fontSize: 15.sp, color: Colors.grey[500])),
+                hint: Text(
+                  'Select Dhikir',
+                  style: TextStyle(fontSize: 15.sp, color: Colors.grey[500]),
+                ),
                 isExpanded: true,
                 underline: const SizedBox(),
                 items: suggestions.map((d) {
                   return DropdownMenuItem<String>(
                     value: d,
-                    child: Text(d,
-                        style: TextStyle(fontSize: 15.sp),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis),
+                    child: Text(
+                      d,
+                      style: TextStyle(fontSize: 15.sp),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   );
                 }).toList(),
                 onChanged: (v) => setState(() => _selectedDhikir = v),
@@ -945,18 +1115,30 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Target Count',
-                    style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+                Text(
+                  'Target Count',
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                ),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 5.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 14.w,
+                    vertical: 5.h,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryGreen.withOpacity(0.12),
+                    color: AppColors.primaryGreen.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20.r),
                   ),
                   child: Text(
                     '$_targetCount',
                     style: TextStyle(
-                        fontSize: 16.sp, fontWeight: FontWeight.w800, color: AppColors.primaryGreen),
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primaryGreen,
+                    ),
                   ),
                 ),
               ],
@@ -968,7 +1150,7 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
               max: 100,
               divisions: 9,
               activeColor: AppColors.primaryGreen,
-              inactiveColor: AppColors.primaryGreen.withOpacity(0.2),
+              inactiveColor: AppColors.primaryGreen.withValues(alpha: 0.2),
               onChanged: (v) => setState(() => _targetCount = v.toInt()),
             ),
 
@@ -977,26 +1159,47 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _selectedDhikir != null ? () => _startNewSession(userId) : null,
+                onPressed: _selectedDhikir != null
+                    ? () => _startNewSession(userId)
+                    : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryGreen,
                   disabledBackgroundColor: Colors.grey[300],
                   padding: EdgeInsets.symmetric(vertical: 16.h),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16.r),
+                  ),
                   elevation: 0,
                 ),
-                child: Text('Start Session',
-                    style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w700, color: Colors.white)),
+                child: Text(
+                  'Start Session',
+                  style: TextStyle(
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ),
 
             const Spacer(),
 
             TextButton.icon(
-              onPressed: () => context.read<DhikirCubit>().loadDhikirHistory(userId),
-              icon: Icon(Icons.history, size: 20.w, color: AppColors.primaryGreen),
-              label: Text('View History',
-                  style: TextStyle(fontSize: 15.sp, color: AppColors.primaryGreen, fontWeight: FontWeight.w600)),
+              onPressed: () =>
+                  context.read<DhikirCubit>().loadDhikirHistory(userId),
+              icon: Icon(
+                Icons.history,
+                size: 20.w,
+                color: AppColors.primaryGreen,
+              ),
+              label: Text(
+                'View History',
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  color: AppColors.primaryGreen,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),
@@ -1007,18 +1210,32 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
   // ─────────────────────────────────────────────────────────────
   //  HISTORY SCREEN
   // ─────────────────────────────────────────────────────────────
-  Widget _buildHistoryScreen(String userId, List<Map<String, dynamic>> sessions) {
+  Widget _buildHistoryScreen(
+    String userId,
+    List<Map<String, dynamic>> sessions,
+  ) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5EFE6),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, size: 18.w, color: const Color(0xFF1A1A2E)),
-          onPressed: () => context.read<DhikirCubit>().loadCurrentSession(userId),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            size: 18.w,
+            color: const Color(0xFF1A1A2E),
+          ),
+          onPressed: () =>
+              context.read<DhikirCubit>().loadCurrentSession(userId),
         ),
-        title: Text('Dhikir History',
-            style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w800, color: const Color(0xFF1A1A2E))),
+        title: Text(
+          'Dhikir History',
+          style: TextStyle(
+            fontSize: 20.sp,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF1A1A2E),
+          ),
+        ),
       ),
       body: sessions.isEmpty
           ? Center(
@@ -1027,8 +1244,10 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
                 children: [
                   const Text('📿', style: TextStyle(fontSize: 64)),
                   SizedBox(height: 16.h),
-                  Text('No sessions yet',
-                      style: TextStyle(fontSize: 18.sp, color: Colors.grey[500])),
+                  Text(
+                    'No sessions yet',
+                    style: TextStyle(fontSize: 18.sp, color: Colors.grey[500]),
+                  ),
                 ],
               ),
             )
@@ -1045,37 +1264,51 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
                     borderRadius: BorderRadius.circular(16.r),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2))
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
                     ],
                   ),
                   child: ListTile(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 8.h,
+                    ),
                     leading: Container(
                       width: 42.w,
                       height: 42.w,
                       decoration: BoxDecoration(
                         color: isCompleted
-                            ? AppColors.primaryGreen.withOpacity(0.12)
-                            : Colors.orange.withOpacity(0.12),
+                            ? AppColors.primaryGreen.withValues(alpha: 0.12)
+                            : Colors.orange.withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        isCompleted ? Icons.check_circle_rounded : Icons.pending_rounded,
-                        color: isCompleted ? AppColors.primaryGreen : Colors.orange,
+                        isCompleted
+                            ? Icons.check_circle_rounded
+                            : Icons.pending_rounded,
+                        color: isCompleted
+                            ? AppColors.primaryGreen
+                            : Colors.orange,
                         size: 22.w,
                       ),
                     ),
                     title: Text(
                       s['dhikirText'],
-                      style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     subtitle: Text(
                       '${s['currentCount']}/${s['targetCount']} beads  •  ⭐ ${s['pointsEarned']} pts',
-                      style: TextStyle(fontSize: 13.sp, color: Colors.grey[500]),
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color: Colors.grey[500],
+                      ),
                     ),
                   ),
                 );
@@ -1096,23 +1329,41 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline_rounded, size: 64.w, color: Colors.redAccent),
+              Icon(
+                Icons.error_outline_rounded,
+                size: 64.w,
+                color: Colors.redAccent,
+              ),
               SizedBox(height: 16.h),
-              Text('Something went wrong',
-                  style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w700, color: Colors.red[700])),
+              Text(
+                'Something went wrong',
+                style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.red[700],
+                ),
+              ),
               SizedBox(height: 8.h),
-              Text(message,
-                  style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
-                  textAlign: TextAlign.center),
+              Text(
+                message,
+                style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
               SizedBox(height: 28.h),
               ElevatedButton.icon(
-                onPressed: () => context.read<DhikirCubit>().loadCurrentSession(userId),
+                onPressed: () =>
+                    context.read<DhikirCubit>().loadCurrentSession(userId),
                 icon: const Icon(Icons.refresh),
                 label: Text('Retry', style: TextStyle(fontSize: 15.sp)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryGreen,
-                  padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 12.h),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 28.w,
+                    vertical: 12.h,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
                 ),
               ),
             ],
@@ -1133,7 +1384,13 @@ class _DhikirScreenState extends State<DhikirScreen> with TickerProviderStateMix
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12.r),
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6, offset: const Offset(0, 2))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Icon(icon, size: 16.w, color: const Color(0xFF2E6B9E)),
       ),

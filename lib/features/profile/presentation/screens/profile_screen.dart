@@ -10,6 +10,7 @@ import '../../../../core/routes/route_names.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../cubit/profile_cubit.dart';
+import '../../../../components/app_background_widget.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -24,59 +25,79 @@ class ProfileScreen extends StatelessWidget {
   ];
 
   final List<Stat> _stats = const [
-    Stat(label: 'Total Neki', value: '4,582', icon: Icons.emoji_events, color: Color(0xFFD4AF37)),
-    Stat(label: 'Current Streak', value: '7 days', icon: Icons.local_fire_department, color: Color(0xFFEF4444)),
-    Stat(label: 'Days Active', value: '42', icon: Icons.calendar_today, color: Color(0xFF0F5132)),
+    Stat(
+      label: 'Total Neki',
+      value: '4,582',
+      icon: Icons.emoji_events,
+      color: Color(0xFFD4AF37),
+    ),
+    Stat(
+      label: 'Current Streak',
+      value: '7 days',
+      icon: Icons.local_fire_department,
+      color: Color(0xFFEF4444),
+    ),
+    Stat(
+      label: 'Days Active',
+      value: '42',
+      icon: Icons.calendar_today,
+      color: Color(0xFF0F5132),
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.black : AppColors.iosBackground,
-      body: BlocBuilder<AuthCubit, AuthState>(
-        builder: (context, state) {
-          if (state is Authenticated) {
-            return SafeArea(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(bottom: 20.h),
-                child: Column(
-                  children: [
-                    _buildHeader(context),
-                    SizedBox(height: 20.h),
-                    _buildProfileSection(context, state.user),
-                    SizedBox(height: 32.h),
-                    _buildSectionLabel(context, 'ACHIEVEMENTS'),
-                    _buildBadgesSection(context),
-                    SizedBox(height: 32.h),
-                    _buildSectionLabel(context, 'STATISTICS'),
-                    _buildStatsSection(context),
-                    SizedBox(height: 32.h),
-                    _buildSectionLabel(context, 'SETTINGS'),
-                    _buildPrivacySection(context),
-                    SizedBox(height: 32.h),
-                    _buildLogoutButton(context),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          return SafeArea(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.person_off, size: 64.sp, color: Colors.grey),
-                  SizedBox(height: 16.h),
-                  Text(
-                    'Not logged in',
-                    style: TextStyle(fontSize: 18.sp, color: Colors.grey),
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          appBackgroundWidget(),
+          BlocBuilder<AuthCubit, AuthState>(
+            builder: (context, state) {
+              if (state is Authenticated) {
+                return SafeArea(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(bottom: 20.h),
+                    child: Column(
+                      children: [
+                        _buildHeader(context),
+                        SizedBox(height: 20.h),
+                        _buildProfileSection(context, state.user),
+                        SizedBox(height: 32.h),
+                        _buildSectionLabel(context, 'ACHIEVEMENTS'),
+                        _buildBadgesSection(context),
+                        SizedBox(height: 32.h),
+                        _buildSectionLabel(context, 'STATISTICS'),
+                        _buildStatsSection(context),
+                        SizedBox(height: 32.h),
+                        _buildSectionLabel(context, 'SETTINGS'),
+                        _buildPrivacySection(context),
+                        SizedBox(height: 32.h),
+                        _buildLogoutButton(context),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ),
-          );
-        },
+                );
+              }
+
+              return SafeArea(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.person_off, size: 64.sp, color: Colors.grey),
+                      SizedBox(height: 16.h),
+                      Text(
+                        'Not logged in',
+                        style: TextStyle(fontSize: 18.sp, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -98,7 +119,11 @@ class ProfileScreen extends StatelessWidget {
               letterSpacing: -0.4,
             ),
           ),
-          Icon(CupertinoIcons.settings, color: AppColors.primaryGreen, size: 22.sp),
+          Icon(
+            CupertinoIcons.settings,
+            color: AppColors.primaryGreen,
+            size: 22.sp,
+          ),
         ],
       ),
     );
@@ -145,16 +170,29 @@ class ProfileScreen extends StatelessWidget {
                       color: const Color(0xFFD4AF37),
                       shape: BoxShape.circle,
                       image: (updatedPhotoUrl ?? user.photoUrl) != null
-                          ? DecorationImage(image: NetworkImage(updatedPhotoUrl ?? user.photoUrl!), fit: BoxFit.cover)
+                          ? DecorationImage(
+                              image: NetworkImage(
+                                updatedPhotoUrl ?? user.photoUrl!,
+                              ),
+                              fit: BoxFit.cover,
+                            )
                           : null,
                     ),
                     child: (updatedPhotoUrl ?? user.photoUrl) == null
                         ? Center(
                             child: isLoading
-                                ? const CupertinoActivityIndicator(color: Colors.white)
+                                ? const CupertinoActivityIndicator(
+                                    color: Colors.white,
+                                  )
                                 : Text(
-                                    user.name.isNotEmpty ? user.name[0].toUpperCase() : '👤',
-                                    style: TextStyle(fontSize: 40.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                                    user.name.isNotEmpty
+                                        ? user.name[0].toUpperCase()
+                                        : '👤',
+                                    style: TextStyle(
+                                      fontSize: 40.sp,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
                                   ),
                           )
                         : (isLoading
@@ -163,7 +201,11 @@ class ProfileScreen extends StatelessWidget {
                                     color: Colors.black.withValues(alpha: 0.3),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Center(child: CupertinoActivityIndicator(color: Colors.white)),
+                                  child: const Center(
+                                    child: CupertinoActivityIndicator(
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 )
                               : null),
                   );
@@ -174,8 +216,15 @@ class ProfileScreen extends StatelessWidget {
                 right: 0,
                 child: Container(
                   padding: EdgeInsets.all(4.w),
-                  decoration: const BoxDecoration(color: AppColors.primaryGreen, shape: BoxShape.circle),
-                  child: Icon(CupertinoIcons.camera_fill, color: Colors.white, size: 16.sp),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryGreen,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    CupertinoIcons.camera_fill,
+                    color: Colors.white,
+                    size: 16.sp,
+                  ),
                 ),
               ),
             ],
@@ -185,7 +234,11 @@ class ProfileScreen extends StatelessWidget {
         // User Name
         Text(
           user.name.isNotEmpty ? user.name : 'User',
-          style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w600, color: AppColors.textDark),
+          style: TextStyle(
+            fontSize: 22.sp,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
         ),
         SizedBox(height: 4.h),
         // User Email
@@ -210,7 +263,11 @@ class ProfileScreen extends StatelessWidget {
         },
         child: Text(
           'Logout',
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: const Color(0xFFFF3B30)),
+          style: TextStyle(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFFFF3B30),
+          ),
         ),
       ),
     );
@@ -223,7 +280,10 @@ class ProfileScreen extends StatelessWidget {
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
-          CupertinoDialogAction(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           CupertinoDialogAction(
             isDestructiveAction: true,
             onPressed: () {
@@ -246,7 +306,10 @@ class ProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8), width: 0.5),
+        border: Border.all(
+          color: isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8),
+          width: 0.5,
+        ),
       ),
       child: Column(
         children: List.generate(_stats.length, (index) {
@@ -260,7 +323,9 @@ class ProfileScreen extends StatelessWidget {
                   child: Divider(
                     height: 1,
                     thickness: 0.5,
-                    color: isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8),
+                    color: isDark
+                        ? const Color(0xFF38383A)
+                        : const Color(0xFFC6C6C8),
                   ),
                 ),
             ],
@@ -290,7 +355,10 @@ class ProfileScreen extends StatelessWidget {
           Expanded(
             child: Text(
               stat.label,
-              style: TextStyle(fontSize: 16.sp, color: isDark ? Colors.white : AppColors.textDark),
+              style: TextStyle(
+                fontSize: 16.sp,
+                color: isDark ? Colors.white : AppColors.textDark,
+              ),
             ),
           ),
           Text(
@@ -298,7 +366,11 @@ class ProfileScreen extends StatelessWidget {
             style: TextStyle(fontSize: 16.sp, color: const Color(0xFF8E8E93)),
           ),
           SizedBox(width: 4.w),
-          Icon(CupertinoIcons.chevron_right, color: const Color(0xFFC7C7CC), size: 14.sp),
+          Icon(
+            CupertinoIcons.chevron_right,
+            color: const Color(0xFFC7C7CC),
+            size: 14.sp,
+          ),
         ],
       ),
     );
@@ -313,7 +385,10 @@ class ProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8), width: 0.5),
+        border: Border.all(
+          color: isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8),
+          width: 0.5,
+        ),
       ),
       child: GridView.builder(
         shrinkWrap: true,
@@ -365,7 +440,10 @@ class ProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8), width: 0.5),
+        border: Border.all(
+          color: isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8),
+          width: 0.5,
+        ),
       ),
       child: Padding(
         padding: EdgeInsets.all(12.w),
@@ -374,11 +452,18 @@ class ProfileScreen extends StatelessWidget {
           children: [
             Text(
               'Show on Leaderboard',
-              style: TextStyle(fontSize: 16.sp, color: isDark ? Colors.white : AppColors.textDark),
+              style: TextStyle(
+                fontSize: 16.sp,
+                color: isDark ? Colors.white : AppColors.textDark,
+              ),
             ),
             Transform.scale(
               scale: 0.8,
-              child: CupertinoSwitch(value: true, activeTrackColor: AppColors.primaryGreen, onChanged: (val) {}),
+              child: CupertinoSwitch(
+                value: true,
+                activeTrackColor: AppColors.primaryGreen,
+                onChanged: (val) {},
+              ),
             ),
           ],
         ),
@@ -417,18 +502,35 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _pickImage(BuildContext context, String userId, ImageSource source) async {
+  Future<void> _pickImage(
+    BuildContext context,
+    String userId,
+    ImageSource source,
+  ) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source, maxWidth: 512, maxHeight: 512, imageQuality: 75);
+    final pickedFile = await picker.pickImage(
+      source: source,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 75,
+    );
 
     if (pickedFile != null && context.mounted) {
-      context.read<ProfileCubit>().uploadProfileImage(userId, File(pickedFile.path));
+      context.read<ProfileCubit>().uploadProfileImage(
+        userId,
+        File(pickedFile.path),
+      );
     }
   }
 }
 
 class Badge {
-  const Badge({required this.id, required this.icon, required this.title, required this.unlocked});
+  const Badge({
+    required this.id,
+    required this.icon,
+    required this.title,
+    required this.unlocked,
+  });
 
   final int id;
   final String icon;
@@ -437,7 +539,12 @@ class Badge {
 }
 
 class Stat {
-  const Stat({required this.label, required this.value, required this.icon, required this.color});
+  const Stat({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
 
   final String label;
   final String value;

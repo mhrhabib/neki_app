@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../cubit/quran_cubit.dart';
+import '../../../../components/app_background_widget.dart';
 
 class QuranHomeScreen extends StatefulWidget {
   const QuranHomeScreen({super.key});
@@ -16,7 +17,10 @@ class QuranHomeScreen extends StatefulWidget {
 
 class _QuranHomeScreenState extends State<QuranHomeScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<int> _filteredSurahIndices = List.generate(quran.totalSurahCount, (index) => index + 1);
+  List<int> _filteredSurahIndices = List.generate(
+    quran.totalSurahCount,
+    (index) => index + 1,
+  );
 
   @override
   void initState() {
@@ -34,14 +38,18 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase();
     setState(() {
-      _filteredSurahIndices = List.generate(quran.totalSurahCount, (index) => index + 1)
-          .where(
-            (index) =>
-                quran.getSurahName(index).toLowerCase().contains(query) ||
-                quran.getSurahNameEnglish(index).toLowerCase().contains(query) ||
-                index.toString().contains(query),
-          )
-          .toList();
+      _filteredSurahIndices =
+          List.generate(quran.totalSurahCount, (index) => index + 1)
+              .where(
+                (index) =>
+                    quran.getSurahName(index).toLowerCase().contains(query) ||
+                    quran
+                        .getSurahNameEnglish(index)
+                        .toLowerCase()
+                        .contains(query) ||
+                    index.toString().contains(query),
+              )
+              .toList();
     });
   }
 
@@ -52,7 +60,7 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
     return BlocProvider(
       create: (context) => QuranCubit(),
       child: Scaffold(
-        backgroundColor: isDark ? const Color(0xFF0A0E27) : const Color(0xFFF9FAFB),
+        backgroundColor: Colors.black,
         appBar: AppBar(
           title: Text(
             'Holy Qur\'an',
@@ -66,65 +74,107 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios, color: isDark ? Colors.white : AppColors.textDark),
+            icon: Icon(
+              Icons.arrow_back_ios,
+              color: isDark ? Colors.white : AppColors.textDark,
+            ),
             onPressed: () => context.pop(),
           ),
         ),
-        body: BlocBuilder<QuranCubit, QuranState>(
-          builder: (context, state) {
-            return Column(
-              children: [
-                if (state.lastReadSurah != null) _buildLastReadCard(context, state.lastReadSurah!, isDark),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-                  child: TextField(
-                    controller: _searchController,
-                    style: TextStyle(color: isDark ? Colors.white : AppColors.textDark),
-                    decoration: InputDecoration(
-                      hintText: 'Search Surah...',
-                      hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey),
-                      prefixIcon: Icon(Icons.search, color: AppColors.primaryGreen),
-                      filled: true,
-                      fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15.r),
-                        borderSide: BorderSide.none,
+        body: Stack(
+          children: [
+            appBackgroundWidget(),
+            BlocBuilder<QuranCubit, QuranState>(
+              builder: (context, state) {
+                return Column(
+                  children: [
+                    if (state.lastReadSurah != null)
+                      _buildLastReadCard(context, state.lastReadSurah!, isDark),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20.w,
+                        vertical: 10.h,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15.r),
-                        borderSide: isDark ? BorderSide.none : BorderSide(color: Colors.grey[200]!),
+                      child: TextField(
+                        controller: _searchController,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppColors.textDark,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Search Surah...',
+                          hintStyle: TextStyle(
+                            color: isDark ? Colors.white38 : Colors.grey,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: AppColors.primaryGreen,
+                          ),
+                          filled: true,
+                          fillColor: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.white,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 20.w,
+                            vertical: 15.h,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15.r),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15.r),
+                            borderSide: isDark
+                                ? BorderSide.none
+                                : BorderSide(color: Colors.grey[200]!),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: _filteredSurahIndices.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No Surahs found',
-                            style: TextStyle(color: isDark ? Colors.white38 : Colors.grey, fontSize: 16.sp),
-                          ),
-                        )
-                      : ListView.separated(
-                          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-                          itemCount: _filteredSurahIndices.length,
-                          separatorBuilder: (context, index) => SizedBox(height: 12.h),
-                          itemBuilder: (context, index) {
-                            final surahNumber = _filteredSurahIndices[index];
-                            return _buildSurahCard(context, surahNumber, isDark);
-                          },
-                        ),
-                ),
-              ],
-            );
-          },
+                    Expanded(
+                      child: _filteredSurahIndices.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No Surahs found',
+                                style: TextStyle(
+                                  color: isDark ? Colors.white38 : Colors.grey,
+                                  fontSize: 16.sp,
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 20.w,
+                                vertical: 10.h,
+                              ),
+                              itemCount: _filteredSurahIndices.length,
+                              separatorBuilder: (context, index) =>
+                                  SizedBox(height: 12.h),
+                              itemBuilder: (context, index) {
+                                final surahNumber =
+                                    _filteredSurahIndices[index];
+                                return _buildSurahCard(
+                                  context,
+                                  surahNumber,
+                                  isDark,
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildLastReadCard(BuildContext context, int surahNumber, bool isDark) {
+  Widget _buildLastReadCard(
+    BuildContext context,
+    int surahNumber,
+    bool isDark,
+  ) {
     return GestureDetector(
       onTap: () => context.push('${RouteNames.quran}/$surahNumber'),
       child: Container(
@@ -132,13 +182,20 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
         padding: EdgeInsets.all(20.w),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [AppColors.primaryGreen, AppColors.primaryGreen.withValues(alpha: 0.7)],
+            colors: [
+              AppColors.primaryGreen,
+              AppColors.primaryGreen.withValues(alpha: 0.7),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20.r),
           boxShadow: [
-            BoxShadow(color: AppColors.primaryGreen.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(
+              color: AppColors.primaryGreen.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Row(
@@ -154,7 +211,11 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
                 ),
                 Text(
                   quran.getSurahName(surahNumber),
-                  style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -175,7 +236,11 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
           color: isDark ? const Color(0xFF1F2937) : Colors.white,
           borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Row(
@@ -183,11 +248,18 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
             Container(
               width: 40.w,
               height: 40.w,
-              decoration: BoxDecoration(color: AppColors.primaryGreen.withValues(alpha: 0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
               child: Center(
                 child: Text(
                   surahNumber.toString(),
-                  style: TextStyle(color: AppColors.primaryGreen, fontWeight: FontWeight.bold, fontSize: 14.sp),
+                  style: TextStyle(
+                    color: AppColors.primaryGreen,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14.sp,
+                  ),
                 ),
               ),
             ),
@@ -207,7 +279,10 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
                   SizedBox(height: 4.h),
                   Text(
                     '${quran.getPlaceOfRevelation(surahNumber)} • ${quran.getVerseCount(surahNumber)} Verses',
-                    style: TextStyle(fontSize: 12.sp, color: isDark ? Colors.white38 : Colors.grey),
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: isDark ? Colors.white38 : Colors.grey,
+                    ),
                   ),
                 ],
               ),

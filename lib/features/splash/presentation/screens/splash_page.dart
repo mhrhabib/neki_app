@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:neki_app/components/app_background_widget.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../onboarding/presentation/cubit/onboarding_cubit.dart';
@@ -64,32 +65,22 @@ class _SplashPageState extends State<SplashPage> {
       body: Stack(
         children: [
           // 1. Background Gradient/Texture effect
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 1.2,
-                  colors: [Color(0xFF202020), Color(0xFF000000)],
-                ),
-              ),
-            ),
-          ),
+          appBackgroundWidget(),
 
           // 2. Faded Mosque Asset at the top (Sketch style)
-          Positioned(
-            top: -50.h,
-            left: 0,
-            right: 0,
-            child: Opacity(
-              opacity: 0.15,
-              child: Image.asset(
-                'assets/Mosque-01 1.png',
-                fit: BoxFit.fitWidth,
-                width: 1.sw,
-              ),
-            ),
-          ),
+          // Positioned(
+          //   top: -50.h,
+          //   left: 0,
+          //   right: 0,
+          //   child: Opacity(
+          //     opacity: 0.15,
+          //     child: Image.asset(
+          //       'assets/Mosque-01 1.png',
+          //       fit: BoxFit.fitWidth,
+          //       width: 1.sw,
+          //     ),
+          //   ),
+          // ),
 
           // 3. Side Decorations (Mandalas)
           Positioned(
@@ -109,14 +100,14 @@ class _SplashPageState extends State<SplashPage> {
             ),
           ),
 
-          Positioned(
-            top: 50.h,
-            left: 10.w,
-            child: Align(
-              alignment: AlignmentGeometry.topCenter,
-              child: Image.asset('assets/Mosque-01 1.png', height: 230.h),
-            ),
-          ),
+          // Positioned(
+          //   top: 50.h,
+          //   left: 10.w,
+          //   child: Align(
+          //     alignment: AlignmentGeometry.topCenter,
+          //     child: Image.asset('assets/Mosque-01 1.png', height: 230.h),
+          //   ),
+          // ),
 
           // 5. Central Logo and Text
           Center(
@@ -125,7 +116,7 @@ class _SplashPageState extends State<SplashPage> {
               children: [
                 // Logo Container
                 SizedBox(height: 10.h),
-                Image.asset('assets/kabba_1.png', height: 80.h),
+                Image.asset('assets/kabba_1.png', height: 100.h),
 
                 // Stylized Brand Name
                 Text(

@@ -12,6 +12,7 @@ import 'features/auth/presentation/cubit/auth_cubit.dart';
 import 'features/salah/presentation/cubit/salah_cubit.dart';
 import 'features/points/presentation/cubit/points_cubit.dart';
 import 'features/challenge/presentation/cubit/challenge_cubit.dart';
+import 'core/location/cubit/location_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,11 +41,18 @@ class _NekiAppState extends State<NekiApp> {
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: getIt<ThemeCubit>()),
-        BlocProvider(create: (context) => getIt<OnboardingCubit>()..checkOnboarding()),
-        BlocProvider(create: (context) => getIt<AuthCubit>()..checkAuthStatus()),
+        BlocProvider(
+          create: (context) => getIt<OnboardingCubit>()..checkOnboarding(),
+        ),
+        BlocProvider(
+          create: (context) => getIt<AuthCubit>()..checkAuthStatus(),
+        ),
         BlocProvider(create: (context) => getIt<SalahCubit>()),
         BlocProvider(create: (context) => getIt<PointsCubit>()),
         BlocProvider(create: (context) => getIt<ChallengeCubit>()),
+        BlocProvider(
+          create: (context) => getIt<LocationCubit>()..fetchLocation(),
+        ),
       ],
       child: BlocBuilder<ThemeCubit, ThemeData>(
         builder: (context, themeData) {
@@ -58,7 +66,9 @@ class _NekiAppState extends State<NekiApp> {
                 title: 'Neki Tracker',
                 theme: AppTheme.lightTheme(),
                 darkTheme: AppTheme.darkTheme(),
-                themeMode: themeData.brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
+                themeMode: themeData.brightness == Brightness.dark
+                    ? ThemeMode.dark
+                    : ThemeMode.light,
                 routerConfig: AppRouter.router,
                 debugShowCheckedModeBanner: false,
               );

@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>327642350514-krd0s9jo4bp5ukjo2u6vv72db3knaqkk.apps.googleusercontent.com</string>
+	<string>327642350514-hdjck04tcgkq8e4aijrj8qvob9s23lj9.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.327642350514-krd0s9jo4bp5ukjo2u6vv72db3knaqkk</string>
+	<string>com.googleusercontent.apps.327642350514-hdjck04tcgkq8e4aijrj8qvob9s23lj9</string>
 	<key>ANDROID_CLIENT_ID</key>
 	<string>327642350514-cm6v8dnv23lco9rksoonas7msq5nkd8u.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
@@ -15,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.nekiApp</string>
+	<string>com.clearwavesystems.nekiapp</string>
 	<key>PROJECT_ID</key>
 	<string>nekiapp-52446</string>
 	<key>STORAGE_BUCKET</key>
@@ -31,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:327642350514:ios:88a40cc0bfa17f6ead5aab</string>
+	<string>1:327642350514:ios:14cf37855b94e19dad5aab</string>
 </dict>
 </plist>

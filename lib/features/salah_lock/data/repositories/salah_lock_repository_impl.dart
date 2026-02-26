@@ -9,6 +9,7 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
   static const String _keyLockAndroid = 'salah_lock_android';
   static const String _keyAutoLockSocialIos = 'salah_lock_social_ios';
   static const String _keyStreakTracking = 'salah_lock_streak_tracking';
+  static const String _keyBlockedApps = 'salah_lock_blocked_apps';
   static const String _keyAutoUnlockMins = 'salah_lock_auto_unlock_mins';
   static const String _keyCompletionsPrefix = 'salah_lock_done_';
 
@@ -21,6 +22,7 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
       lockDeviceAndroid: prefs.getBool(_keyLockAndroid) ?? false,
       autoLockSocialIos: prefs.getBool(_keyAutoLockSocialIos) ?? false,
       streakTracking: prefs.getBool(_keyStreakTracking) ?? false,
+      blockedApps: prefs.getStringList(_keyBlockedApps) ?? [],
       autoUnlockMinutes: prefs.getInt(_keyAutoUnlockMins) ?? 120,
     );
   }
@@ -31,6 +33,7 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
     await prefs.setBool(_keyLockAndroid, settings.lockDeviceAndroid);
     await prefs.setBool(_keyAutoLockSocialIos, settings.autoLockSocialIos);
     await prefs.setBool(_keyStreakTracking, settings.streakTracking);
+    await prefs.setStringList(_keyBlockedApps, settings.blockedApps);
     await prefs.setInt(_keyAutoUnlockMins, settings.autoUnlockMinutes);
   }
 

@@ -66,7 +66,7 @@ class DefaultFirebaseOptions {
     storageBucket: 'nekiapp-52446.firebasestorage.app',
     androidClientId: '327642350514-cm6v8dnv23lco9rksoonas7msq5nkd8u.apps.googleusercontent.com',
     iosClientId: '327642350514-krd0s9jo4bp5ukjo2u6vv72db3knaqkk.apps.googleusercontent.com',
-    iosBundleId: 'com.example.nekiApp',
+    iosBundleId: 'com.clearwavesystems.nekiapp',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -77,7 +77,7 @@ class DefaultFirebaseOptions {
     storageBucket: 'nekiapp-52446.firebasestorage.app',
     androidClientId: '327642350514-cm6v8dnv23lco9rksoonas7msq5nkd8u.apps.googleusercontent.com',
     iosClientId: '327642350514-krd0s9jo4bp5ukjo2u6vv72db3knaqkk.apps.googleusercontent.com',
-    iosBundleId: 'com.example.nekiApp',
+    iosBundleId: 'com.clearwavesystems.nekiapp',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

@@ -1,6 +1,6 @@
-package com.example.neki_app
+package com.clearwavesystems.nekiapp
 
-import android.app_admin.DeviceAdminReceiver
+import android.app.admin.DeviceAdminReceiver
 import android.content.Context
 import android.content.Intent
 

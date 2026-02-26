@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:adhan/adhan.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../data/services/salah_device_lock_service.dart';
+import '../../data/services/device_management_service.dart';
 import '../../data/services/salah_notification_service.dart';
 import '../../domain/entities/salah_lock_settings.dart';
 import '../../domain/repositories/salah_lock_repository.dart';
@@ -17,7 +17,7 @@ part 'salah_lock_state.dart';
 class SalahLockCubit extends Cubit<SalahLockState> {
   final SalahLockRepository repository;
   final SalahNotificationService notificationService;
-  final SalahDeviceLockService deviceLockService;
+  final DeviceManagementService deviceManager;
   final SalahCubit salahCubit;
   final LocationCubit locationCubit;
 
@@ -29,12 +29,13 @@ class SalahLockCubit extends Cubit<SalahLockState> {
   SalahLockCubit({
     required this.repository,
     required this.notificationService,
-    required this.deviceLockService,
+    required this.deviceManager,
     required this.salahCubit,
     required this.locationCubit,
-  }) : super(SalahLockIdle());
+  }) : super(SalahLockIdle(SalahLockSettings()));
 
   Future<void> init() async {
+    emit(SalahLockLoading(_settings));
     _settings = await repository.getSettings();
     final jsonString = await rootBundle.loadString('assets/salah_ayahs.json');
     final List<dynamic> jsonList = json.decode(jsonString);
@@ -48,17 +49,13 @@ class SalahLockCubit extends Cubit<SalahLockState> {
 
     // Initial check
     if (locationCubit.state is LocationLoaded) {
-      startMonitoring(
-        userId: '',
-        locationState: locationCubit.state as LocationLoaded,
-      );
+      startMonitoring(userId: '', locationState: locationCubit.state as LocationLoaded);
     }
+    // Ensure any listeners (UI) update after settings are loaded
+    emit(SalahLockIdle(_settings));
   }
 
-  void startMonitoring({
-    required String userId,
-    required LocationLoaded locationState,
-  }) {
+  void startMonitoring({required String userId, required LocationLoaded locationState}) {
     _monitoringTimer?.cancel();
 
     final prayerTimes = _calculatePrayerTimes(locationState);
@@ -73,13 +70,8 @@ class SalahLockCubit extends Cubit<SalahLockState> {
 
   PrayerTimes _calculatePrayerTimes(LocationLoaded state) {
     final coordinates = Coordinates(state.latitude, state.longitude);
-    final params = CalculationMethod.karachi.getParameters()
-      ..madhab = Madhab.hanafi;
-    return PrayerTimes(
-      coordinates,
-      DateComponents.from(DateTime.now()),
-      params,
-    );
+    final params = CalculationMethod.karachi.getParameters()..madhab = Madhab.hanafi;
+    return PrayerTimes(coordinates, DateComponents.from(DateTime.now()), params);
   }
 
   Future<void> checkPrayerLock(PrayerTimes prayerTimes, String userId) async {
@@ -89,7 +81,7 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     final currentPrayer = prayerTimes.currentPrayer();
     if (currentPrayer == Prayer.none || currentPrayer == Prayer.sunrise) {
       if (state is SalahLockActive) {
-        emit(SalahLockIdle());
+        emit(SalahLockIdle(_settings));
       }
       return;
     }
@@ -101,15 +93,21 @@ class SalahLockCubit extends Cubit<SalahLockState> {
       if (state is! SalahLockActive) {
         // Trigger lock
         if (_settings.lockDeviceAndroid) {
-          await deviceLockService.lockDevice();
+          await deviceManager.lockDeviceScreen();
+        }
+
+        // Start App Blocker if there are blocked apps
+        if (_settings.blockedApps.isNotEmpty) {
+          await deviceManager.startAppBlocker(_settings.blockedApps);
         }
 
         final randomVerse = _ayahs[Random().nextInt(_ayahs.length)];
-        emit(SalahLockActive(salahName: prayerName, verse: randomVerse));
+        emit(SalahLockActive(salahName: prayerName, verse: randomVerse, settings: _settings));
       }
     } else {
       if (state is SalahLockActive) {
-        emit(SalahLockIdle());
+        await deviceManager.stopAppBlocker();
+        emit(SalahLockIdle(_settings));
       }
     }
   }
@@ -118,25 +116,47 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     await salahCubit.markSalahComplete(userId: userId, salahName: salahName);
     await repository.markSalahCompletedLocally(salahName);
     await notificationService.cancelAll();
-    emit(SalahLockUnlocked());
+    await deviceManager.stopAppBlocker();
+    emit(SalahLockUnlocked(_settings));
 
     // After 2 seconds, move back to idle so we can lock for next prayer
     Future.delayed(const Duration(seconds: 2), () {
-      emit(SalahLockIdle());
+      emit(SalahLockIdle(_settings));
     });
   }
 
   Future<void> remindLater(String salahName) async {
-    await notificationService.scheduleReminder(
-      salahName,
-      const Duration(minutes: 10),
-    );
-    emit(SalahLockIdle()); // Temporarily dismiss overlay
+    await notificationService.scheduleReminder(salahName, const Duration(minutes: 10));
+    await deviceManager.stopAppBlocker();
+    emit(SalahLockIdle(_settings)); // Temporarily dismiss overlay
   }
 
   Future<void> updateSettings(SalahLockSettings settings) async {
     await repository.saveSettings(settings);
     _settings = settings;
+    // Re-emit current state with new settings so UI will rebuild.
+    if (state is SalahLockActive) {
+      final s = state as SalahLockActive;
+      emit(SalahLockActive(salahName: s.salahName, verse: s.verse, settings: _settings));
+    } else if (state is SalahLockUnlocked) {
+      emit(SalahLockUnlocked(_settings));
+    } else {
+      emit(SalahLockIdle(_settings));
+    }
+  }
+
+  Future<bool> checkAndRequestAndroidPermissions() async {
+    final usage = await deviceManager.checkUsageStatsPermission();
+    if (!usage) {
+      await deviceManager.requestUsageStatsPermission();
+      return false;
+    }
+    final overlay = await deviceManager.checkOverlayPermission();
+    if (!overlay) {
+      await deviceManager.requestOverlayPermission();
+      return false;
+    }
+    return true;
   }
 
   SalahLockSettings get settings => _settings;

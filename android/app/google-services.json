@@ -7,18 +7,18 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:327642350514:android:c344e9d50c718a40ad5aab",
+        "mobilesdk_app_id": "1:327642350514:android:52d30e36fa5b431bad5aab",
         "android_client_info": {
-          "package_name": "com.example.neki_app"
+          "package_name": "com.clearwavesystems.nekiapp"
         }
       },
       "oauth_client": [
         {
-          "client_id": "327642350514-cm6v8dnv23lco9rksoonas7msq5nkd8u.apps.googleusercontent.com",
+          "client_id": "327642350514-gp043mlldjrcilohltgnd3f52ii7k58h.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.neki_app",
-            "certificate_hash": "e29c66fb6a13a9f8c914cf472a21a6dbde355fd1"
+            "package_name": "com.clearwavesystems.nekiapp",
+            "certificate_hash": "7b97fcd7061ca29e5dab11e3e722b2e22dffc156"
           }
         },
         {
@@ -39,10 +39,10 @@
               "client_type": 3
             },
             {
-              "client_id": "327642350514-krd0s9jo4bp5ukjo2u6vv72db3knaqkk.apps.googleusercontent.com",
+              "client_id": "327642350514-hdjck04tcgkq8e4aijrj8qvob9s23lj9.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.nekiApp"
+                "bundle_id": "com.clearwavesystems.nekiapp"
               }
             }
           ]

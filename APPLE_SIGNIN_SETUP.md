@@ -25,7 +25,7 @@ This guide explains how to configure Sign in with Apple for the Neki App on iOS.
 1. Go to https://developer.apple.com/account
 2. Navigate to **Certificates, Identifiers & Profiles**
 3. Click on **Identifiers**
-4. Find your app's identifier (e.g., `com.example.nekiApp`)
+4. Find your app's identifier (e.g., `com.clearwavesystems.nekiapp`)
 5. Edit the identifier
 6. Check "Sign in with Apple"
 7. Click "Edit" next to Sign in with Apple
@@ -37,7 +37,7 @@ This guide explains how to configure Sign in with Apple for the Neki App on iOS.
 1. In **Identifiers**, click the "+" button
 2. Select "Services IDs" and click "Continue"
 3. Enter a description: "Neki App Sign in with Apple"
-4. Enter an identifier: `com.example.nekiApp.signin` (must be different from app identifier)
+4. Enter an identifier: `com.clearwavesystems.nekiapp.signin` (must be different from app identifier)
 5. Click "Continue" and "Register"
 6. Select your new Service ID from the list
 7. Check "Sign in with Apple"
@@ -59,7 +59,7 @@ This guide explains how to configure Sign in with Apple for the Neki App on iOS.
 4. Click on **Apple** provider
 5. Click "Enable"
 6. **OAuth code flow configuration** (for web/Android if needed):
-   - Service ID: `com.example.nekiApp.signin` (from step 1.3)
+   - Service ID: `com.clearwavesystems.nekiapp.signin` (from step 1.3)
    - Apple Team ID: Found in Apple Developer Account (top right corner)
    - Key ID: (You'll create this in next step)
    - Private key: (You'll create this in next step)

@@ -172,11 +172,17 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       debugPrint('🔵 [AppleSignIn] Apple ID credential received');
 
+      if (appleCredential.identityToken == null) {
+        throw Exception('Apple Sign-In failed: No identity token received');
+      }
+
       // Create OAuth credential for Firebase
       final oauthCredential = fb_auth.OAuthProvider(
         'apple.com',
       ).credential(idToken: appleCredential.identityToken, rawNonce: rawNonce);
-      debugPrint('🔵 [AppleSignIn] Firebase OAuth credential created');
+      debugPrint(
+        '🔵 [AppleSignIn] Firebase OAuth credential created (ID Token length: ${appleCredential.identityToken?.length})',
+      );
 
       // Sign in to Firebase with Apple credential
       final userCredential = await _firebaseAuth.signInWithCredential(oauthCredential);

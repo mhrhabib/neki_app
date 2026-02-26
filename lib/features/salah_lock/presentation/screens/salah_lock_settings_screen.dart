@@ -19,15 +19,16 @@ class SalahLockSettingsScreen extends StatelessWidget {
           'Salah Lock Mode',
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new), onPressed: () => Navigator.pop(context)),
       ),
       body: BlocBuilder<SalahLockCubit, SalahLockState>(
         builder: (context, state) {
+          if (state is SalahLockLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
           final cubit = context.read<SalahLockCubit>();
-          final settings = cubit.settings;
+          final settings = state.settings;
 
           return ListView(
             padding: EdgeInsets.all(20.w),
@@ -37,8 +38,7 @@ class SalahLockSettingsScreen extends StatelessWidget {
                 title: 'Enable Salah Lock Mode',
                 subtitle: 'Globally lock the app during prayer times',
                 value: settings.isEnabled,
-                onChanged: (val) =>
-                    cubit.updateSettings(settings.copyWith(isEnabled: val)),
+                onChanged: (val) => cubit.updateSettings(settings.copyWith(isEnabled: val)),
               ),
               SizedBox(height: 24.h),
               _buildSectionHeader('PLATFORM SPECIFIC'),
@@ -48,16 +48,36 @@ class SalahLockSettingsScreen extends StatelessWidget {
                 value: settings.lockDeviceAndroid,
                 onChanged: (val) async {
                   if (val) {
-                    final isActive = await cubit.deviceLockService
-                        .isDeviceAdminActive();
+                    final isActive = await cubit.deviceManager.isDeviceAdminActive();
                     if (!isActive) {
-                      await cubit.deviceLockService.requestDeviceAdmin();
+                      await cubit.deviceManager.requestDeviceAdmin();
                       return;
                     }
                   }
-                  cubit.updateSettings(
-                    settings.copyWith(lockDeviceAndroid: val),
-                  );
+                  cubit.updateSettings(settings.copyWith(lockDeviceAndroid: val));
+                },
+              ),
+              _buildToggleTile(
+                title: 'Block Distracting Apps (Android)',
+                subtitle: 'Blocks social media & games during prayer',
+                value: settings.blockedApps.isNotEmpty,
+                onChanged: (val) async {
+                  if (val) {
+                    final granted = await cubit.checkAndRequestAndroidPermissions();
+                    if (!granted) return;
+
+                    // Example blocked apps (Production apps should allow choosing)
+                    final apps = [
+                      'com.facebook.katana',
+                      'com.instagram.android',
+                      'com.zhiliaoapp.musically', // TikTok
+                      'com.twitter.android',
+                      'com.whatsapp',
+                    ];
+                    cubit.updateSettings(settings.copyWith(blockedApps: apps));
+                  } else {
+                    cubit.updateSettings(settings.copyWith(blockedApps: []));
+                  }
                 },
               ),
               _buildToggleTile(
@@ -66,10 +86,8 @@ class SalahLockSettingsScreen extends StatelessWidget {
                 value: settings.autoLockSocialIos,
                 onChanged: (val) async {
                   if (val) {
-                    final urls = [
-                      Uri.parse('App-Prefs:root=SCREEN_TIME'),
-                      Uri.parse('prefs:root=SCREEN_TIME'),
-                    ];
+                    await cubit.deviceManager.requestIOSAuthorization();
+                    final urls = [Uri.parse('App-Prefs:root=SCREEN_TIME'), Uri.parse('prefs:root=SCREEN_TIME')];
                     for (var url in urls) {
                       if (await canLaunchUrl(url)) {
                         await launchUrl(url);
@@ -77,9 +95,7 @@ class SalahLockSettingsScreen extends StatelessWidget {
                       }
                     }
                   }
-                  cubit.updateSettings(
-                    settings.copyWith(autoLockSocialIos: val),
-                  );
+                  cubit.updateSettings(settings.copyWith(autoLockSocialIos: val));
                 },
               ),
               SizedBox(height: 24.h),
@@ -88,9 +104,7 @@ class SalahLockSettingsScreen extends StatelessWidget {
                 title: 'Enable Streak Tracking',
                 subtitle: 'Keep track of your prayer consistency',
                 value: settings.streakTracking,
-                onChanged: (val) => cubit.updateSettings(
-                  settings.copyWith(streakTracking: val),
-                ),
+                onChanged: (val) => cubit.updateSettings(settings.copyWith(streakTracking: val)),
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -104,10 +118,7 @@ class SalahLockSettingsScreen extends StatelessWidget {
                 ),
                 trailing: Text(
                   'Edit',
-                  style: TextStyle(
-                    color: const Color(0xFF4ADE80),
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(color: const Color(0xFF4ADE80), fontWeight: FontWeight.bold),
                 ),
                 onTap: () {
                   // Show numeric picker or dialog
@@ -143,18 +154,11 @@ class SalahLockSettingsScreen extends StatelessWidget {
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16.r),
-      ),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(16.r)),
       child: ListTile(
         title: Text(
           title,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 15.sp,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w500),
         ),
         subtitle: Text(
           subtitle,

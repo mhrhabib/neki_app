@@ -22,7 +22,11 @@ import ManagedSettings
         if #available(iOS 15.0, *) {
             Task {
                 do {
-                    try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+                    if #available(iOS 16.0, *) {
+                        try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+                    } else {
+                        // Fallback on earlier versions
+                    }
                     result(true)
                 } catch {
                     result(FlutterError(code: "AUTH_FAILED", message: error.localizedDescription, details: nil))

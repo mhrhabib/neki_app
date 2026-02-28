@@ -9,10 +9,16 @@ class HomeAllMenuSection extends StatelessWidget {
   const HomeAllMenuSection({super.key});
 
   static const List<Map<String, dynamic>> _menuItems = [
-    {'title': 'Habit Tracker', 'icon': '📋', 'route': RouteNames.habitBuilding},
-    {'title': 'Dallu Dua', 'icon': '🤲', 'route': RouteNames.salah},
+    {'title': 'Roza', 'icon': '🌙', 'route': RouteNames.roza},
+    {'title': '99 Names', 'icon': '✨', 'route': RouteNames.namesOfAllah},
+    {'title': 'Calendar', 'icon': '📅', 'route': RouteNames.calendar},
+    {'title': 'Zakat', 'icon': '💰', 'route': RouteNames.zakat},
+    {'title': 'Good Deeds', 'icon': '❤️', 'route': RouteNames.goodDeeds},
     {'title': 'Quran', 'icon': '📖', 'route': RouteNames.quran},
-    {'title': 'Tasbeeh', 'icon': '📿', 'route': RouteNames.dhikir},
+    {'title': 'Dhikr', 'icon': '📿', 'route': RouteNames.dhikir},
+    {'title': 'Qibla', 'icon': '🧭', 'route': RouteNames.qibla},
+    {'title': 'Habit', 'icon': '📋', 'route': RouteNames.habitBuilding},
+    {'title': 'Dua', 'icon': '🤲', 'route': RouteNames.salah},
   ];
 
   @override
@@ -71,20 +77,20 @@ class _MenuItemList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 90.h,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 16.w),
-        itemCount: menuItems.length,
-        itemBuilder: (context, index) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      child: Wrap(
+        spacing: 12.w,
+        runSpacing: 16.h,
+        alignment: WrapAlignment.start,
+        children: List.generate(menuItems.length, (index) {
           final item = menuItems[index];
           return _MenuIconButton(
             title: item['title'] as String,
             icon: item['icon'] as String,
             route: item['route'] as String,
           );
-        },
+        }),
       ),
     );
   }
@@ -105,9 +111,8 @@ class _MenuIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => context.push(route),
-      child: Container(
-        width: 72.w,
-        margin: EdgeInsets.only(right: 12.w),
+      child: SizedBox(
+        width: 76.w,
         child: Column(
           children: [
             Container(

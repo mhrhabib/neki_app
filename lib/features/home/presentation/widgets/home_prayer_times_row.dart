@@ -23,48 +23,40 @@ class HomePrayerTimesRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentPrayer = prayerTimes?.currentPrayer();
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 12.w),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 12.h),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.07),
-          borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: _prayers.map((p) {
-            final prayer = p['prayer'] as Prayer;
-            final time = prayerTimes != null
-                ? formatTimeOnly(prayerTimes!.timeForPrayer(prayer))
-                : '--:--';
-            final isActive = currentPrayer == prayer;
+    return SizedBox(
+      height: 90.h,
+      child: ListView.separated(
+        padding: EdgeInsets.symmetric(horizontal: 20.w),
+        scrollDirection: Axis.horizontal,
+        itemCount: _prayers.length,
+        separatorBuilder: (context, index) => SizedBox(width: 10.w),
+        itemBuilder: (context, index) {
+          final p = _prayers[index];
+          final prayer = p['prayer'] as Prayer;
+          final time = prayerTimes != null
+              ? formatTimeOnly(prayerTimes!.timeForPrayer(prayer))
+              : '--:--';
+          final isActive = currentPrayer == prayer;
 
-            return _PrayerTimeItem(
-              name: p['name'] as String,
-              icon: p['icon'] as String,
-              time: time,
-              isActive: isActive,
-            );
-          }).toList(),
-        ),
+          return _PrayerCard(
+            name: p['name'] as String,
+            icon: p['icon'] as String,
+            time: time,
+            isActive: isActive,
+          );
+        },
       ),
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Single item inside the prayer times row
-// ---------------------------------------------------------------------------
-
-class _PrayerTimeItem extends StatelessWidget {
+class _PrayerCard extends StatelessWidget {
   final String name;
   final String icon;
   final String time;
   final bool isActive;
 
-  const _PrayerTimeItem({
+  const _PrayerCard({
     required this.name,
     required this.icon,
     required this.time,
@@ -73,39 +65,56 @@ class _PrayerTimeItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          name,
-          style: TextStyle(
-            color: isActive ? Colors.white : Colors.white54,
-            fontSize: 9.sp,
-          ),
+    return Container(
+      width: 75.w,
+      padding: EdgeInsets.all(8.w),
+      decoration: BoxDecoration(
+        color: isActive
+            ? Colors.white.withValues(alpha: 0.12)
+            : Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: isActive
+              ? const Color(0xFF4ADE80).withValues(alpha: 0.4)
+              : Colors.white.withValues(alpha: 0.08),
+          width: isActive ? 1.5 : 1,
         ),
-        SizedBox(height: 4.h),
-        Text(icon, style: TextStyle(fontSize: 16.sp)),
-        SizedBox(height: 4.h),
-        Text(
-          time,
-          style: TextStyle(
-            color: isActive ? Colors.white : Colors.white60,
-            fontSize: 11.sp,
-            fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(icon, style: TextStyle(fontSize: 14.sp)),
+              if (isActive)
+                Icon(
+                  Icons.check_circle_rounded,
+                  size: 12.sp,
+                  color: const Color(0xFF4ADE80),
+                ),
+            ],
           ),
-        ),
-        SizedBox(height: 4.h),
-        // Active prayer indicator dot
-        Container(
-          width: 6.w,
-          height: 6.w,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isActive
-                ? const Color(0xFF4ADE80)
-                : Colors.white.withValues(alpha: 0.2),
+          const Spacer(),
+          Text(
+            name,
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.white70,
+              fontSize: 10.sp,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+            ),
           ),
-        ),
-      ],
+          SizedBox(height: 1.h),
+          Text(
+            time,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

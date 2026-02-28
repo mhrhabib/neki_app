@@ -46,6 +46,10 @@ import ManagedSettings
         // For a production app, we would save the selection to a shared app group container
         // that the extension can read.
         result(true)
+      case "lockDevice":
+        // iOS does not allow programmatic screen locking for standard apps.
+        // We return true to avoid MissingPluginException.
+        result(true)
       default:
         result(FlutterMethodNotImplemented)
       }

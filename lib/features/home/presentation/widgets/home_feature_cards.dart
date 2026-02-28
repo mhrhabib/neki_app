@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../challenge/presentation/cubit/challenge_cubit.dart';
 
-/// Two side-by-side feature cards:
+/// Two side-by-side feature cards with a premium glassmorphic design:
 ///  • Addiction Recovery
 ///  • Best Satan Challenge (daily goal builder)
 class HomeFeatureCards extends StatelessWidget {
@@ -14,179 +14,176 @@ class HomeFeatureCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: BlocBuilder<ChallengeCubit, ChallengeState>(
         builder: (context, state) {
           return Row(
             children: [
-              Expanded(child: _AddictionCard(state: state)),
+              Expanded(
+                child: _FeatureCard(
+                  title: 'Addiction\nRecovery',
+                  subtitle: _isAddictionActive(state)
+                      ? 'View your plan'
+                      : 'Start recovery',
+                  imagePath: 'assets/images/features/addiction_recovery.png',
+                  onTap: () => context.push(
+                    _isAddictionActive(state)
+                        ? RouteNames.habitBuilding
+                        : RouteNames.addiction,
+                  ),
+                  gradient: const [Color(0xFF1E4D35), Color(0xFF0D2818)],
+                ),
+              ),
               SizedBox(width: 12.w),
-              Expanded(child: _ChallengeCard(state: state)),
+              Expanded(
+                child: _FeatureCard(
+                  title: 'Best Satan\nChallenge',
+                  subtitle: _isChallengeActive(state)
+                      ? 'Continue journey'
+                      : 'Build your neki',
+                  imagePath: 'assets/images/features/satan_challenge.png',
+                  onTap: () => context.push(
+                    _isChallengeActive(state)
+                        ? RouteNames.habitBuilding
+                        : RouteNames.goalSelection,
+                  ),
+                  gradient: const [Color(0xFF1A3D50), Color(0xFF0D2030)],
+                ),
+              ),
             ],
           );
         },
       ),
     );
   }
-}
 
-// ---------------------------------------------------------------------------
-// Private card widgets
-// ---------------------------------------------------------------------------
-
-class _AddictionCard extends StatelessWidget {
-  final ChallengeState state;
-
-  const _AddictionCard({required this.state});
-
-  bool get _hasActive =>
-      state is ChallengeLoaded &&
-      (state as ChallengeLoaded).hasActiveChallenge &&
-      (state as ChallengeLoaded).challenge != null &&
-      (state as ChallengeLoaded).challenge!.challengeType != null &&
-      (state as ChallengeLoaded).challenge!.challengeType!.startsWith(
-        'addiction_',
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push(
-        _hasActive ? RouteNames.habitBuilding : RouteNames.addiction,
-      ),
-      child: Container(
-        height: 140.h,
-        padding: EdgeInsets.all(14.w),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1E4D35), Color(0xFF0D2818)],
-          ),
-          borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: 0,
-              right: 0,
-              child: Text('🕌', style: TextStyle(fontSize: 40.sp)),
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: _CardContent(
-                title: 'Addiction Recover',
-                subtitle: _hasActive
-                    ? 'View your plan'
-                    : 'Start a recover plan',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  bool _isAddictionActive(ChallengeState state) {
+    return state is ChallengeLoaded &&
+        state.hasActiveChallenge &&
+        state.challenge?.challengeType?.startsWith('addiction_') == true;
   }
-}
 
-class _ChallengeCard extends StatelessWidget {
-  final ChallengeState state;
-
-  const _ChallengeCard({required this.state});
-
-  bool get _hasActive {
+  bool _isChallengeActive(ChallengeState state) {
     if (state is! ChallengeLoaded) return false;
-    final loaded = state as ChallengeLoaded;
-    return loaded.hasActiveChallenge &&
-        (loaded.challenge?.challengeType == null ||
-            !loaded.challenge!.challengeType!.startsWith('addiction_'));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push(
-        _hasActive ? RouteNames.habitBuilding : RouteNames.goalSelection,
-      ),
-      child: Container(
-        height: 140.h,
-        padding: EdgeInsets.all(14.w),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1A3D50), Color(0xFF0D2030)],
-          ),
-          borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: 0,
-              right: 0,
-              child: Text('🕋', style: TextStyle(fontSize: 40.sp)),
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: _CardContent(
-                title: 'Best Satan Challeng',
-                subtitle: _hasActive
-                    ? 'Continue your journey'
-                    : 'Start buiding you daily neki',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return state.hasActiveChallenge &&
+        !(state.challenge?.challengeType?.startsWith('addiction_') == true);
   }
 }
 
-/// Shared bottom section used inside both feature cards.
-class _CardContent extends StatelessWidget {
+class _FeatureCard extends StatelessWidget {
   final String title;
   final String subtitle;
+  final String imagePath;
+  final VoidCallback onTap;
+  final List<Color> gradient;
 
-  const _CardContent({required this.title, required this.subtitle});
+  const _FeatureCard({
+    required this.title,
+    required this.subtitle,
+    required this.imagePath,
+    required this.onTap,
+    required this.gradient,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 13.sp,
-            fontWeight: FontWeight.w700,
-          ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 160.h,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28.r),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
-        SizedBox(height: 2.h),
-        Text(
-          subtitle,
-          style: TextStyle(color: Colors.white60, fontSize: 10.sp),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            // Background Image/Illustration (Full Bleed)
+            Positioned.fill(child: Image.asset(imagePath, fit: BoxFit.cover)),
+
+            // Gradient Overlay for Readability
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.05),
+                      Colors.black.withValues(alpha: 0.8),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Subtle glass effect overlay on top of the image
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: gradient[0].withValues(alpha: 0.15),
+                ),
+              ),
+            ),
+
+            // Content
+            Padding(
+              padding: EdgeInsets.all(18.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Spacer(),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w900,
+                      height: 1.1,
+                      letterSpacing: -0.5,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          offset: const Offset(0, 2),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 6.h),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 14.h),
+                  Container(
+                    width: 32.w,
+                    height: 32.w,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white,
+                        size: 11.sp,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        SizedBox(height: 8.h),
-        Container(
-          padding: EdgeInsets.all(6.w),
-          decoration: BoxDecoration(
-            color: const Color(0xFF4ADE80).withValues(alpha: 0.2),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.arrow_forward,
-            color: const Color(0xFF4ADE80),
-            size: 12.sp,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

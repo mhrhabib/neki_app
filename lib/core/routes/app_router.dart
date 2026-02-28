@@ -41,116 +41,188 @@ class AppRouter {
     routes: [
       GoRoute(
         path: RouteNames.splash,
-        builder: (context, state) => const SplashPage(),
+        pageBuilder: (context, state) =>
+            _buildPageWithTransition(child: const SplashPage(), state: state),
       ),
       GoRoute(
         path: RouteNames.login,
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) =>
+            _buildPageWithTransition(child: const LoginScreen(), state: state),
       ),
       GoRoute(
         path: RouteNames.goalSelection,
-        builder: (context, state) => const onboarding.GoalSelectionScreen(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const onboarding.GoalSelectionScreen(),
+          state: state,
+        ),
       ),
       GoRoute(
         path: RouteNames.habitBuildingOnboarding,
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
+        pageBuilder: (context, state) => _buildPageWithTransition(
           child: const onboarding.HabitBuildingScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 300),
+          state: state,
         ),
       ),
       GoRoute(
         path: RouteNames.habitBuilding,
-        builder: (context, state) => const HabitBuildingScreen(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const HabitBuildingScreen(),
+          state: state,
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) => MainScreen(child: child),
         routes: [
           GoRoute(
             path: RouteNames.home,
-            builder: (context, state) => const HomeDashboardScreen(),
+            pageBuilder: (context, state) => _buildPageWithTransition(
+              child: const HomeDashboardScreen(),
+              state: state,
+            ),
           ),
           GoRoute(
             path: RouteNames.profile,
-            builder: (context, state) => BlocProvider(
-              create: (context) => getIt<ProfileCubit>(),
-              child: const ProfileScreen(),
+            pageBuilder: (context, state) => _buildPageWithTransition(
+              child: BlocProvider(
+                create: (context) => getIt<ProfileCubit>(),
+                child: const ProfileScreen(),
+              ),
+              state: state,
             ),
           ),
           GoRoute(
             path: RouteNames.leaderboard,
-            builder: (context, state) => const LeaderboardScreen(),
+            pageBuilder: (context, state) => _buildPageWithTransition(
+              child: const LeaderboardScreen(),
+              state: state,
+            ),
           ),
         ],
       ),
       GoRoute(
         path: RouteNames.salah,
-        builder: (context, state) => const SalahScreen(),
+        pageBuilder: (context, state) =>
+            _buildPageWithTransition(child: const SalahScreen(), state: state),
       ),
       GoRoute(
         path: RouteNames.roza,
-        builder: (context, state) => BlocProvider(
-          create: (context) => getIt<RozaCubit>(),
-          child: const RozaScreen(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: BlocProvider(
+            create: (context) => getIt<RozaCubit>(),
+            child: const RozaScreen(),
+          ),
+          state: state,
         ),
       ),
       GoRoute(
         path: RouteNames.dhikir,
-        builder: (context, state) => BlocProvider(
-          create: (context) => getIt<DhikirCubit>(),
-          child: const DhikirScreen(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: BlocProvider(
+            create: (context) => getIt<DhikirCubit>(),
+            child: const DhikirScreen(),
+          ),
+          state: state,
         ),
       ),
       GoRoute(
         path: RouteNames.zakat,
-        builder: (context, state) => BlocProvider(
-          create: (context) => getIt<ZakatCubit>(),
-          child: const ZakatScreen(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: BlocProvider(
+            create: (context) => getIt<ZakatCubit>(),
+            child: const ZakatScreen(),
+          ),
+          state: state,
         ),
       ),
       GoRoute(
         path: RouteNames.addiction,
-        builder: (context, state) => const AddictionScreen(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const AddictionScreen(),
+          state: state,
+        ),
       ),
       GoRoute(
         path: RouteNames.goodDeeds,
-        builder: (context, state) => const GoodDeedsScreen(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const GoodDeedsScreen(),
+          state: state,
+        ),
       ),
       GoRoute(
         path: RouteNames.qibla,
-        builder: (context, state) => const QiblaCompassScreen(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const QiblaCompassScreen(),
+          state: state,
+        ),
       ),
       GoRoute(
         path: RouteNames.namesOfAllah,
-        builder: (context, state) => const NamesScreen(),
+        pageBuilder: (context, state) =>
+            _buildPageWithTransition(child: const NamesScreen(), state: state),
       ),
       GoRoute(
         path: RouteNames.calendar,
-        builder: (context, state) => const CalendarScreen(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const CalendarScreen(),
+          state: state,
+        ),
       ),
       GoRoute(
         path: RouteNames.quran,
-        builder: (context, state) => const QuranHomeScreen(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const QuranHomeScreen(),
+          state: state,
+        ),
         routes: [
           GoRoute(
             path: ':surahNumber',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final surahNumber = int.parse(
                 state.pathParameters['surahNumber']!,
               );
-              return SurahDetailScreen(surahNumber: surahNumber);
+              return _buildPageWithTransition(
+                child: SurahDetailScreen(surahNumber: surahNumber),
+                state: state,
+              );
             },
           ),
         ],
       ),
       GoRoute(
         path: RouteNames.salahLockSettings,
-        builder: (context, state) => const SalahLockSettingsScreen(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const SalahLockSettingsScreen(),
+          state: state,
+        ),
       ),
     ],
     errorBuilder: (context, state) => const NotFoundPage(),
   );
+
+  /// Helper to build a page with a consistent transition
+  static CustomTransitionPage _buildPageWithTransition({
+    required Widget child,
+    required GoRouterState state,
+  }) {
+    return CustomTransitionPage(
+      key: state.pageKey,
+      child: child,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        // Fade + subtle scale/slide effect
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: animation.drive(
+              Tween<Offset>(
+                begin: const Offset(0.05, 0),
+                end: Offset.zero,
+              ).chain(CurveTween(curve: Curves.easeOutCubic)),
+            ),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 400),
+    );
+  }
 }

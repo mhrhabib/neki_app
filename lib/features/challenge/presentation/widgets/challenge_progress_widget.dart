@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_typography.dart';
 import '../../../challenge/domain/entities/challenge_entity.dart';
 
 class ChallengeProgressWidget extends StatelessWidget {
@@ -12,47 +11,78 @@ class ChallengeProgressWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(20.w),
+      padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primaryGreen, AppColors.primaryGreen.withValues(alpha: 0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16.r),
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(28.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         boxShadow: [
-          BoxShadow(color: AppColors.primaryGreen.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 6)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title and status
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '${challenge.durationDays} Day Challenge',
-                style: AppTypography.h2.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Current Marathon',
+                    style: TextStyle(color: Colors.white60, fontSize: 13.sp),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    '${challenge.durationDays} Day Challenge',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
               ),
               if (challenge.isCompleted)
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20.r),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 14.w,
+                    vertical: 8.h,
                   ),
-                  child: Text(
-                    '✓ Completed',
-                    style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.bold),
+                  decoration: BoxDecoration(
+                    color: AppColors.successGreen.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                      color: AppColors.successGreen.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        color: AppColors.successGreen,
+                        size: 14.sp,
+                      ),
+                      SizedBox(width: 6.w),
+                      Text(
+                        'Completed',
+                        style: TextStyle(
+                          color: AppColors.successGreen,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
             ],
           ),
-
-          SizedBox(height: 20.h),
-
-          // Progress bar
+          SizedBox(height: 28.h),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -62,45 +92,85 @@ class ChallengeProgressWidget extends StatelessWidget {
                   Text(
                     'Day ${challenge.completedDays} of ${challenge.durationDays}',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: Colors.white70,
                       fontSize: 14.sp,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
                     '${(challenge.progress * 100).toInt()}%',
-                    style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: AppColors.goldAccent,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ],
               ),
-              SizedBox(height: 12.h),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10.r),
-                child: LinearProgressIndicator(
-                  value: challenge.progress,
-                  minHeight: 10.h,
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
+              SizedBox(height: 14.h),
+              Stack(
+                children: [
+                  Container(
+                    height: 10.h,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                  ),
+                  FractionallySizedBox(
+                    widthFactor: challenge.progress,
+                    child: Container(
+                      height: 10.h,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.primaryGreen, Color(0xFF50C878)],
+                        ),
+                        borderRadius: BorderRadius.circular(10.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primaryGreen.withValues(
+                              alpha: 0.3,
+                            ),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-
-          SizedBox(height: 20.h),
-
-          // Stats row
+          SizedBox(height: 28.h),
           Row(
             children: [
               Expanded(
-                child: _buildStatCard(icon: '🔥', label: 'Streak', value: '${challenge.completedDays} days'),
+                child: _buildStatItem(
+                  icon: Icons.local_fire_department,
+                  label: 'Streak',
+                  value: '${challenge.completedDays}',
+                  color: Colors.orangeAccent,
+                ),
               ),
               SizedBox(width: 12.w),
               Expanded(
-                child: _buildStatCard(icon: '⭐', label: 'Points', value: '${challenge.rewardPoints}'),
+                child: _buildStatItem(
+                  icon: Icons.stars_rounded,
+                  label: 'Neki Pts',
+                  value: '${challenge.rewardPoints}',
+                  color: AppColors.goldAccent,
+                ),
               ),
               SizedBox(width: 12.w),
               Expanded(
-                child: _buildStatCard(icon: '📅', label: 'Remaining', value: '${challenge.remainingDays} days'),
+                child: _buildStatItem(
+                  icon: Icons.calendar_today_rounded,
+                  label: 'To Go',
+                  value: '${challenge.remainingDays}',
+                  color: Colors.blueAccent,
+                ),
               ),
             ],
           ),
@@ -109,22 +179,40 @@ class ChallengeProgressWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard({required String icon, required String label, required String value}) {
+  Widget _buildStatItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
     return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12.r)),
+      padding: EdgeInsets.symmetric(vertical: 16.h),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
       child: Column(
         children: [
-          Text(icon, style: TextStyle(fontSize: 20.sp)),
-          SizedBox(height: 6.h),
+          Icon(icon, color: color, size: 20.sp),
+          SizedBox(height: 8.h),
           Text(
             value,
-            style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           SizedBox(height: 2.h),
           Text(
-            label,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 10.sp),
+            label.toUpperCase(),
+            style: TextStyle(
+              color: Colors.white38,
+              fontSize: 9.sp,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+            ),
           ),
         ],
       ),

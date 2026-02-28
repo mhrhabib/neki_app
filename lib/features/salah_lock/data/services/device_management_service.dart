@@ -38,7 +38,9 @@ class DeviceManagementService {
 
   Future<void> startAppBlocker(List<String> blockedApps) async {
     if (!Platform.isAndroid) return;
-    await _channel.invokeMethod('startAppBlocker', {'blockedApps': blockedApps});
+    await _channel.invokeMethod('startAppBlocker', {
+      'blockedApps': blockedApps,
+    });
   }
 
   Future<void> stopAppBlocker() async {
@@ -66,8 +68,7 @@ class DeviceManagementService {
   // --- General ---
 
   Future<void> lockDeviceScreen() async {
-    // Uses the existing neki/device_lock channel or we can move it here
-    const lockChannel = MethodChannel('neki/device_lock');
-    await lockChannel.invokeMethod('lockDevice');
+    // Use the class-level _channel ('neki/device_management')
+    await _channel.invokeMethod('lockDevice');
   }
 }

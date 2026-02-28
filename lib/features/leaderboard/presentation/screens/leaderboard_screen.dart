@@ -60,97 +60,146 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       body: Stack(
         children: [
           appBackgroundWidget(),
-          SafeArea(
-            child: Column(
-              children: [
-                _buildHeader(),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.all(20.w),
-                    child: Column(
-                      children: [
-                        if (data.isNotEmpty) _buildTopPerformerCard(data[0]),
-                        SizedBox(height: 20.h),
-                        _buildLeaderboardList(data.sublist(1)),
-                      ],
+          CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 180.h,
+                pinned: true,
+                stretch: true,
+                backgroundColor: Colors.transparent,
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
+                flexibleSpace: FlexibleSpaceBar(
+                  stretchModes: const [
+                    StretchMode.blurBackground,
+                    StretchMode.zoomBackground,
+                  ],
+                  background: SafeArea(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20.w),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(height: 20.h),
+                          Text(
+                            'Leaderboard',
+                            style: TextStyle(
+                              fontSize: 32.sp,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          Text(
+                            'Top performers of this week',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const Spacer(),
+                          _buildTabSwitcher(),
+                          SizedBox(height: 20.h),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 100.h),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    if (data.isNotEmpty) ...[
+                      _buildTopPerformerCard(data[0]),
+                      SizedBox(height: 25.h),
+                      _buildLeaderboardHeader(),
+                      SizedBox(height: 15.h),
+                    ],
+                    ...data.sublist(1).map((user) => _buildUserCard(user)),
+                  ]),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+  Widget _buildTabSwitcher() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+      height: 48.h,
+      padding: EdgeInsets.all(4.w),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1F2937) : Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB),
-            width: 1,
-          ),
-        ),
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            'Leaderboard',
-            style: TextStyle(
-              fontSize: 28.sp,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : AppColors.primaryGreen,
-            ),
-          ),
-          SizedBox(height: 16.h),
-          Container(
-            padding: EdgeInsets.all(4.w),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-            child: Row(
-              children: [
-                _buildTabButton('Global', 'global'),
-                _buildTabButton('Country', 'country'),
-              ],
-            ),
-          ),
+          _buildTabButton('Global', 'global'),
+          _buildTabButton('Country', 'country'),
         ],
       ),
+    );
+  }
+
+  Widget _buildLeaderboardHeader() {
+    return Row(
+      children: [
+        Container(
+          width: 4.w,
+          height: 18.h,
+          decoration: BoxDecoration(
+            color: AppColors.goldAccent,
+            borderRadius: BorderRadius.circular(2.r),
+          ),
+        ),
+        SizedBox(width: 10.w),
+        Text(
+          'RANKINGS',
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w900,
+            color: AppColors.goldAccent,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildTabButton(String label, String tab) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isActive = _activeTab == tab;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _activeTab = tab),
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: 10.h),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
             color: isActive
-                ? (isDark ? const Color(0xFF1F2937) : Colors.white)
+                ? Colors.white.withValues(alpha: 0.15)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(8.r),
+            borderRadius: BorderRadius.circular(10.r),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 4.r,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
           ),
           alignment: Alignment.center,
           child: Text(
             label,
             style: TextStyle(
               fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: isActive
-                  ? (isDark ? AppColors.goldAccent : AppColors.primaryGreen)
-                  : const Color(0xFF6B7280),
+              fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+              color: isActive ? Colors.white : Colors.white38,
             ),
           ),
         ),
@@ -161,173 +210,136 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   Widget _buildTopPerformerCard(LeaderboardUser user) {
     return Container(
       width: double.infinity,
-      margin: EdgeInsets.symmetric(horizontal: 0.w),
-      padding: EdgeInsets.all(20.w),
+      padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primaryGreen,
-            AppColors.primaryGreen.withValues(alpha: 0.9),
-            AppColors.darkGreen.withValues(alpha: 0.8),
+            Colors.white.withValues(alpha: 0.1),
+            Colors.white.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24.r),
+        borderRadius: BorderRadius.circular(30.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryGreen.withValues(alpha: 0.3),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 20.r,
-            offset: Offset(0, 8.h),
-            spreadRadius: 2.r,
-          ),
-          BoxShadow(
-            color: AppColors.primaryGreen.withValues(alpha: 0.1),
-            blurRadius: 40.r,
-            offset: Offset(0, 16.h),
-            spreadRadius: 4.r,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         children: [
-          // Trophy with glow effect
-          Container(
-            padding: EdgeInsets.all(12.w),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
-                  blurRadius: 15.r,
-                  spreadRadius: 2.r,
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 100.w,
+                height: 100.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.goldAccent.withValues(alpha: 0.3),
+                      AppColors.goldAccent.withValues(alpha: 0.0),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                 ),
-              ],
-            ),
-            child: Icon(
-              Icons.emoji_events,
-              size: 36.sp,
-              color: const Color(0xFFD4AF37),
-            ),
-          ),
-          SizedBox(height: 12.h),
-
-          // Crown emoji with animation effect
-          Container(
-            padding: EdgeInsets.all(8.w),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.2),
-                width: 1.w,
               ),
-            ),
-            child: Text('👑', style: TextStyle(fontSize: 40.sp)),
+              Container(
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.goldAccent.withValues(alpha: 0.3),
+                    width: 2.w,
+                  ),
+                ),
+                child: Text('👑', style: TextStyle(fontSize: 45.sp)),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: EdgeInsets.all(8.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.goldAccent,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.black, width: 3.w),
+                  ),
+                  child: Icon(
+                    Icons.emoji_events,
+                    size: 16.sp,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 16.h),
-
-          // Name with modern typography
+          SizedBox(height: 20.h),
           Text(
             user.name,
             style: TextStyle(
-              fontSize: 24.sp,
-              fontWeight: FontWeight.w800,
+              fontSize: 26.sp,
+              fontWeight: FontWeight.w900,
               color: Colors.white,
               letterSpacing: 0.5,
-              shadows: [
-                Shadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  offset: Offset(0, 2.h),
-                  blurRadius: 4.r,
-                ),
-              ],
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 6.h),
-
-          // Country and title
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.2),
-                width: 1.w,
-              ),
-            ),
-            child: Text(
-              '${user.country} Top Performer',
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFFD4AF37),
-                letterSpacing: 0.3,
-              ),
             ),
           ),
-          SizedBox(height: 16.h),
-
-          // Points display with modern styling
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12.r),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 10.r,
-                  offset: Offset(0, 4.h),
+          SizedBox(height: 4.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(user.country, style: TextStyle(fontSize: 18.sp)),
+              SizedBox(width: 8.w),
+              Text(
+                'TOP RECOVERER',
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.goldAccent,
+                  letterSpacing: 1.5,
                 ),
-              ],
+              ),
+            ],
+          ),
+          SizedBox(height: 24.h),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 30.w, vertical: 15.h),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(20.r),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
             child: Column(
               children: [
-                Text(
-                  'TOTAL POINTS',
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF6B7280),
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                SizedBox(height: 2.h),
                 Text(
                   user.points.toString().replaceAllMapped(
                     RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
                     (Match m) => '${m[1]},',
                   ),
                   style: TextStyle(
-                    fontSize: 28.sp,
+                    fontSize: 32.sp,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.primaryGreen,
+                    color: Colors.white,
                     letterSpacing: 1,
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          // Decorative elements
-          SizedBox(height: 12.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              3,
-              (index) => Container(
-                margin: EdgeInsets.symmetric(horizontal: 3.w),
-                width: 6.w,
-                height: 6.w,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.6),
-                  shape: BoxShape.circle,
+                Text(
+                  'RECOVERY POINTS',
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white38,
+                    letterSpacing: 1.2,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -335,54 +347,49 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     );
   }
 
-  Widget _buildLeaderboardList(List<LeaderboardUser> users) {
-    return Column(children: users.map((user) => _buildUserCard(user)).toList());
-  }
-
   Widget _buildUserCard(LeaderboardUser user) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
-      margin: EdgeInsets.only(bottom: 10.h),
+      margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: user.isYou
-            ? (isDark
-                  ? AppColors.primaryGreen.withValues(alpha: 0.2)
-                  : const Color(0xFF0F5132).withValues(alpha: 0.1))
-            : (isDark ? const Color(0xFF1F2937) : Colors.white),
-        borderRadius: BorderRadius.circular(14.r),
+            ? AppColors.primaryGreen.withValues(alpha: 0.15)
+            : Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
           color: user.isYou
-              ? AppColors.primaryGreen
-              : (isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB)),
+              ? AppColors.primaryGreen.withValues(alpha: 0.5)
+              : Colors.white.withValues(alpha: 0.08),
           width: user.isYou ? 2.w : 1.w,
         ),
       ),
       child: Row(
         children: [
           Container(
-            width: 40.w,
-            height: 40.w,
+            width: 45.w,
+            height: 45.w,
             decoration: BoxDecoration(
               color: user.rank <= 3
-                  ? _getRankColor(user.rank).withValues(alpha: 0.2)
-                  : (isDark
-                        ? const Color(0xFF374151)
-                        : const Color(0xFFF3F4F6)),
-              borderRadius: BorderRadius.circular(20.r),
+                  ? _getRankColor(user.rank).withValues(alpha: 0.15)
+                  : Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(15.r),
+              border: user.rank <= 3
+                  ? Border.all(
+                      color: _getRankColor(user.rank).withValues(alpha: 0.3),
+                    )
+                  : null,
             ),
             alignment: Alignment.center,
             child: Text(
-              '#${user.rank}',
+              '${user.rank}',
               style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w700,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w900,
                 color: _getRankColor(user.rank),
               ),
             ),
           ),
-          SizedBox(width: 14.w),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,28 +399,28 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     Text(
                       user.name,
                       style: TextStyle(
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : const Color(0xFF1F2937),
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
                       ),
                     ),
                     if (user.isYou) ...[
-                      SizedBox(width: 6.w),
+                      SizedBox(width: 8.w),
                       Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: 8.w,
+                          horizontal: 6.w,
                           vertical: 2.h,
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryGreen,
-                          borderRadius: BorderRadius.circular(6.r),
+                          borderRadius: BorderRadius.circular(4.r),
                         ),
                         child: Text(
                           'YOU',
                           style: TextStyle(
-                            fontSize: 10.sp,
+                            fontSize: 9.sp,
                             color: Colors.white,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ),
@@ -421,22 +428,47 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   ],
                 ),
                 SizedBox(height: 2.h),
-                Text(
-                  '${user.country} ${user.points.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} points',
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    color: const Color(0xFF6B7280),
-                  ),
+                Row(
+                  children: [
+                    Text(user.country, style: TextStyle(fontSize: 14.sp)),
+                    SizedBox(width: 6.w),
+                    Text(
+                      'Recoverer',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.white38,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          if (user.rank <= 3)
-            Icon(
-              Icons.military_tech,
-              size: 24.sp,
-              color: _getRankColor(user.rank),
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                user.points.toString().replaceAllMapped(
+                  RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                  (Match m) => '${m[1]},',
+                ),
+                style: TextStyle(
+                  fontSize: 17.sp,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+              Text(
+                'pts',
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  color: Colors.white30,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -56,5 +56,16 @@
 		<string>prefs</string>
 		<string>app-prefs</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.327642350514-hdjck04tcgkq8e4aijrj8qvob9s23lj9</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

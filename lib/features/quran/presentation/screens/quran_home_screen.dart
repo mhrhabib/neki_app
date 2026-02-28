@@ -59,32 +59,30 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
 
     return BlocProvider(
       create: (context) => QuranCubit(),
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          title: Text(
-            'Holy Qur\'an',
-            style: TextStyle(
-              color: isDark ? Colors.white : AppColors.textDark,
-              fontWeight: FontWeight.bold,
-              fontSize: 20.sp,
+      child: Stack(
+        children: [
+          appBackgroundWidget(),
+          Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              title: Text(
+                'Holy Qur\'an',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20.sp,
+                ),
+              ),
+              centerTitle: true,
+
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+                onPressed: () => context.pop(),
+              ),
             ),
-          ),
-          centerTitle: true,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios,
-              color: isDark ? Colors.white : AppColors.textDark,
-            ),
-            onPressed: () => context.pop(),
-          ),
-        ),
-        body: Stack(
-          children: [
-            appBackgroundWidget(),
-            BlocBuilder<QuranCubit, QuranState>(
+            body: BlocBuilder<QuranCubit, QuranState>(
               builder: (context, state) {
                 return Column(
                   children: [
@@ -95,37 +93,58 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
                         horizontal: 20.w,
                         vertical: 10.h,
                       ),
-                      child: TextField(
-                        controller: _searchController,
-                        style: TextStyle(
-                          color: isDark ? Colors.white : AppColors.textDark,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        decoration: InputDecoration(
-                          hintText: 'Search Surah...',
-                          hintStyle: TextStyle(
-                            color: isDark ? Colors.white38 : Colors.grey,
+                        child: TextField(
+                          controller: _searchController,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14.sp,
                           ),
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: AppColors.primaryGreen,
-                          ),
-                          filled: true,
-                          fillColor: isDark
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : Colors.white,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20.w,
-                            vertical: 15.h,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15.r),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15.r),
-                            borderSide: isDark
-                                ? BorderSide.none
-                                : BorderSide(color: Colors.grey[200]!),
+                          decoration: InputDecoration(
+                            hintText: 'Search Surah...',
+                            hintStyle: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 14.sp,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: AppColors.goldAccent,
+                              size: 20.sp,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.08),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 20.w,
+                              vertical: 15.h,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15.r),
+                              borderSide: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15.r),
+                              borderSide: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15.r),
+                              borderSide: const BorderSide(
+                                color: AppColors.goldAccent,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -136,7 +155,7 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
                               child: Text(
                                 'No Surahs found',
                                 style: TextStyle(
-                                  color: isDark ? Colors.white38 : Colors.grey,
+                                  color: Colors.white38,
                                   fontSize: 16.sp,
                                 ),
                               ),
@@ -164,8 +183,8 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
                 );
               },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -179,48 +198,99 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
       onTap: () => context.push('${RouteNames.quran}/$surahNumber'),
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-        padding: EdgeInsets.all(20.w),
         decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20.r),
           gradient: LinearGradient(
             colors: [
-              AppColors.primaryGreen,
-              AppColors.primaryGreen.withValues(alpha: 0.7),
+              const Color(0xFF1E4D35),
+              const Color(0xFF0D2818).withValues(alpha: 0.9),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(
+            color: AppColors.goldAccent.withValues(alpha: 0.3),
+          ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primaryGreen.withValues(alpha: 0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
-        child: Row(
+        child: Stack(
           children: [
-            Icon(Icons.menu_book, color: Colors.white, size: 30.sp),
-            SizedBox(width: 15.w),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Continue Reading',
-                  style: TextStyle(color: Colors.white70, fontSize: 12.sp),
+            Positioned(
+              right: -20.w,
+              top: -20.h,
+              child: Opacity(
+                opacity: 0.1,
+                child: Icon(
+                  Icons.auto_stories,
+                  color: Colors.white,
+                  size: 100.sp,
                 ),
-                Text(
-                  quran.getSurahName(surahNumber),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+              ),
             ),
-            const Spacer(),
-            Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16.sp),
+            Padding(
+              padding: EdgeInsets.all(20.w),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(10.w),
+                    decoration: BoxDecoration(
+                      color: AppColors.goldAccent.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.menu_book,
+                      color: AppColors.goldAccent,
+                      size: 24.sp,
+                    ),
+                  ),
+                  SizedBox(width: 15.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'CONTINUE READING',
+                          style: TextStyle(
+                            color: AppColors.goldAccent,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          quran.getSurahName(surahNumber),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          'Surah No. $surahNumber • ${quran.getVerseCount(surahNumber)} Verses',
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 11.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: AppColors.goldAccent,
+                    size: 16.sp,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -233,35 +303,36 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
       child: Container(
         padding: EdgeInsets.all(16.w),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1F2937) : Colors.white,
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
           children: [
-            Container(
-              width: 40.w,
-              height: 40.w,
-              decoration: BoxDecoration(
-                color: AppColors.primaryGreen.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  Icons.star,
+                  color: AppColors.goldAccent.withValues(alpha: 0.2),
+                  size: 44.sp,
+                ),
+                Text(
                   surahNumber.toString(),
                   style: TextStyle(
-                    color: AppColors.primaryGreen,
+                    color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 14.sp,
                   ),
                 ),
-              ),
+              ],
             ),
             SizedBox(width: 16.w),
             Expanded(
@@ -272,16 +343,18 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
                     quran.getSurahName(surahNumber),
                     style: TextStyle(
                       fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppColors.textDark,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
                   ),
                   SizedBox(height: 4.h),
                   Text(
-                    '${quran.getPlaceOfRevelation(surahNumber)} • ${quran.getVerseCount(surahNumber)} Verses',
+                    '${quran.getPlaceOfRevelation(surahNumber).toUpperCase()} • ${quran.getVerseCount(surahNumber)} VERSES',
                     style: TextStyle(
-                      fontSize: 12.sp,
-                      color: isDark ? Colors.white38 : Colors.grey,
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white60,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ],
@@ -290,10 +363,11 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
             Text(
               quran.getSurahNameArabic(surahNumber),
               style: TextStyle(
-                fontSize: 18.sp,
+                fontSize: 22.sp,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'Amiri',
-                color: AppColors.primaryGreen,
+                fontFamily:
+                    'Amiri', // Ensure this font is available or fallback
+                color: AppColors.goldAccent,
               ),
             ),
           ],

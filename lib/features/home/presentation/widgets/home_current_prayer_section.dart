@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -5,29 +6,58 @@ import 'home_prayer_helpers.dart';
 
 /// Displays the currently active prayer name (small label), its time in large
 /// digits, and the name + time of the upcoming next prayer underneath.
-class HomeCurrentPrayerSection extends StatelessWidget {
+class HomeCurrentPrayerSection extends StatefulWidget {
   final PrayerTimes? prayerTimes;
 
   const HomeCurrentPrayerSection({super.key, required this.prayerTimes});
 
   @override
+  State<HomeCurrentPrayerSection> createState() =>
+      _HomeCurrentPrayerSectionState();
+}
+
+class _HomeCurrentPrayerSectionState extends State<HomeCurrentPrayerSection> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Refresh the UI ogni minuto to keep the clock accurate
+    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final currentPrayerName = prayerTimes != null
-        ? getPrayerName(prayerTimes!.currentPrayer()).toLowerCase()
+    final currentPrayerName = widget.prayerTimes != null
+        ? getPrayerName(widget.prayerTimes!.currentPrayer()).toLowerCase()
         : '--';
 
-    final currentTime = prayerTimes != null
+    final currentTime = formatTimeOnly(DateTime.now());
+
+    final prayerLimit = widget.prayerTimes != null
         ? formatTimeOnly(
-            prayerTimes!.timeForPrayer(prayerTimes!.currentPrayer()),
+            widget.prayerTimes!.timeForPrayer(widget.prayerTimes!.nextPrayer()),
           )
         : '--:--';
 
-    final nextPrayerName = prayerTimes != null
-        ? getNextPrayerLabel(prayerTimes!.nextPrayer())
+    final nextPrayerName = widget.prayerTimes != null
+        ? getNextPrayerLabel(widget.prayerTimes!.nextPrayer())
         : '--';
 
-    final nextTime = prayerTimes != null
-        ? formatTimeOnly(prayerTimes!.timeForPrayer(prayerTimes!.nextPrayer()))
+    final nextTime = widget.prayerTimes != null
+        ? formatTimeOnly(
+            widget.prayerTimes!.timeForPrayer(widget.prayerTimes!.nextPrayer()),
+          )
         : '--:--';
 
     return Padding(
@@ -42,15 +72,29 @@ class HomeCurrentPrayerSection extends StatelessWidget {
           ),
           SizedBox(height: 4.h),
 
-          // Big clock-style current time
-          Text(
-            currentTime,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 56.sp,
-              fontWeight: FontWeight.w700,
-              height: 1.0,
-              letterSpacing: -2,
+          // Big clock-style current time + limit
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: currentTime,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 56.sp,
+                    fontWeight: FontWeight.w700,
+                    height: 1.0,
+                    letterSpacing: -2,
+                  ),
+                ),
+                TextSpan(
+                  text: ' ($prayerLimit)',
+                  style: TextStyle(
+                    color: Colors.white60,
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
             ),
           ),
           SizedBox(height: 4.h),

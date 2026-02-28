@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
 import '../cubit/challenge_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../widgets/challenge_progress_widget.dart';
@@ -16,14 +14,16 @@ class HabitBuildingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: Colors.white, size: 20.sp),
           onPressed: () => context.pop(),
         ),
+        centerTitle: true,
         title: BlocBuilder<ChallengeCubit, ChallengeState>(
           builder: (context, state) {
             String title = 'Beat Satan Challenge';
@@ -32,7 +32,6 @@ class HabitBuildingScreen extends StatelessWidget {
                 state.challenge!.challengeType != null) {
               final t = state.challenge!.challengeType!;
               if (t.startsWith('addiction_')) {
-                // format: addiction_<id>_<days>
                 final parts = t.split('_');
                 if (parts.length >= 3) {
                   final id = parts[1];
@@ -44,9 +43,9 @@ class HabitBuildingScreen extends StatelessWidget {
             }
             return Text(
               title,
-              style: GoogleFonts.sanchez(
+              style: TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
                 fontSize: 18.sp,
               ),
             );
@@ -60,7 +59,6 @@ class HabitBuildingScreen extends StatelessWidget {
             listener: (context, state) {
               if (state is ChallengeDayCompleted) {
                 _showDayCompletedDialog(context, state.pointsEarned);
-                // Reset to loaded state after showing dialog
                 Future.delayed(const Duration(seconds: 2), () {
                   if (context.mounted) {
                     context.read<ChallengeCubit>().resetToLoaded();
@@ -72,14 +70,22 @@ class HabitBuildingScreen extends StatelessWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(state.message),
-                    backgroundColor: Colors.red,
+                    backgroundColor: Colors.redAccent,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
                   ),
                 );
               }
             },
             builder: (context, state) {
               if (state is ChallengeLoading) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.primaryGreen,
+                  ),
+                );
               }
 
               if (state is ChallengeLoaded && state.challenge == null) {
@@ -96,30 +102,27 @@ class HabitBuildingScreen extends StatelessWidget {
                 return _buildNoChallengeView(context);
               }
 
-              return SingleChildScrollView(
-                padding: EdgeInsets.all(AppSpacing.outerPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Challenge progress card
-                    ChallengeProgressWidget(challenge: challenge),
-
-                    SizedBox(height: 24.h),
-
-                    // Daily task card
-                    _buildDailyTaskCard(context, challenge),
-
-                    SizedBox(height: 24.h),
-
-                    // Motivation section
-                    _buildMotivationSection(context, challenge),
-
-                    SizedBox(height: 24.h),
-
-                    // Complete today button
-                    if (challenge.canCompleteToday() && !challenge.isCompleted)
-                      _buildCompleteButton(context),
-                  ],
+              return SafeArea(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 20.w,
+                    vertical: 10.h,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ChallengeProgressWidget(challenge: challenge),
+                      SizedBox(height: 24.h),
+                      _buildDailyTaskCard(context, challenge),
+                      SizedBox(height: 24.h),
+                      _buildMotivationSection(context, challenge),
+                      SizedBox(height: 32.h),
+                      if (challenge.canCompleteToday() &&
+                          !challenge.isCompleted)
+                        _buildCompleteButton(context),
+                      SizedBox(height: 40.h),
+                    ],
+                  ),
                 ),
               );
             },
@@ -134,20 +137,36 @@ class HabitBuildingScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('📝', style: TextStyle(fontSize: 80.sp)),
-          SizedBox(height: 24.h),
+          Container(
+            padding: EdgeInsets.all(24.w),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            child: Icon(
+              Icons.description_outlined,
+              color: AppColors.goldAccent,
+              size: 60.sp,
+            ),
+          ),
+          SizedBox(height: 32.h),
           Text(
             'No Active Challenge',
-            style: GoogleFonts.sanchez(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 24.sp,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w900,
             ),
           ),
           SizedBox(height: 12.h),
           Text(
-            'Start a challenge to track your progress',
-            style: GoogleFonts.sanchez(color: Colors.white70, fontSize: 14.sp),
+            'Start a challenge to begin your journey\nof transformation and discipline.',
+            style: TextStyle(
+              color: Colors.white60,
+              fontSize: 14.sp,
+              height: 1.5,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -157,46 +176,76 @@ class HabitBuildingScreen extends StatelessWidget {
 
   Widget _buildDailyTaskCard(BuildContext context, dynamic challenge) {
     return Container(
-      padding: EdgeInsets.all(20.w),
+      padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        borderRadius: BorderRadius.circular(28.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.task_alt, color: AppColors.goldAccent, size: 24.sp),
+              Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  color: AppColors.goldAccent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Icon(
+                  Icons.task_alt,
+                  color: AppColors.goldAccent,
+                  size: 20.sp,
+                ),
+              ),
               SizedBox(width: 12.w),
               Text(
-                'Today\'s Task',
-                style: GoogleFonts.sanchez(
-                  color: AppColors.goldAccent,
-                  fontWeight: FontWeight.bold,
+                'Today\'s Focus',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
                   fontSize: 18.sp,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 16.h),
+          SizedBox(height: 20.h),
           Text(
             _dailyTaskText(challenge),
-            style: GoogleFonts.sanchez(color: Colors.white, fontSize: 14.sp),
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14.sp,
+              height: 1.6,
+            ),
           ),
+          SizedBox(height: 20.h),
+          Divider(color: Colors.white.withValues(alpha: 0.1)),
           SizedBox(height: 16.h),
-          Text(
-            '✅ Focus on positive actions',
-            style: GoogleFonts.sanchez(color: Colors.white70, fontSize: 13.sp),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            '✅ Stay consistent and patient',
-            style: GoogleFonts.sanchez(color: Colors.white70, fontSize: 13.sp),
-          ),
+          _buildTaskItem('Focus on positive actions'),
+          SizedBox(height: 10.h),
+          _buildTaskItem('Stay consistent and patient'),
         ],
       ),
+    );
+  }
+
+  Widget _buildTaskItem(String text) {
+    return Row(
+      children: [
+        Icon(
+          Icons.check_circle_outline,
+          color: AppColors.successGreen,
+          size: 16.sp,
+        ),
+        SizedBox(width: 10.w),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(color: Colors.white60, fontSize: 13.sp),
+          ),
+        ),
+      ],
     );
   }
 
@@ -223,67 +272,105 @@ class HabitBuildingScreen extends StatelessWidget {
         final id = parts[1];
         switch (id) {
           case 'porn':
-            return '✅ Avoid triggers and block sources\n✅ Replace usage with prayer/dhikr\n✅ Use accountability tools';
+            return '• Avoid triggers and block harmful sources\n• Replace usage with prayer or dhikr\n• Use accountability tools to stay safe';
           case 'smoking':
-            return '✅ Delay first cigarette\n✅ Chew gum or use replacements\n✅ Reach out to a buddy for support';
+            return '• Delay the first habit of the day\n• Use physical replacements like gum\n• Connect with a support buddy';
           case 'alcohol':
-            return '✅ Avoid social triggers\n✅ Drink water and go for a walk\n✅ Seek accountability';
+            return '• Avoid environments with social triggers\n• Stay hydrated and physically active\n• Maintain strict accountability';
           case 'gambling':
-            return '✅ Self-exclude from sites\n✅ Replace with a hobby\n✅ Seek help if urges persist';
+            return '• Self-exclude from digital platforms\n• Engage in a constructive new hobby\n• Monitor your urges with mindfulness';
           default:
-            return '✅ Avoid bad habits\n✅ Do a good deed instead\n✅ Keep consistent';
+            return '• Avoid negative habitual repetitions\n• Perform a small good deed instead\n• Maintain high mental consistency';
         }
       }
     }
-    return '✅ Avoid sin and bad habits\n✅ Focus on positive actions\n✅ Stay consistent and patient';
+    return '• Consciously avoid old patterns\n• Replace negative thoughts with dhikr\n• Focus on building a better self today';
   }
 
   Widget _buildMotivationSection(BuildContext context, dynamic challenge) {
     return Container(
-      padding: EdgeInsets.all(20.w),
+      padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
-        color: AppColors.goldAccent.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: AppColors.goldAccent.withValues(alpha: 0.3)),
+        color: AppColors.primaryGreen.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(28.r),
+        border: Border.all(
+          color: AppColors.primaryGreen.withValues(alpha: 0.1),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '💪 Keep Going!',
-            style: GoogleFonts.sanchez(
-              color: AppColors.goldAccent,
-              fontWeight: FontWeight.bold,
-              fontSize: 18.sp,
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                color: AppColors.goldAccent,
+                size: 20.sp,
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                'Neki Motivation',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16.sp,
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 16.h),
           Text(
             '"Indeed, Allah is with the patient." - Quran 2:153',
-            style: GoogleFonts.sanchez(
-              color: Colors.white70,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
               fontStyle: FontStyle.italic,
               fontSize: 14.sp,
+              height: 1.4,
             ),
           ),
-          SizedBox(height: 12.h),
-          if (challenge.completedDays > 0)
-            Text(
-              '🔥 You\'ve completed ${challenge.completedDays} ${challenge.completedDays == 1 ? 'day' : 'days'}! Keep up the amazing work!',
-              style: GoogleFonts.sanchez(
-                color: AppColors.goldAccent,
-                fontWeight: FontWeight.w600,
-                fontSize: 14.sp,
+          if (challenge.completedDays > 0) ...[
+            SizedBox(height: 16.h),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                color: AppColors.goldAccent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('🔥', style: TextStyle(fontSize: 14.sp)),
+                  SizedBox(width: 8.w),
+                  Text(
+                    '${challenge.completedDays} days completed! Keep it up.',
+                    style: TextStyle(
+                      color: AppColors.goldAccent,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13.sp,
+                    ),
+                  ),
+                ],
               ),
             ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildCompleteButton(BuildContext context) {
-    return SizedBox(
+    return Container(
       width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.goldAccent.withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: ElevatedButton(
         onPressed: () {
           final authState = context.read<AuthCubit>().state;
@@ -296,16 +383,18 @@ class HabitBuildingScreen extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.goldAccent,
           foregroundColor: Colors.black,
-          padding: EdgeInsets.symmetric(vertical: 16.h),
+          padding: EdgeInsets.symmetric(vertical: 20.h),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.r),
+            borderRadius: BorderRadius.circular(20.r),
           ),
+          elevation: 0,
         ),
         child: Text(
           'Mark Today as Complete ✓',
-          style: GoogleFonts.sanchez(
+          style: TextStyle(
             fontSize: 16.sp,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -316,43 +405,71 @@ class HabitBuildingScreen extends StatelessWidget {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.r),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('✅', style: TextStyle(fontSize: 60.sp)),
-            SizedBox(height: 16.h),
-            Text(
-              'Alhamdulillah!',
-              style: GoogleFonts.sanchez(
-                color: AppColors.goldAccent,
-                fontWeight: FontWeight.bold,
-                fontSize: 22.sp,
-              ),
+      builder: (context) => Container(
+        alignment: Alignment.center,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            margin: EdgeInsets.all(24.w),
+            padding: EdgeInsets.all(32.w),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0A0E21).withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(32.r),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
-            SizedBox(height: 12.h),
-            Text(
-              'You earned $points points!',
-              style: GoogleFonts.sanchez(color: Colors.white, fontSize: 16.sp),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 24.h),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.goldAccent,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(20.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.successGreen.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: AppColors.successGreen,
+                    size: 48.sp,
+                  ),
                 ),
-              ),
-              child: const Text('Continue'),
+                SizedBox(height: 24.h),
+                Text(
+                  'Alhamdulillah!',
+                  style: TextStyle(
+                    color: AppColors.goldAccent,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 24.sp,
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                Text(
+                  'One more step closer. You\'ve earned $points points for your discipline today.',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16.sp,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 32.h),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                    minimumSize: Size(double.infinity, 56.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                  ),
+                  child: const Text(
+                    'Continue Journey',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -362,60 +479,79 @@ class HabitBuildingScreen extends StatelessWidget {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.r),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('🎉', style: TextStyle(fontSize: 80.sp)),
-            SizedBox(height: 16.h),
-            Text(
-              'Alhamdulillah!',
-              style: GoogleFonts.sanchez(
-                color: AppColors.goldAccent,
-                fontWeight: FontWeight.bold,
-                fontSize: 24.sp,
-              ),
+      builder: (context) => Container(
+        alignment: Alignment.center,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            margin: EdgeInsets.all(24.w),
+            padding: EdgeInsets.all(32.w),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0A0E21).withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(32.r),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
-            SizedBox(height: 12.h),
-            Text(
-              'Challenge Completed!',
-              style: GoogleFonts.sanchez(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20.sp,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              'Total Points Earned: $totalPoints',
-              style: GoogleFonts.sanchez(
-                color: AppColors.goldAccent,
-                fontWeight: FontWeight.bold,
-                fontSize: 18.sp,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 24.h),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                context.pop(); // Go back to home
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.goldAccent,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(20.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.goldAccent.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.emoji_events_outlined,
+                    color: AppColors.goldAccent,
+                    size: 60.sp,
+                  ),
                 ),
-              ),
-              child: const Text('Back to Home'),
+                SizedBox(height: 24.h),
+                Text(
+                  'Mabrouk!',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 28.sp,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  'Challenge Completed Successfully',
+                  style: TextStyle(
+                    color: AppColors.goldAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18.sp,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 20.h),
+                Text(
+                  'Total Points Earned: $totalPoints',
+                  style: TextStyle(color: Colors.white70, fontSize: 16.sp),
+                ),
+                SizedBox(height: 32.h),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    context.pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                    minimumSize: Size(double.infinity, 56.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                  ),
+                  child: const Text(
+                    'Return Home',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

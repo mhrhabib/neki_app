@@ -11,7 +11,7 @@ import '../../../points/presentation/cubit/points_cubit.dart';
 import '../widgets/home_all_menu_section.dart';
 import '../widgets/home_current_prayer_section.dart';
 import '../widgets/home_feature_cards.dart';
-import '../widgets/home_johuur_card.dart';
+import '../widgets/home_user_stats_card.dart';
 import '../widgets/home_prayer_times_row.dart';
 import '../widgets/home_top_bar.dart';
 
@@ -80,8 +80,8 @@ class HomeDashboardScreen extends StatelessWidget {
                             HomePrayerTimesRow(prayerTimes: prayerTimes),
                             SizedBox(height: 16.h),
 
-                            // ── Johuur highlight card ────────────────────────
-                            HomeJohuurCard(prayerTimes: prayerTimes),
+                            // ── User stats card (Points + Streak) ───────────
+                            const HomeUserStatsCard(),
                             SizedBox(height: 20.h),
 
                             // ── Quick-access menu icons ──────────────────────
@@ -90,6 +90,7 @@ class HomeDashboardScreen extends StatelessWidget {
 
                             // ── Addiction + Challenge feature cards ──────────
                             const HomeFeatureCards(),
+                            SizedBox(height: 20.h),
                           ],
                         ),
                       ),

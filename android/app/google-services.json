@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "327642350514-f6rq8tg10jat9o7pasj5s8ni6tm6ju05.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.clearwavesystems.nekiapp",
+            "certificate_hash": "0be949fa6c22d8381353f6c532cbf29dfdcb7387"
+          }
+        },
+        {
           "client_id": "327642350514-gp043mlldjrcilohltgnd3f52ii7k58h.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

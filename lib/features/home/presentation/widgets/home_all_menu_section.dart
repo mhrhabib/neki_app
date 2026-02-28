@@ -16,9 +16,8 @@ class HomeAllMenuSection extends StatelessWidget {
     {'title': 'Good Deeds', 'icon': '❤️', 'route': RouteNames.goodDeeds},
     {'title': 'Quran', 'icon': '📖', 'route': RouteNames.quran},
     {'title': 'Dhikr', 'icon': '📿', 'route': RouteNames.dhikir},
-    {'title': 'Qibla', 'icon': '🧭', 'route': RouteNames.qibla},
+    {'title': 'Qibla Compass', 'icon': '🧭', 'route': RouteNames.qibla},
     {'title': 'Habit', 'icon': '📋', 'route': RouteNames.habitBuilding},
-    {'title': 'Dua', 'icon': '🤲', 'route': RouteNames.salah},
   ];
 
   @override

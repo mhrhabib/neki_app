@@ -18,22 +18,28 @@ import ManagedSettings
     channel.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       switch call.method {
-      case "requestIOSAuthorization":
+       case "requestIOSAuthorization":
         if #available(iOS 15.0, *) {
-            Task {
-                do {
-                    if #available(iOS 16.0, *) {
-                        try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
-                    } else {
-                        // Fallback on earlier versions
-                    }
-                    result(true)
-                } catch {
-                    result(FlutterError(code: "AUTH_FAILED", message: error.localizedDescription, details: nil))
+          Task {
+            do {
+                if #available(iOS 16.0, *) {
+                    try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+                } else {
+                    // Fallback on earlier versions
                 }
+              DispatchQueue.main.async {
+                result(true)
+              }
+            } catch {
+              DispatchQueue.main.async {
+                result(FlutterError(code: "AUTH_FAILED", 
+                                  message: error.localizedDescription, 
+                                  details: "\(error)"))
+              }
             }
+          }
         } else {
-            result(FlutterError(code: "UNSUPPORTED", message: "iOS 15.0+ required", details: nil))
+          result(FlutterError(code: "UNSUPPORTED", message: "iOS 15.0+ required", details: nil))
         }
       case "checkIOSAuthorization":
         if #available(iOS 15.0, *) {

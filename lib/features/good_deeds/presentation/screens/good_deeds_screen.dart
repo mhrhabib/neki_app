@@ -189,17 +189,8 @@ class _GoodDeedsScreenState extends State<GoodDeedsScreen> {
         leading: Padding(
           padding: EdgeInsets.only(left: 12.w),
           child: IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new,
-              color: Colors.white,
-              size: 20.sp,
-            ),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white.withValues(alpha: 0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-            ),
+            icon: Icon(Icons.arrow_back, color: Colors.white, size: 20.sp),
+
             onPressed: () => context.pop(),
           ),
         ),

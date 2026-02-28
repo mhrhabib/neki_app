@@ -14,14 +14,36 @@ import '../widgets/home_feature_cards.dart';
 import '../widgets/home_user_stats_card.dart';
 import '../widgets/home_prayer_times_row.dart';
 import '../widgets/home_top_bar.dart';
+import '../../../salah/presentation/cubit/salah_cubit.dart';
 
 /// Home dashboard screen.
 ///
 /// Acts as an orchestrator: it wires up Blocs/Cubits and hands off
 /// the individual UI sections to self-contained widget files found in
 /// `lib/features/home/presentation/widgets/`.
-class HomeDashboardScreen extends StatelessWidget {
+class HomeDashboardScreen extends StatefulWidget {
   const HomeDashboardScreen({super.key});
+
+  @override
+  State<HomeDashboardScreen> createState() => _HomeDashboardScreenState();
+}
+
+class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Check if we are already authenticated on startup and trigger loads
+    final authState = context.read<AuthCubit>().state;
+    if (authState is Authenticated) {
+      _triggerDataLoads(authState.user.id);
+    }
+  }
+
+  void _triggerDataLoads(String userId) {
+    context.read<PointsCubit>().loadUserPoints(userId);
+    context.read<ChallengeCubit>().loadChallenge(userId);
+    context.read<SalahCubit>().loadTodaysSalahs(userId);
+  }
 
   // -------------------------------------------------------------------------
   // Prayer time calculation
@@ -43,13 +65,15 @@ class HomeDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0D2818),
-      body: BlocBuilder<AuthCubit, AuthState>(
+      body: BlocConsumer<AuthCubit, AuthState>(
+        listener: (context, authState) {
+          if (authState is Authenticated) {
+            // Trigger data loads when transitioning to Authenticated
+            _triggerDataLoads(authState.user.id);
+          }
+        },
         builder: (context, authState) {
           if (authState is Authenticated) {
-            // Trigger data loads as soon as we know the user.
-            context.read<PointsCubit>().loadUserPoints(authState.user.id);
-            context.read<ChallengeCubit>().loadChallenge(authState.user.id);
-
             return BlocBuilder<LocationCubit, LocationState>(
               builder: (context, locationState) {
                 final prayerTimes = locationState is LocationLoaded

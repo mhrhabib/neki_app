@@ -12,7 +12,10 @@ class SalahRepositoryImpl implements SalahRepository {
   @override
   Future<List<SalahEntity>> getTodaysSalahs(String userId) async {
     final now = DateTime.now();
-    final todayStr = DateTime(now.year, now.month, now.day).toIso8601String().split('T')[0];
+    // Shift logical day by 4 hours backwards.
+    // So 3:00 AM Tuesday is treated as Monday for Salah tracking purposes.
+    final logicalNow = now.subtract(const Duration(hours: 4));
+    final todayStr = DateTime(logicalNow.year, logicalNow.month, logicalNow.day).toIso8601String().split('T')[0];
 
     // Fetch all salahs for the user and filter in memory to avoid needing a composite index
     final snapshot = await _firestoreService.getCollection(
@@ -23,7 +26,8 @@ class SalahRepositoryImpl implements SalahRepository {
     final List<SalahEntity> allUserSalahs = snapshot.docs.map((doc) => SalahModel.fromJson(doc.data())).toList();
 
     final todaysSalahs = allUserSalahs.where((salah) {
-      final salahDateStr = salah.timestamp.toIso8601String().split('T')[0];
+      final logicalSalahTime = salah.timestamp.subtract(const Duration(hours: 4));
+      final salahDateStr = logicalSalahTime.toIso8601String().split('T')[0];
       return salahDateStr == todayStr;
     }).toList();
 

@@ -2,11 +2,14 @@ import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../components/app_background_widget.dart';
 import '../../../../core/location/cubit/location_cubit.dart';
 import '../../../../core/location/cubit/location_state.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../challenge/presentation/cubit/challenge_cubit.dart';
+import '../../../challenge/presentation/widgets/challenge_progress_widget.dart';
 import '../../../points/presentation/cubit/points_cubit.dart';
 import '../widgets/home_all_menu_section.dart';
 import '../widgets/home_current_prayer_section.dart';
@@ -51,8 +54,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
 
   PrayerTimes? _calculatePrayerTimes(LocationLoaded state) {
     final coordinates = Coordinates(state.latitude, state.longitude);
-    final params = CalculationMethod.karachi.getParameters()
-      ..madhab = Madhab.hanafi;
+    final params = CalculationMethod.karachi.getParameters()..madhab = Madhab.hanafi;
     final date = DateComponents.from(DateTime.now());
     return PrayerTimes(coordinates, date, params);
   }
@@ -76,9 +78,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
           if (authState is Authenticated) {
             return BlocBuilder<LocationCubit, LocationState>(
               builder: (context, locationState) {
-                final prayerTimes = locationState is LocationLoaded
-                    ? _calculatePrayerTimes(locationState)
-                    : null;
+                final prayerTimes = locationState is LocationLoaded ? _calculatePrayerTimes(locationState) : null;
 
                 return Stack(
                   children: [
@@ -106,6 +106,25 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
 
                             // ── User stats card (Points + Streak) ───────────
                             const HomeUserStatsCard(),
+                            SizedBox(height: 20.h),
+
+                            // ── Active Challenge progress card ───────────────
+                            BlocBuilder<ChallengeCubit, ChallengeState>(
+                              builder: (context, challengeState) {
+                                if (challengeState is ChallengeLoaded &&
+                                    challengeState.challenge != null &&
+                                    challengeState.challenge!.isActive) {
+                                  return Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 20.w),
+                                    child: GestureDetector(
+                                      onTap: () => context.push(RouteNames.habitBuilding),
+                                      child: ChallengeProgressWidget(challenge: challengeState.challenge!),
+                                    ),
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              },
+                            ),
                             SizedBox(height: 20.h),
 
                             // ── Quick-access menu icons ──────────────────────

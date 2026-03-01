@@ -27,11 +27,18 @@ class SalahNotificationService {
   }
 
   Future<void> scheduleReminder(String salahName, Duration delay) async {
+    tz.Location location;
+    try {
+      location = tz.local;
+    } catch (_) {
+      location = tz.UTC;
+    }
+
     await _notificationsPlugin.zonedSchedule(
       0,
       'Salah Reminder',
       'It is time for $salahName. Please take a moment to pray.',
-      tz.TZDateTime.now(tz.local).add(delay),
+      tz.TZDateTime.now(location).add(delay),
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'salah_lock_channel',

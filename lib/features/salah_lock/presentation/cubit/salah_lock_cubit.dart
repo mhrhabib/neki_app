@@ -126,7 +126,11 @@ class SalahLockCubit extends Cubit<SalahLockState> {
   }
 
   Future<void> remindLater(String salahName) async {
-    await notificationService.scheduleReminder(salahName, const Duration(minutes: 10));
+    try {
+      await notificationService.scheduleReminder(salahName, const Duration(minutes: 10));
+    } catch (e) {
+      // Ignore notification failures to ensure the app still unlocks
+    }
     await deviceManager.stopAppBlocker();
     emit(SalahLockIdle(_settings)); // Temporarily dismiss overlay
   }

@@ -12,9 +12,77 @@ class PointsRepositoryImpl implements PointsRepository {
   @override
   Future<NekiPointsEntity> getUserPoints(String userId) async {
     final doc = await _firestoreService.getDocument(collectionPath: _collectionPath, documentId: userId);
+    final now = DateTime.now();
 
     if (doc != null && doc.exists) {
-      return NekiPointsModel.fromJson(doc.data()!);
+      NekiPointsModel model = NekiPointsModel.fromJson(doc.data()!);
+      bool needsUpdate = false;
+
+      final lastActive = model.lastActiveDate;
+      if (lastActive != null) {
+        final lastActiveDate = DateTime(lastActive.year, lastActive.month, lastActive.day);
+        final todayDate = DateTime(now.year, now.month, now.day);
+        final difference = todayDate.difference(lastActiveDate).inDays;
+
+        if (difference == 1) {
+          model = NekiPointsModel(
+            userId: model.userId,
+            totalPoints: model.totalPoints,
+            todayPoints: 0,
+            weekPoints: todayDate.weekday == DateTime.monday ? 0 : model.weekPoints,
+            monthPoints: todayDate.day == 1 ? 0 : model.monthPoints,
+            currentStreak: model.currentStreak + 1,
+            longestStreak: (model.currentStreak + 1) > model.longestStreak
+                ? (model.currentStreak + 1)
+                : model.longestStreak,
+            lastActiveDate: now,
+          );
+          needsUpdate = true;
+        } else if (difference > 1) {
+          model = NekiPointsModel(
+            userId: model.userId,
+            totalPoints: model.totalPoints,
+            todayPoints: 0,
+            weekPoints: (difference >= 7 || todayDate.weekday < lastActiveDate.weekday) ? 0 : model.weekPoints,
+            monthPoints: (difference >= 30 || todayDate.month != lastActiveDate.month) ? 0 : model.monthPoints,
+            currentStreak: 1, // Reset streak to 1 since they missed a day
+            longestStreak: model.longestStreak,
+            lastActiveDate: now,
+          );
+          needsUpdate = true;
+        } else if (difference == 0 && model.currentStreak == 0) {
+          // If they haven't started a streak yet, set it to 1
+          model = NekiPointsModel(
+            userId: model.userId,
+            totalPoints: model.totalPoints,
+            todayPoints: model.todayPoints,
+            weekPoints: model.weekPoints,
+            monthPoints: model.monthPoints,
+            currentStreak: 1,
+            longestStreak: model.longestStreak < 1 ? 1 : model.longestStreak,
+            lastActiveDate: now,
+          );
+          needsUpdate = true;
+        }
+      } else {
+        // Migration case - lastActiveDate is null
+        model = NekiPointsModel(
+          userId: model.userId,
+          totalPoints: model.totalPoints,
+          todayPoints: model.todayPoints,
+          weekPoints: model.weekPoints,
+          monthPoints: model.monthPoints,
+          currentStreak: model.currentStreak < 1 ? 1 : model.currentStreak,
+          longestStreak: model.longestStreak < 1 ? 1 : model.longestStreak,
+          lastActiveDate: now,
+        );
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        await _firestoreService.setDocument(collectionPath: _collectionPath, documentId: userId, data: model.toJson());
+      }
+      return model;
     } else {
       final defaultPoints = NekiPointsModel(
         userId: userId,
@@ -22,10 +90,11 @@ class PointsRepositoryImpl implements PointsRepository {
         todayPoints: 0,
         weekPoints: 0,
         monthPoints: 0,
-        currentStreak: 0,
-        longestStreak: 0,
+        currentStreak: 1,
+        longestStreak: 1,
+        lastActiveDate: now,
       );
-      // Optional: Initialize in Firestore
+      // Initialize in Firestore
       await _firestoreService.setDocument(
         collectionPath: _collectionPath,
         documentId: userId,
@@ -47,6 +116,7 @@ class PointsRepositoryImpl implements PointsRepository {
       monthPoints: currentPoints.monthPoints + points,
       currentStreak: currentPoints.currentStreak,
       longestStreak: currentPoints.longestStreak,
+      lastActiveDate: DateTime.now(), // update last active on activity
     );
 
     await _firestoreService.setDocument(
@@ -64,8 +134,8 @@ class PointsRepositoryImpl implements PointsRepository {
 
   @override
   Future<void> updateStreak(String userId) async {
+    // Rely on getUserPoints for logic, just trigger it and update timestamp
     final currentPoints = await getUserPoints(userId) as NekiPointsModel;
-    final newStreak = currentPoints.currentStreak + 1;
 
     final updatedPoints = NekiPointsModel(
       userId: userId,
@@ -73,8 +143,9 @@ class PointsRepositoryImpl implements PointsRepository {
       todayPoints: currentPoints.todayPoints,
       weekPoints: currentPoints.weekPoints,
       monthPoints: currentPoints.monthPoints,
-      currentStreak: newStreak,
-      longestStreak: newStreak > currentPoints.longestStreak ? newStreak : currentPoints.longestStreak,
+      currentStreak: currentPoints.currentStreak,
+      longestStreak: currentPoints.longestStreak,
+      lastActiveDate: DateTime.now(),
     );
 
     await _firestoreService.setDocument(

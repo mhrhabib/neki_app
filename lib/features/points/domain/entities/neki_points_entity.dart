@@ -6,6 +6,7 @@ class NekiPointsEntity {
   final int monthPoints;
   final int currentStreak;
   final int longestStreak;
+  final DateTime? lastActiveDate;
 
   NekiPointsEntity({
     required this.userId,
@@ -15,5 +16,6 @@ class NekiPointsEntity {
     required this.monthPoints,
     required this.currentStreak,
     required this.longestStreak,
+    this.lastActiveDate,
   });
 }

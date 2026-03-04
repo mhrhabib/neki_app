@@ -17,6 +17,7 @@ import '../widgets/home_feature_cards.dart';
 import '../widgets/home_user_stats_card.dart';
 import '../widgets/home_prayer_times_row.dart';
 import '../widgets/home_top_bar.dart';
+import '../widgets/home_setup_guide_card.dart';
 import '../../../salah/presentation/cubit/salah_cubit.dart';
 
 /// Home dashboard screen.
@@ -54,7 +55,8 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
 
   PrayerTimes? _calculatePrayerTimes(LocationLoaded state) {
     final coordinates = Coordinates(state.latitude, state.longitude);
-    final params = CalculationMethod.karachi.getParameters()..madhab = Madhab.hanafi;
+    final params = CalculationMethod.karachi.getParameters()
+      ..madhab = Madhab.hanafi;
     final date = DateComponents.from(DateTime.now());
     return PrayerTimes(coordinates, date, params);
   }
@@ -78,7 +80,9 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
           if (authState is Authenticated) {
             return BlocBuilder<LocationCubit, LocationState>(
               builder: (context, locationState) {
-                final prayerTimes = locationState is LocationLoaded ? _calculatePrayerTimes(locationState) : null;
+                final prayerTimes = locationState is LocationLoaded
+                    ? _calculatePrayerTimes(locationState)
+                    : null;
 
                 return Stack(
                   children: [
@@ -106,6 +110,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
 
                             // ── User stats card (Points + Streak) ───────────
                             const HomeUserStatsCard(),
+                            const HomeSetupGuideCard(),
                             SizedBox(height: 20.h),
 
                             // ── Active Challenge progress card ───────────────
@@ -115,10 +120,16 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                     challengeState.challenge != null &&
                                     challengeState.challenge!.isActive) {
                                   return Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 20.w),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 20.w,
+                                    ),
                                     child: GestureDetector(
-                                      onTap: () => context.push(RouteNames.habitBuilding),
-                                      child: ChallengeProgressWidget(challenge: challengeState.challenge!),
+                                      onTap: () => context.push(
+                                        RouteNames.habitBuilding,
+                                      ),
+                                      child: ChallengeProgressWidget(
+                                        challenge: challengeState.challenge!,
+                                      ),
                                     ),
                                   );
                                 }

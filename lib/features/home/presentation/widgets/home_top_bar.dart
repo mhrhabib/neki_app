@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/location/cubit/location_cubit.dart';
 import '../../../../core/location/cubit/location_state.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../salah_lock/presentation/cubit/salah_lock_cubit.dart';
 
 /// Top app bar showing the user's location pill on the left
 /// and a circular profile icon on the right.
@@ -74,22 +76,62 @@ class _LocationPill extends StatelessWidget {
 class _ProfileIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => GoRouter.of(context).push(RouteNames.salahLockSettings),
-      child: Container(
-        width: 36.w,
-        height: 36.w,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.12),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-        ),
-        child: Icon(
-          CupertinoIcons.person_fill,
-          color: Colors.white70,
-          size: 18.sp,
-        ),
-      ),
+    return BlocBuilder<SalahLockCubit, SalahLockState>(
+      builder: (context, state) {
+        final bool showPulse = state.showSetupGuide;
+
+        return GestureDetector(
+          onTap: () => GoRouter.of(context).push(RouteNames.salahLockSettings),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 36.w,
+                height: 36.w,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: showPulse
+                        ? AppColors.goldAccent.withValues(alpha: 0.5)
+                        : Colors.white.withValues(alpha: 0.2),
+                    width: showPulse ? 1.5.w : 1.w,
+                  ),
+                ),
+                child: Icon(
+                  CupertinoIcons.person_fill,
+                  color: showPulse ? AppColors.goldAccent : Colors.white70,
+                  size: 18.sp,
+                ),
+              ),
+              if (showPulse)
+                Positioned(
+                  top: -2.r,
+                  right: -2.r,
+                  child: Container(
+                    width: 10.r,
+                    height: 10.r,
+                    decoration: BoxDecoration(
+                      color: AppColors.goldAccent,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF0D2818),
+                        width: 2.r,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.goldAccent.withValues(alpha: 0.5),
+                          blurRadius: 4.r,
+                          spreadRadius: 1.r,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

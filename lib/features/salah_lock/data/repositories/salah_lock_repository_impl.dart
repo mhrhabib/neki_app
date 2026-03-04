@@ -12,16 +12,17 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
   static const String _keyBlockedApps = 'salah_lock_blocked_apps';
   static const String _keyAutoUnlockMins = 'salah_lock_auto_unlock_mins';
   static const String _keyCompletionsPrefix = 'salah_lock_done_';
+  static const String _keyGuideDismissed = 'salah_lock_guide_dismissed';
 
   SalahLockRepositoryImpl(this.prefs);
 
   @override
   Future<SalahLockSettings> getSettings() async {
     return SalahLockSettings(
-      isEnabled: prefs.getBool(_keyEnabled) ?? false,
+      isEnabled: prefs.getBool(_keyEnabled) ?? true,
       lockDeviceAndroid: prefs.getBool(_keyLockAndroid) ?? false,
       autoLockSocialIos: prefs.getBool(_keyAutoLockSocialIos) ?? false,
-      streakTracking: prefs.getBool(_keyStreakTracking) ?? false,
+      streakTracking: prefs.getBool(_keyStreakTracking) ?? true,
       blockedApps: prefs.getStringList(_keyBlockedApps) ?? [],
       autoUnlockMinutes: prefs.getInt(_keyAutoUnlockMins) ?? 120,
     );
@@ -53,6 +54,16 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
   Future<void> clearDailyCompletions() async {
     // SharedPreferences doesn't have a prefix clear, but we only call this
     // if we want to reset. Actually, using the date in the key handles expiry.
+  }
+
+  @override
+  Future<bool> isGuideDismissed() async {
+    return prefs.getBool(_keyGuideDismissed) ?? false;
+  }
+
+  @override
+  Future<void> setGuideDismissed(bool dismissed) async {
+    await prefs.setBool(_keyGuideDismissed, dismissed);
   }
 
   String _getTodayKey() {

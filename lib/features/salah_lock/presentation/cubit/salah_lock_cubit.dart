@@ -11,6 +11,7 @@ import '../../domain/repositories/salah_lock_repository.dart';
 import '../../../salah/presentation/cubit/salah_cubit.dart';
 import '../../../../core/location/cubit/location_cubit.dart';
 import '../../../../core/location/cubit/location_state.dart';
+import '../../../auth/domain/repositories/premium_repository.dart';
 
 part 'salah_lock_state.dart';
 
@@ -20,10 +21,13 @@ class SalahLockCubit extends Cubit<SalahLockState> {
   final DeviceManagementService deviceManager;
   final SalahCubit salahCubit;
   final LocationCubit locationCubit;
+  final PremiumRepository premiumRepository;
 
   Timer? _monitoringTimer;
   StreamSubscription? _locationSubscription;
+  StreamSubscription? _salahSubscription;
   SalahLockSettings _settings = SalahLockSettings();
+  bool _isGuideDismissed = false;
   List<Map<String, String>> _ayahs = [];
 
   SalahLockCubit({
@@ -32,11 +36,14 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     required this.deviceManager,
     required this.salahCubit,
     required this.locationCubit,
+    required this.premiumRepository,
   }) : super(SalahLockIdle(SalahLockSettings()));
 
   Future<void> init() async {
-    emit(SalahLockLoading(_settings));
+    emit(SalahLockLoading(_settings, isGuideDismissed: _isGuideDismissed));
     _settings = await repository.getSettings();
+    _isGuideDismissed = await repository.isGuideDismissed();
+
     final jsonString = await rootBundle.loadString('assets/salah_ayahs.json');
     final List<dynamic> jsonList = json.decode(jsonString);
     _ayahs = jsonList.map((e) => Map<String, String>.from(e)).toList();
@@ -47,15 +54,30 @@ class SalahLockCubit extends Cubit<SalahLockState> {
       }
     });
 
+    _salahSubscription = salahCubit.stream.listen((salahState) {
+      if (salahState is SalahLoaded && locationCubit.state is LocationLoaded) {
+        final prayerTimes = _calculatePrayerTimes(
+          locationCubit.state as LocationLoaded,
+        );
+        checkPrayerLock(prayerTimes, '');
+      }
+    });
+
     // Initial check
     if (locationCubit.state is LocationLoaded) {
-      startMonitoring(userId: '', locationState: locationCubit.state as LocationLoaded);
+      final prayerTimes = _calculatePrayerTimes(
+        locationCubit.state as LocationLoaded,
+      );
+      checkPrayerLock(prayerTimes, '');
     }
     // Ensure any listeners (UI) update after settings are loaded
-    emit(SalahLockIdle(_settings));
+    emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
   }
 
-  void startMonitoring({required String userId, required LocationLoaded locationState}) {
+  void startMonitoring({
+    required String userId,
+    required LocationLoaded locationState,
+  }) {
     _monitoringTimer?.cancel();
 
     final prayerTimes = _calculatePrayerTimes(locationState);
@@ -70,8 +92,13 @@ class SalahLockCubit extends Cubit<SalahLockState> {
 
   PrayerTimes _calculatePrayerTimes(LocationLoaded state) {
     final coordinates = Coordinates(state.latitude, state.longitude);
-    final params = CalculationMethod.karachi.getParameters()..madhab = Madhab.hanafi;
-    return PrayerTimes(coordinates, DateComponents.from(DateTime.now()), params);
+    final params = CalculationMethod.karachi.getParameters()
+      ..madhab = Madhab.hanafi;
+    return PrayerTimes(
+      coordinates,
+      DateComponents.from(DateTime.now()),
+      params,
+    );
   }
 
   Future<void> checkPrayerLock(PrayerTimes prayerTimes, String userId) async {
@@ -81,13 +108,36 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     final currentPrayer = prayerTimes.currentPrayer();
     if (currentPrayer == Prayer.none || currentPrayer == Prayer.sunrise) {
       if (state is SalahLockActive) {
-        emit(SalahLockIdle(_settings));
+        emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
       }
       return;
     }
 
     final prayerName = _getPrayerName(currentPrayer);
-    final isDone = await repository.isSalahCompletedLocally(prayerName);
+
+    // Premium Check: Allow only 2 prayers (Fajr and Isha) for free users
+    final isPremium = await premiumRepository.isPremium();
+    if (!isPremium) {
+      if (prayerName != 'Fajr' && prayerName != 'Isha') {
+        if (state is SalahLockActive) {
+          emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
+        }
+        return;
+      }
+    }
+
+    bool isDone = await repository.isSalahCompletedLocally(prayerName);
+
+    // Also check SalahCubit state for sync
+    if (!isDone && salahCubit.state is SalahLoaded) {
+      final loadedState = salahCubit.state as SalahLoaded;
+      isDone = loadedState.salahs.any(
+        (s) => s.salahName == prayerName && s.isCompleted,
+      );
+      if (isDone) {
+        await repository.markSalahCompletedLocally(prayerName);
+      }
+    }
 
     if (!isDone) {
       if (state is! SalahLockActive) {
@@ -102,12 +152,19 @@ class SalahLockCubit extends Cubit<SalahLockState> {
         }
 
         final randomVerse = _ayahs[Random().nextInt(_ayahs.length)];
-        emit(SalahLockActive(salahName: prayerName, verse: randomVerse, settings: _settings));
+        emit(
+          SalahLockActive(
+            salahName: prayerName,
+            verse: randomVerse,
+            settings: _settings,
+            isGuideDismissed: _isGuideDismissed,
+          ),
+        );
       }
     } else {
       if (state is SalahLockActive) {
         await deviceManager.stopAppBlocker();
-        emit(SalahLockIdle(_settings));
+        emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
       }
     }
   }
@@ -117,22 +174,27 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     await repository.markSalahCompletedLocally(salahName);
     await notificationService.cancelAll();
     await deviceManager.stopAppBlocker();
-    emit(SalahLockUnlocked(_settings));
+    emit(SalahLockUnlocked(_settings, isGuideDismissed: _isGuideDismissed));
 
     // After 2 seconds, move back to idle so we can lock for next prayer
     Future.delayed(const Duration(seconds: 2), () {
-      emit(SalahLockIdle(_settings));
+      emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
     });
   }
 
   Future<void> remindLater(String salahName) async {
     try {
-      await notificationService.scheduleReminder(salahName, const Duration(minutes: 10));
+      await notificationService.scheduleReminder(
+        salahName,
+        const Duration(minutes: 10),
+      );
     } catch (e) {
       // Ignore notification failures to ensure the app still unlocks
     }
     await deviceManager.stopAppBlocker();
-    emit(SalahLockIdle(_settings)); // Temporarily dismiss overlay
+    emit(
+      SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed),
+    ); // Temporarily dismiss overlay
   }
 
   Future<void> updateSettings(SalahLockSettings settings) async {
@@ -141,12 +203,25 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     // Re-emit current state with new settings so UI will rebuild.
     if (state is SalahLockActive) {
       final s = state as SalahLockActive;
-      emit(SalahLockActive(salahName: s.salahName, verse: s.verse, settings: _settings));
+      emit(
+        SalahLockActive(
+          salahName: s.salahName,
+          verse: s.verse,
+          settings: _settings,
+          isGuideDismissed: _isGuideDismissed,
+        ),
+      );
     } else if (state is SalahLockUnlocked) {
-      emit(SalahLockUnlocked(_settings));
+      emit(SalahLockUnlocked(_settings, isGuideDismissed: _isGuideDismissed));
     } else {
-      emit(SalahLockIdle(_settings));
+      emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
     }
+  }
+
+  Future<void> dismissGuide() async {
+    await repository.setGuideDismissed(true);
+    _isGuideDismissed = true;
+    updateSettings(_settings); // Trigger a re-emit
   }
 
   Future<bool> checkAndRequestAndroidPermissions() async {
@@ -180,6 +255,7 @@ class SalahLockCubit extends Cubit<SalahLockState> {
   Future<void> close() {
     _monitoringTimer?.cancel();
     _locationSubscription?.cancel();
+    _salahSubscription?.cancel();
     return super.close();
   }
 }

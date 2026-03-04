@@ -21,6 +21,9 @@ class HomeUserStatsCard extends StatelessWidget {
           if (state is PointsLoaded) {
             totalPoints = state.points.totalPoints;
             currentStreak = state.points.currentStreak;
+            debugPrint(
+              'Total Points: $totalPoints, Current Streak: $currentStreak',
+            );
           }
 
           return Container(

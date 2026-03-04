@@ -7,7 +7,7 @@ import 'core/di/set_up_di.dart';
 import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/theme/theme_cubit.dart';
-import 'features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'features/beat_satan_chalange/presentation/cubit/onboarding_cubit.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 import 'features/salah/presentation/cubit/salah_cubit.dart';
 import 'features/points/presentation/cubit/points_cubit.dart';
@@ -18,6 +18,7 @@ import 'features/salah_lock/presentation/widgets/salah_lock_overlay.dart';
 import 'features/salah_lock/domain/repositories/salah_lock_repository.dart';
 import 'features/salah_lock/data/services/salah_notification_service.dart';
 import 'features/salah_lock/data/services/device_management_service.dart';
+import 'features/auth/domain/repositories/premium_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,12 +45,18 @@ class _NekiAppState extends State<NekiApp> {
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: getIt<ThemeCubit>()),
-        BlocProvider(create: (context) => getIt<OnboardingCubit>()..checkOnboarding()),
-        BlocProvider(create: (context) => getIt<AuthCubit>()..checkAuthStatus()),
+        BlocProvider(
+          create: (context) => getIt<OnboardingCubit>()..checkOnboarding(),
+        ),
+        BlocProvider(
+          create: (context) => getIt<AuthCubit>()..checkAuthStatus(),
+        ),
         BlocProvider(create: (context) => getIt<SalahCubit>()),
         BlocProvider(create: (context) => getIt<PointsCubit>()),
         BlocProvider(create: (context) => getIt<ChallengeCubit>()),
-        BlocProvider(create: (context) => getIt<LocationCubit>()..fetchLocation()),
+        BlocProvider(
+          create: (context) => getIt<LocationCubit>()..fetchLocation(),
+        ),
         // Create SalahLockCubit using the same SalahCubit and LocationCubit
         // instances that are provided above so they can communicate and
         // SalahLock can listen to location/salah updates correctly.
@@ -60,6 +67,7 @@ class _NekiAppState extends State<NekiApp> {
             deviceManager: getIt<DeviceManagementService>(),
             salahCubit: BlocProvider.of<SalahCubit>(context),
             locationCubit: BlocProvider.of<LocationCubit>(context),
+            premiumRepository: getIt<PremiumRepository>(),
           )..init(),
         ),
       ],
@@ -74,11 +82,18 @@ class _NekiAppState extends State<NekiApp> {
                 title: 'Neki Tracker',
                 theme: AppTheme.lightTheme(),
                 darkTheme: AppTheme.darkTheme(),
-                themeMode: themeData.brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
+                themeMode: themeData.brightness == Brightness.dark
+                    ? ThemeMode.dark
+                    : ThemeMode.light,
                 routerConfig: AppRouter.router,
                 debugShowCheckedModeBanner: false,
                 builder: (context, child) {
-                  return Stack(children: [if (child != null) child, const SalahLockOverlay()]);
+                  return Stack(
+                    children: [
+                      if (child != null) child,
+                      const SalahLockOverlay(),
+                    ],
+                  );
                 },
               );
             },

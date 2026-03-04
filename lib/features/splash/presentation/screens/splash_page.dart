@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:neki_app/components/app_background_widget.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../onboarding/presentation/cubit/onboarding_cubit.dart';
+import '../../../beat_satan_chalange/presentation/cubit/onboarding_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 
 class SplashPage extends StatefulWidget {
@@ -53,8 +53,8 @@ class _SplashPageState extends State<SplashPage> {
         context.go(RouteNames.login);
       }
     } else {
-      // User hasn't completed onboarding, show goal selection
-      context.go(RouteNames.goalSelection);
+      // User hasn't completed onboarding, show premium onboarding
+      context.go(RouteNames.premiumOnboarding);
     }
   }
 

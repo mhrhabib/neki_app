@@ -673,7 +673,7 @@ class _DhikirScreenState extends State<DhikirScreen>
                           Positioned.fill(
                             child: AnimatedBuilder(
                               animation: _completionAnimation,
-                              builder: (_, __) => Opacity(
+                              builder: (_, _) => Opacity(
                                 opacity: _completionAnimation.value.clamp(
                                   0.0,
                                   1.0,
@@ -827,7 +827,7 @@ class _DhikirScreenState extends State<DhikirScreen>
                     // Animated bead icon + count
                     AnimatedBuilder(
                       animation: _beadController,
-                      builder: (_, __) {
+                      builder: (_, _) {
                         final scale =
                             1.0 +
                             0.18 * math.sin(_beadController.value * math.pi);
@@ -914,7 +914,7 @@ class _DhikirScreenState extends State<DhikirScreen>
                 ),
               ),
             );
-          }).toList(),
+          }),
           SizedBox(width: 8.w),
           GestureDetector(
             onTap: () {

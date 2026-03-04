@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/challenge/presentation/screens/habit_building_screen.dart';
-import '../../features/onboarding/presentation/screens/goal_selection_screen.dart'
+import '../../features/beat_satan_chalange/presentation/screens/goal_selection_screen.dart'
     as onboarding;
-import '../../features/onboarding/presentation/screens/habit_building_screen.dart'
+import '../../features/beat_satan_chalange/presentation/screens/habit_building_screen.dart'
+    as onboarding;
+import '../../features/onboarding/presentation/screens/premium_onboarding_screen.dart'
     as onboarding;
 import '../../features/good_deeds/presentation/screens/good_deeds_screen.dart';
 import '../../features/home/presentation/screens/home_dashboard_screen.dart';
@@ -60,6 +62,13 @@ class AppRouter {
         path: RouteNames.habitBuildingOnboarding,
         pageBuilder: (context, state) => _buildPageWithTransition(
           child: const onboarding.HabitBuildingScreen(),
+          state: state,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.premiumOnboarding,
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const onboarding.PremiumOnboardingScreen(),
           state: state,
         ),
       ),

@@ -6,4 +6,6 @@ abstract class SalahLockRepository {
   Future<bool> isSalahCompletedLocally(String salahName);
   Future<void> markSalahCompletedLocally(String salahName);
   Future<void> clearDailyCompletions();
+  Future<bool> isGuideDismissed();
+  Future<void> setGuideDismissed(bool dismissed);
 }

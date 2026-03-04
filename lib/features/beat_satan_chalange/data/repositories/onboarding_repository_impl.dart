@@ -21,6 +21,9 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   @override
   Future<void> saveChallengeGoal(int days, int targetPoints) async {
     final prefs = await SharedPreferences.getInstance();
-    await Future.wait([prefs.setInt(_challengeDaysKey, days), prefs.setInt(_challengeTargetKey, targetPoints)]);
+    await Future.wait([
+      prefs.setInt(_challengeDaysKey, days),
+      prefs.setInt(_challengeTargetKey, targetPoints),
+    ]);
   }
 }

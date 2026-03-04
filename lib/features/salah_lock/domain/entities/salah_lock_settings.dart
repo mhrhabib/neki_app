@@ -7,10 +7,10 @@ class SalahLockSettings {
   final int autoUnlockMinutes;
 
   SalahLockSettings({
-    this.isEnabled = false,
+    this.isEnabled = true,
     this.lockDeviceAndroid = false,
     this.autoLockSocialIos = false,
-    this.streakTracking = false,
+    this.streakTracking = true,
     this.blockedApps = const [],
     this.autoUnlockMinutes = 120,
   });

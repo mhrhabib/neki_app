@@ -305,6 +305,19 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     return true;
   }
 
+  Future<bool> checkAndRequestIOSPermissions() async {
+    final auth = await deviceManager.checkIOSAuthorization();
+    if (!auth) {
+      await deviceManager.requestIOSAuthorization();
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> openIOSAppPicker() async {
+    await deviceManager.selectBlockedApps();
+  }
+
   SalahLockSettings get settings => _settings;
 
   String _getPrayerName(Prayer prayer) {

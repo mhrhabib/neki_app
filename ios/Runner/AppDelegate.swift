@@ -1,12 +1,17 @@
 import Flutter
 import UIKit
-import flutter_local_notifications
-
 import FamilyControls
 import ManagedSettings
+import SwiftUI
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
+  
+  // Storage for the selected apps to block
+  private var selection = FamilyActivitySelection()
+  private let store = ManagedSettingsStore()
+  private let activityKey = "neki_blocked_selection"
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -15,57 +20,134 @@ import ManagedSettings
     let channel = FlutterMethodChannel(name: "neki/device_management",
                                               binaryMessenger: controller.binaryMessenger)
     
+    // Load existing selection from UserDefaults if possible
+    loadSelection()
+
     channel.setMethodCallHandler({
-      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      guard let self = self else { return }
+      
       switch call.method {
-       case "requestIOSAuthorization":
+      case "requestIOSAuthorization":
         if #available(iOS 15.0, *) {
           Task {
             do {
-                if #available(iOS 16.0, *) {
-                    try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
-                } else {
-                    // Fallback on earlier versions
-                }
-              DispatchQueue.main.async {
-                result(true)
-              }
+              try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+              DispatchQueue.main.async { result(true) }
             } catch {
-              DispatchQueue.main.async {
-                result(FlutterError(code: "AUTH_FAILED", 
-                                  message: error.localizedDescription, 
-                                  details: "\(error)"))
-              }
+              DispatchQueue.main.async { result(FlutterError(code: "AUTH_FAILED", message: error.localizedDescription, details: nil)) }
             }
           }
         } else {
           result(FlutterError(code: "UNSUPPORTED", message: "iOS 15.0+ required", details: nil))
         }
+
       case "checkIOSAuthorization":
         if #available(iOS 15.0, *) {
-            result(AuthorizationCenter.shared.authorizationStatus == .approved)
+          result(AuthorizationCenter.shared.authorizationStatus == .approved)
         } else {
-            result(false)
+          result(false)
         }
-      case "applyIOSBlockList":
-        // This requires ManagedSettings which is usually done via a DeviceActivityMonitorExtension
-        // For a production app, we would save the selection to a shared app group container
-        // that the extension can read.
-        result(true)
-      case "lockDevice":
-        // iOS does not allow programmatic screen locking for standard apps.
-        // We return true to avoid MissingPluginException.
-        result(true)
+
+      case "selectBlockedApps":
+        // Show the native SwiftUI FamilyActivityPicker
+        self.showPicker(result: result)
+
+      case "startAppBlocker":
+        // On iOS, starting the app blocker means applying the shield
+        self.applyShield(result: result)
+
+      case "stopAppBlocker":
+        // On iOS, stopping means clearing the shield
+        self.removeShield(result: result)
+
       default:
         result(FlutterMethodNotImplemented)
       }
     })
 
-    if #available(iOS 10.0, *) {
-      UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
-    }
-    
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
+
+  // MARK: - Shield Logic
+
+  private func applyShield(result: FlutterResult) {
+    if #available(iOS 16.0, *) {
+        // Apply the selection to ManagedSettings
+        store.shield.applications = selection.applicationTokens
+        store.shield.applicationCategories = selection.categoryTokens.isEmpty ? nil : selection.categoryTokens
+        result(true)
+    } else {
+        result(FlutterError(code: "UNSUPPORTED", message: "Shielding requires iOS 16.0+", details: nil))
+    }
+  }
+
+  private func removeShield(result: FlutterResult) {
+    if #available(iOS 16.0, *) {
+        store.shield.applications = nil
+        store.shield.applicationCategories = nil
+        result(true)
+    } else {
+        result(true) // No-op on older versions
+    }
+  }
+
+  // MARK: - Picker Logic
+
+  private func showPicker(result: @escaping FlutterResult) {
+    if #available(iOS 15.0, *) {
+        let pickerProvider = PickerProvider(selection: self.selection) { newSelection in
+            self.selection = newSelection
+            self.saveSelection()
+            result(true)
+        }
+        
+        let hostingController = UIHostingController(rootView: pickerProvider)
+        if let rootVC = window?.rootViewController {
+            rootVC.present(hostingController, animated: true)
+        }
+    } else {
+        result(FlutterError(code: "UNSUPPORTED", message: "iOS 15.0+ required for picker", details: nil))
+    }
+  }
+
+  private func saveSelection() {
+    let encoder = JSONEncoder()
+    if let encoded = try? encoder.encode(selection) {
+        UserDefaults.standard.set(encoded, forKey: activityKey)
+    }
+  }
+
+  private func loadSelection() {
+    if let data = UserDefaults.standard.data(forKey: activityKey) {
+        let decoder = JSONDecoder()
+        if let loaded = try? decoder.decode(FamilyActivitySelection.self, from: data) {
+            self.selection = loaded
+        }
+    }
+  }
+}
+
+// Helper for SwiftUI Picker
+@available(iOS 15.0, *)
+struct PickerProvider: View {
+    @State var selection: FamilyActivitySelection
+    var onSave: (FamilyActivitySelection) -> Void
+    @Environment(\.presentationMode) var presentationMode
+
+    var body: some View {
+        NavigationView {
+            FamilyActivityPicker(selection: $selection)
+                .navigationTitle("Select Restricted Apps")
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") {
+                            onSave(selection)
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    }
+                }
+        }
+    }
 }

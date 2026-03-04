@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -105,36 +106,60 @@ class SalahLockSettingsScreen extends StatelessWidget {
                           value: settings.blockedApps.isNotEmpty,
                           onChanged: (val) async {
                             if (val) {
-                              // 1. Turn it on in the UI immediately
-                              final apps = [
-                                'com.facebook.katana',
-                                'com.facebook.lite',
-                                'com.instagram.android',
-                                'com.zhiliaoapp.musically',
-                                'com.twitter.android',
-                                'com.snapchat.android',
-                                'com.google.android.youtube',
-                                'com.google.android.apps.youtube.music',
-                                'com.whatsapp',
-                                'com.netflix.mediaclient',
-                              ];
-                              cubit.updateSettings(settings.copyWith(blockedApps: apps));
+                              if (Platform.isIOS) {
+                                final granted = await cubit.checkAndRequestIOSPermissions();
+                                if (granted) {
+                                  await cubit.openIOSAppPicker();
+                                  // Update settings to reflect that we have a selection active
+                                  cubit.updateSettings(settings.copyWith(blockedApps: ['ios_shield_active']));
+                                }
+                              } else {
+                                // 1. Turn it on in the UI immediately
+                                final apps = [
+                                  'com.facebook.katana',
+                                  'com.facebook.lite',
+                                  'com.instagram.android',
+                                  'com.zhiliaoapp.musically',
+                                  'com.twitter.android',
+                                  'com.snapchat.android',
+                                  'com.google.android.youtube',
+                                  'com.google.android.apps.youtube.music',
+                                  'com.whatsapp',
+                                  'com.netflix.mediaclient',
+                                ];
+                                cubit.updateSettings(settings.copyWith(blockedApps: apps));
 
-                              // 2. Request permissions in background
-                              final granted = await cubit.checkAndRequestAndroidPermissions();
-                              if (!granted && context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Permissions required for blocking to take effect.'),
-                                    duration: Duration(seconds: 3),
-                                  ),
-                                );
+                                // 2. Request permissions in background
+                                final granted = await cubit.checkAndRequestAndroidPermissions();
+                                if (!granted && context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Permissions required for blocking to take effect.'),
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
+                                }
                               }
                             } else {
                               cubit.updateSettings(settings.copyWith(blockedApps: []));
                             }
                           },
                         ),
+                        if (Platform.isIOS && settings.blockedApps.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(left: 60.w, bottom: 12.h),
+                            child: InkWell(
+                              onTap: () => cubit.openIOSAppPicker(),
+                              child: Text(
+                                'Change Selected Apps →',
+                                style: TextStyle(
+                                  color: AppColors.primaryGreen,
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
                         _buildToggleTile(
                           icon: Icons.gpp_maybe_rounded,
                           title: 'Strict Lockdown Mode',

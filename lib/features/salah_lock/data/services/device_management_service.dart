@@ -67,22 +67,20 @@ class DeviceManagementService {
     }
   }
 
+  // --- Unified / Universal ---
+
   Future<void> startAppBlocker(List<String> blockedApps) async {
-    if (!Platform.isAndroid) return;
     try {
-      debugPrint('🚫 DeviceManager: Starting app blocker for ${blockedApps.length} apps');
-      await _channel.invokeMethod('startAppBlocker', {
-        'blockedApps': blockedApps,
-      });
+      debugPrint('🚫 DeviceManager: Starting app blocker (${Platform.isAndroid ? 'Android' : 'iOS'})');
+      await _channel.invokeMethod('startAppBlocker', {'blockedApps': blockedApps});
     } catch (e) {
       debugPrint('❌ DeviceManager: Error starting app blocker - $e');
     }
   }
 
   Future<void> stopAppBlocker() async {
-    if (!Platform.isAndroid) return;
     try {
-      debugPrint('🚫 DeviceManager: Stopping app blocker');
+      debugPrint('🚫 DeviceManager: Stopping app blocker (${Platform.isAndroid ? 'Android' : 'iOS'})');
       await _channel.invokeMethod('stopAppBlocker');
     } catch (e) {
       debugPrint('❌ DeviceManager: Error stopping app blocker - $e');
@@ -110,12 +108,13 @@ class DeviceManagementService {
     }
   }
 
-  Future<void> applyIOSBlockList(List<String> appTokens) async {
+  /// Opens the native iOS Apple Picker for the user to select which apps to block.
+  Future<void> selectBlockedApps() async {
     if (!Platform.isIOS) return;
     try {
-      await _channel.invokeMethod('applyIOSBlockList', {'appTokens': appTokens});
+      await _channel.invokeMethod('selectBlockedApps');
     } catch (e) {
-      debugPrint('❌ DeviceManager: Error applying iOS block list - $e');
+      debugPrint('❌ DeviceManager: Error selecting apps - $e');
     }
   }
 

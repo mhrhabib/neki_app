@@ -4,6 +4,7 @@ class SalahLockSettings {
   final bool autoLockSocialIos;
   final bool streakTracking;
   final List<String> blockedApps;
+  final bool lockAllApps;
   final int autoUnlockMinutes;
 
   SalahLockSettings({
@@ -12,6 +13,7 @@ class SalahLockSettings {
     this.autoLockSocialIos = false,
     this.streakTracking = true,
     this.blockedApps = const [],
+    this.lockAllApps = false,
     this.autoUnlockMinutes = 120,
   });
 
@@ -21,6 +23,7 @@ class SalahLockSettings {
     bool? autoLockSocialIos,
     bool? streakTracking,
     List<String>? blockedApps,
+    bool? lockAllApps,
     int? autoUnlockMinutes,
   }) {
     return SalahLockSettings(
@@ -29,6 +32,7 @@ class SalahLockSettings {
       autoLockSocialIos: autoLockSocialIos ?? this.autoLockSocialIos,
       streakTracking: streakTracking ?? this.streakTracking,
       blockedApps: blockedApps ?? this.blockedApps,
+      lockAllApps: lockAllApps ?? this.lockAllApps,
       autoUnlockMinutes: autoUnlockMinutes ?? this.autoUnlockMinutes,
     );
   }

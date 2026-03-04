@@ -25,8 +25,8 @@ class BlockedActivity : AppCompatActivity() {
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        // Prevent going back to the blocked app
-        super.onBackPressed()
+        // Do nothing to block the back button
     }
 }

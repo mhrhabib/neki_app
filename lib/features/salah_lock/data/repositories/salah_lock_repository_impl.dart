@@ -10,6 +10,7 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
   static const String _keyAutoLockSocialIos = 'salah_lock_social_ios';
   static const String _keyStreakTracking = 'salah_lock_streak_tracking';
   static const String _keyBlockedApps = 'salah_lock_blocked_apps';
+  static const String _keyLockAllApps = 'salah_lock_all_apps';
   static const String _keyAutoUnlockMins = 'salah_lock_auto_unlock_mins';
   static const String _keyCompletionsPrefix = 'salah_lock_done_';
   static const String _keyGuideDismissed = 'salah_lock_guide_dismissed';
@@ -24,6 +25,7 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
       autoLockSocialIos: prefs.getBool(_keyAutoLockSocialIos) ?? false,
       streakTracking: prefs.getBool(_keyStreakTracking) ?? true,
       blockedApps: prefs.getStringList(_keyBlockedApps) ?? [],
+      lockAllApps: prefs.getBool(_keyLockAllApps) ?? false,
       autoUnlockMinutes: prefs.getInt(_keyAutoUnlockMins) ?? 120,
     );
   }
@@ -35,6 +37,7 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
     await prefs.setBool(_keyAutoLockSocialIos, settings.autoLockSocialIos);
     await prefs.setBool(_keyStreakTracking, settings.streakTracking);
     await prefs.setStringList(_keyBlockedApps, settings.blockedApps);
+    await prefs.setBool(_keyLockAllApps, settings.lockAllApps);
     await prefs.setInt(_keyAutoUnlockMins, settings.autoUnlockMinutes);
   }
 
@@ -68,6 +71,8 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
 
   String _getTodayKey() {
     final now = DateTime.now();
-    return '${now.year}-${now.month}-${now.day}';
+    // Shift logical day by 4 hours backwards to match SalahRepositoryImpl
+    final logicalNow = now.subtract(const Duration(hours: 4));
+    return '${logicalNow.year}-${logicalNow.month}-${logicalNow.day}';
   }
 }

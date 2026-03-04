@@ -18,10 +18,7 @@ class HomeTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [_LocationPill(), _ProfileIcon()],
-      ),
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [_LocationPill(), _SettingsIcon()]),
     );
   }
 }
@@ -51,19 +48,11 @@ class _LocationPill extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                CupertinoIcons.location_fill,
-                color: Colors.white70,
-                size: 12.sp,
-              ),
+              Icon(CupertinoIcons.location_fill, color: Colors.white70, size: 12.sp),
               SizedBox(width: 4.w),
               Text(
                 locationText,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -73,7 +62,7 @@ class _LocationPill extends StatelessWidget {
   }
 }
 
-class _ProfileIcon extends StatelessWidget {
+class _SettingsIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SalahLockCubit, SalahLockState>(
@@ -99,7 +88,7 @@ class _ProfileIcon extends StatelessWidget {
                   ),
                 ),
                 child: Icon(
-                  CupertinoIcons.person_fill,
+                  CupertinoIcons.settings,
                   color: showPulse ? AppColors.goldAccent : Colors.white70,
                   size: 18.sp,
                 ),
@@ -114,10 +103,7 @@ class _ProfileIcon extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.goldAccent,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF0D2818),
-                        width: 2.r,
-                      ),
+                      border: Border.all(color: const Color(0xFF0D2818), width: 2.r),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.goldAccent.withValues(alpha: 0.5),

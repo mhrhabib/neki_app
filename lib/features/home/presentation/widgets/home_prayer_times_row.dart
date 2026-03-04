@@ -42,17 +42,12 @@ class HomePrayerTimesRow extends StatelessWidget {
                 final index = entry.key;
                 final p = entry.value;
                 final prayer = p['prayer'] as Prayer;
-                final time = prayerTimes != null
-                    ? formatTimeOnly(prayerTimes!.timeForPrayer(prayer))
-                    : '--:--';
+                final time = prayerTimes != null ? formatTimeOnly(prayerTimes!.timeForPrayer(prayer)) : '--:--';
                 final isActive = currentPrayer == prayer;
 
                 return Expanded(
                   child: Padding(
-                    padding: EdgeInsets.only(
-                      left: index == 0 ? 0 : 4.w,
-                      right: index == _prayers.length - 1 ? 0 : 4.w,
-                    ),
+                    padding: EdgeInsets.only(left: index == 0 ? 0 : 4.w, right: index == _prayers.length - 1 ? 0 : 4.w),
                     child: _PrayerCard(
                       name: p['name'] as String,
                       icon: p['icon'] as String,
@@ -75,7 +70,7 @@ class HomePrayerTimesRow extends StatelessWidget {
         if (state is SalahLoaded) {
           final prayers = [
             {'name': 'Fajr', 'initial': 'F'},
-            {'name': 'Zuhr', 'initial': 'Z'},
+            {'name': 'Dhuhr', 'initial': 'D'},
             {'name': 'Asr', 'initial': 'A'},
             {'name': 'Maghrib', 'initial': 'M'},
             {'name': 'Isha', 'initial': 'I'},
@@ -91,32 +86,23 @@ class HomePrayerTimesRow extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.03),
                   borderRadius: BorderRadius.circular(16.r),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.05),
-                  ),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                 ),
                 child: Row(
                   children: [
                     Text(
                       'Salah Tracker',
-                      style: TextStyle(
-                        color: AppColors.goldAccent,
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: TextStyle(color: AppColors.goldAccent, fontSize: 13.sp, fontWeight: FontWeight.w800),
                     ),
                     // const Spacer(),
                     Expanded(
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        reverse:
-                            true, // Show most recent/right-aligned prayers first if overflowing
+                        reverse: true, // Show most recent/right-aligned prayers first if overflowing
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: prayers.map((p) {
-                            final isDone = state.salahs.any(
-                              (s) => s.salahName == p['name'] && s.isCompleted,
-                            );
+                            final isDone = state.salahs.any((s) => s.salahName == p['name'] && s.isCompleted);
                             return Container(
                               width: 24.w,
                               height: 24.w,
@@ -124,39 +110,25 @@ class HomePrayerTimesRow extends StatelessWidget {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: isDone
-                                    ? AppColors.successGreen.withValues(
-                                        alpha: 0.2,
-                                      )
+                                    ? AppColors.successGreen.withValues(alpha: 0.2)
                                     : Colors.white.withValues(alpha: 0.05),
                                 border: Border.all(
                                   color: isDone
-                                      ? AppColors.successGreen.withValues(
-                                          alpha: 0.5,
-                                        )
+                                      ? AppColors.successGreen.withValues(alpha: 0.5)
                                       : Colors.white.withValues(alpha: 0.1),
                                   width: 1.w,
                                 ),
                                 boxShadow: isDone
-                                    ? [
-                                        BoxShadow(
-                                          color: AppColors.successGreen
-                                              .withValues(alpha: 0.2),
-                                          blurRadius: 4,
-                                        ),
-                                      ]
+                                    ? [BoxShadow(color: AppColors.successGreen.withValues(alpha: 0.2), blurRadius: 4)]
                                     : [],
                               ),
                               child: Center(
                                 child: Text(
                                   p['initial']!,
                                   style: TextStyle(
-                                    color: isDone
-                                        ? Colors.white
-                                        : Colors.white24,
+                                    color: isDone ? Colors.white : Colors.white24,
                                     fontSize: 10.sp,
-                                    fontWeight: isDone
-                                        ? FontWeight.w900
-                                        : FontWeight.w600,
+                                    fontWeight: isDone ? FontWeight.w900 : FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -166,11 +138,7 @@ class HomePrayerTimesRow extends StatelessWidget {
                       ),
                     ),
                     SizedBox(width: 8.w),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      size: 10.sp,
-                      color: Colors.white24,
-                    ),
+                    Icon(Icons.arrow_forward_ios, size: 10.sp, color: Colors.white24),
                   ],
                 ),
               ),
@@ -189,12 +157,7 @@ class _PrayerCard extends StatelessWidget {
   final String time;
   final bool isActive;
 
-  const _PrayerCard({
-    required this.name,
-    required this.icon,
-    required this.time,
-    required this.isActive,
-  });
+  const _PrayerCard({required this.name, required this.icon, required this.time, required this.isActive});
 
   @override
   Widget build(BuildContext context) {
@@ -202,14 +165,10 @@ class _PrayerCard extends StatelessWidget {
       height: 102.h,
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
       decoration: BoxDecoration(
-        color: isActive
-            ? AppColors.primaryGreen.withValues(alpha: 0.15)
-            : Colors.white.withValues(alpha: 0.05),
+        color: isActive ? AppColors.primaryGreen.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
-          color: isActive
-              ? AppColors.primaryGreen.withValues(alpha: 0.4)
-              : Colors.white.withValues(alpha: 0.08),
+          color: isActive ? AppColors.primaryGreen.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.08),
           width: 1.5.w,
         ),
         boxShadow: isActive
@@ -233,10 +192,7 @@ class _PrayerCard extends StatelessWidget {
               if (isActive)
                 Container(
                   padding: EdgeInsets.all(2.w),
-                  decoration: const BoxDecoration(
-                    color: AppColors.successGreen,
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: const BoxDecoration(color: AppColors.successGreen, shape: BoxShape.circle),
                   child: Icon(Icons.check, size: 8.sp, color: Colors.white),
                 ),
             ],
@@ -258,11 +214,7 @@ class _PrayerCard extends StatelessWidget {
             fit: BoxFit.scaleDown,
             child: Text(
               time,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w800,
-              ),
+              style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w800),
             ),
           ),
         ],

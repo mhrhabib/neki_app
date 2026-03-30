@@ -19,6 +19,7 @@ class _SalahLockOverlayState extends State<SalahLockOverlay>
   late Animation<double> _fadeAnimation;
   int _alhamdulillahCount = 0;
   final int _targetCount = 10;
+  bool _isConfirming = false;
 
   @override
   void initState() {
@@ -28,6 +29,11 @@ class _SalahLockOverlayState extends State<SalahLockOverlay>
       duration: const Duration(milliseconds: 500),
     );
     _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.dismissed && mounted) {
+        setState(() {}); // force builder to re-evaluate and return SizedBox.shrink()
+      }
+    });
   }
 
   @override
@@ -252,10 +258,15 @@ class _SalahLockOverlayState extends State<SalahLockOverlay>
           Column(
             children: [
               ElevatedButton(
-                onPressed: () => context.read<SalahLockCubit>().confirmPrayed(
-                  userId,
-                  salahName,
-                ),
+                onPressed: _isConfirming
+                    ? null
+                    : () async {
+                        setState(() => _isConfirming = true);
+                        await context
+                            .read<SalahLockCubit>()
+                            .confirmPrayed(userId, salahName);
+                        if (mounted) setState(() => _isConfirming = false);
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4ADE80),
                   foregroundColor: Colors.black,
@@ -277,8 +288,12 @@ class _SalahLockOverlayState extends State<SalahLockOverlay>
               ),
               SizedBox(height: 16.h),
               TextButton(
-                onPressed: () =>
-                    context.read<SalahLockCubit>().remindLater(salahName),
+                onPressed: _isConfirming
+                    ? null
+                    : () {
+                        setState(() => _isConfirming = true);
+                        context.read<SalahLockCubit>().remindLater(salahName);
+                      },
                 child: Text(
                   'Remind me in 10 minutes',
                   style: TextStyle(color: Colors.white60, fontSize: 14.sp),

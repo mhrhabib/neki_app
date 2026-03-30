@@ -39,6 +39,9 @@ import '../../features/salah_lock/presentation/cubit/salah_lock_cubit.dart';
 import '../../features/auth/domain/repositories/premium_repository.dart';
 import '../../features/auth/data/repositories/premium_repository_impl.dart';
 import '../services/iap_service.dart';
+import '../../features/leaderboard/domain/repositories/leaderboard_repository.dart';
+import '../../features/leaderboard/data/repositories/leaderboard_repository_impl.dart';
+import '../../features/leaderboard/presentation/cubit/leaderboard_cubit.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -107,6 +110,9 @@ class SetUpDI {
     getIt.registerLazySingleton<IAPService>(
       () => IAPService(getIt<PremiumRepository>()),
     );
+    getIt.registerLazySingleton<LeaderboardRepository>(
+      () => LeaderboardRepositoryImpl(getIt<FirestoreService>()),
+    );
 
     // ========== CUBITS (Factories) ==========
     // ThemeCubit needs to be a singleton so the same instance is shared across the app
@@ -156,6 +162,12 @@ class SetUpDI {
     );
     getIt.registerFactory<LocationCubit>(
       () => LocationCubit(getIt<LocationService>()),
+    );
+    getIt.registerFactory<LeaderboardCubit>(
+      () => LeaderboardCubit(
+        leaderboardRepository: getIt<LeaderboardRepository>(),
+        authRepository: getIt<AuthRepository>(),
+      ),
     );
     getIt.registerFactory<SalahLockCubit>(
       () => SalahLockCubit(

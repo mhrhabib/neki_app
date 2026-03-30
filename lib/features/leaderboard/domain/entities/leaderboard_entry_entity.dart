@@ -4,7 +4,7 @@ class LeaderboardEntryEntity {
   final String userName;
   final String? photoUrl;
   final int totalPoints;
-  final String country;
+  final String? country;
 
   LeaderboardEntryEntity({
     required this.rank,
@@ -12,6 +12,6 @@ class LeaderboardEntryEntity {
     required this.userName,
     this.photoUrl,
     required this.totalPoints,
-    required this.country,
+    this.country,
   });
 }

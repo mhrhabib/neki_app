@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../components/app_background_widget.dart';
 import '../cubit/salah_lock_cubit.dart';
@@ -66,137 +65,13 @@ class SalahLockSettingsScreen extends StatelessWidget {
                         _buildToggleTile(
                           icon: CupertinoIcons.lock_shield_fill,
                           title: 'Enable Salah Lock Mode',
-                          subtitle: 'Globally lock the app during prayer times',
+                          subtitle: 'Prayer notifications + in-app reminder at each Salah time',
                           value: settings.isEnabled,
-                          onChanged: (val) => cubit.updateSettings(settings.copyWith(isEnabled: val)),
-                        ),
-                        SizedBox(height: 24.h),
-                        _buildSectionHeader('PLATFORM PROTECTION'),
-                        _buildToggleTile(
-                          icon: Icons.android_rounded,
-                          title: 'Lock Device Screen',
-                          subtitle: 'Physically lock the device (Android Admin)',
-                          value: settings.lockDeviceAndroid,
                           onChanged: (val) async {
-                            if (val) {
-                              final isActive = await cubit.deviceManager.isDeviceAdminActive();
-                              if (!isActive) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Please enable Device Administrator permission, then toggle again.',
-                                      ),
-                                    ),
-                                  );
-                                }
-                                await cubit.deviceManager.requestDeviceAdmin();
-                                return;
-                              }
+                            if (val && Platform.isAndroid) {
+                              await cubit.checkAndRequestBasicPermissions();
                             }
-                            cubit.updateSettings(settings.copyWith(lockDeviceAndroid: val));
-                          },
-                        ),
-                        _buildToggleTile(
-                          icon: Icons.app_blocking_rounded,
-                          title: 'Block Distracting Apps',
-                          subtitle: settings.blockedApps.isEmpty
-                              ? 'Blocks social media & games during prayer'
-                              : 'Blocking ${settings.blockedApps.length} social media apps',
-                          value: settings.blockedApps.isNotEmpty,
-                          onChanged: (val) async {
-                            if (val) {
-                              if (Platform.isIOS) {
-                                final granted = await cubit.checkAndRequestIOSPermissions();
-                                if (granted) {
-                                  await cubit.openIOSAppPicker();
-                                  // Update settings to reflect that we have a selection active
-                                  cubit.updateSettings(settings.copyWith(blockedApps: ['ios_shield_active']));
-                                }
-                              } else {
-                                // 1. Turn it on in the UI immediately
-                                final apps = [
-                                  'com.facebook.katana',
-                                  'com.facebook.lite',
-                                  'com.instagram.android',
-                                  'com.zhiliaoapp.musically',
-                                  'com.twitter.android',
-                                  'com.snapchat.android',
-                                  'com.google.android.youtube',
-                                  'com.google.android.apps.youtube.music',
-                                  'com.whatsapp',
-                                  'com.netflix.mediaclient',
-                                ];
-                                cubit.updateSettings(settings.copyWith(blockedApps: apps));
-
-                                // 2. Request permissions in background
-                                final granted = await cubit.checkAndRequestAndroidPermissions();
-                                if (!granted && context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Permissions required for blocking to take effect.'),
-                                      duration: Duration(seconds: 3),
-                                    ),
-                                  );
-                                }
-                              }
-                            } else {
-                              cubit.updateSettings(settings.copyWith(blockedApps: []));
-                            }
-                          },
-                        ),
-                        if (Platform.isIOS && settings.blockedApps.isNotEmpty)
-                          Padding(
-                            padding: EdgeInsets.only(left: 60.w, bottom: 12.h),
-                            child: InkWell(
-                              onTap: () => cubit.openIOSAppPicker(),
-                              child: Text(
-                                'Change Selected Apps →',
-                                style: TextStyle(
-                                  color: AppColors.primaryGreen,
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        _buildToggleTile(
-                          icon: Icons.gpp_maybe_rounded,
-                          title: 'Strict Lockdown Mode',
-                          subtitle: 'Lock EVERYTHING except Neki during prayer',
-                          value: settings.lockAllApps,
-                          onChanged: (val) async {
-                            if (val) {
-                              final granted = await cubit.checkAndRequestAndroidPermissions();
-                              if (!granted && context.mounted) {
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).showSnackBar(const SnackBar(content: Text('Permissions required for Lockdown.')));
-                              }
-                            }
-                            cubit.updateSettings(settings.copyWith(lockAllApps: val));
-                          },
-                        ),
-                        _buildToggleTile(
-                          icon: Icons.apple_rounded,
-                          title: 'Auto-Lock (iOS)',
-                          subtitle: 'Screen Time integration for iOS limits',
-                          value: settings.autoLockSocialIos,
-                          onChanged: (val) async {
-                            if (val) {
-                              await cubit.deviceManager.requestIOSAuthorization();
-                              final urls = [
-                                Uri.parse('App-Prefs:root=SCREEN_TIME'),
-                                Uri.parse('prefs:root=SCREEN_TIME'),
-                              ];
-                              for (var url in urls) {
-                                if (await canLaunchUrl(url)) {
-                                  await launchUrl(url);
-                                  break;
-                                }
-                              }
-                            }
-                            cubit.updateSettings(settings.copyWith(autoLockSocialIos: val));
+                            cubit.updateSettings(settings.copyWith(isEnabled: val));
                           },
                         ),
                         SizedBox(height: 24.h),
@@ -278,14 +153,8 @@ class SalahLockSettingsScreen extends StatelessWidget {
           ),
           child: Icon(icon, color: AppColors.primaryGreen, size: 20.sp),
         ),
-        title: Text(
-          title,
-          style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w700),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(color: Colors.white60, fontSize: 12.sp),
-        ),
+        title: Text(title, style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w700)),
+        subtitle: Text(subtitle, style: TextStyle(color: Colors.white60, fontSize: 12.sp)),
         trailing: CupertinoSwitch(
           activeTrackColor: AppColors.primaryGreen,
           inactiveTrackColor: Colors.white10,
@@ -320,14 +189,8 @@ class SalahLockSettingsScreen extends StatelessWidget {
           ),
           child: Icon(icon, color: AppColors.goldAccent, size: 20.sp),
         ),
-        title: Text(
-          title,
-          style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w700),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(color: Colors.white60, fontSize: 12.sp),
-        ),
+        title: Text(title, style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w700)),
+        subtitle: Text(subtitle, style: TextStyle(color: Colors.white60, fontSize: 12.sp)),
         trailing: Icon(CupertinoIcons.chevron_right, color: Colors.white24, size: 16.sp),
       ),
     );

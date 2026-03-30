@@ -8,4 +8,6 @@ abstract class SalahLockRepository {
   Future<void> clearDailyCompletions();
   Future<bool> isGuideDismissed();
   Future<void> setGuideDismissed(bool dismissed);
+  Future<String?> getLastNotificationDate();
+  Future<void> saveLastNotificationDate(String dateKey);
 }

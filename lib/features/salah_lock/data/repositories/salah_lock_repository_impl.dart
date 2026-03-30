@@ -6,14 +6,11 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
   final SharedPreferences prefs;
 
   static const String _keyEnabled = 'salah_lock_enabled';
-  static const String _keyLockAndroid = 'salah_lock_android';
-  static const String _keyAutoLockSocialIos = 'salah_lock_social_ios';
   static const String _keyStreakTracking = 'salah_lock_streak_tracking';
-  static const String _keyBlockedApps = 'salah_lock_blocked_apps';
-  static const String _keyLockAllApps = 'salah_lock_all_apps';
   static const String _keyAutoUnlockMins = 'salah_lock_auto_unlock_mins';
   static const String _keyCompletionsPrefix = 'salah_lock_done_';
   static const String _keyGuideDismissed = 'salah_lock_guide_dismissed';
+  static const String _keyLastNotificationDate = 'salah_lock_last_notif_date';
 
   SalahLockRepositoryImpl(this.prefs);
 
@@ -21,11 +18,7 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
   Future<SalahLockSettings> getSettings() async {
     return SalahLockSettings(
       isEnabled: prefs.getBool(_keyEnabled) ?? true,
-      lockDeviceAndroid: prefs.getBool(_keyLockAndroid) ?? false,
-      autoLockSocialIos: prefs.getBool(_keyAutoLockSocialIos) ?? false,
       streakTracking: prefs.getBool(_keyStreakTracking) ?? true,
-      blockedApps: prefs.getStringList(_keyBlockedApps) ?? [],
-      lockAllApps: prefs.getBool(_keyLockAllApps) ?? false,
       autoUnlockMinutes: prefs.getInt(_keyAutoUnlockMins) ?? 120,
     );
   }
@@ -33,31 +26,22 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
   @override
   Future<void> saveSettings(SalahLockSettings settings) async {
     await prefs.setBool(_keyEnabled, settings.isEnabled);
-    await prefs.setBool(_keyLockAndroid, settings.lockDeviceAndroid);
-    await prefs.setBool(_keyAutoLockSocialIos, settings.autoLockSocialIos);
     await prefs.setBool(_keyStreakTracking, settings.streakTracking);
-    await prefs.setStringList(_keyBlockedApps, settings.blockedApps);
-    await prefs.setBool(_keyLockAllApps, settings.lockAllApps);
     await prefs.setInt(_keyAutoUnlockMins, settings.autoUnlockMinutes);
   }
 
   @override
   Future<bool> isSalahCompletedLocally(String salahName) async {
-    final today = _getTodayKey();
-    return prefs.getBool('$_keyCompletionsPrefix${salahName}_$today') ?? false;
+    return prefs.getBool('$_keyCompletionsPrefix${salahName}_${_getTodayKey()}') ?? false;
   }
 
   @override
   Future<void> markSalahCompletedLocally(String salahName) async {
-    final today = _getTodayKey();
-    await prefs.setBool('$_keyCompletionsPrefix${salahName}_$today', true);
+    await prefs.setBool('$_keyCompletionsPrefix${salahName}_${_getTodayKey()}', true);
   }
 
   @override
-  Future<void> clearDailyCompletions() async {
-    // SharedPreferences doesn't have a prefix clear, but we only call this
-    // if we want to reset. Actually, using the date in the key handles expiry.
-  }
+  Future<void> clearDailyCompletions() async {}
 
   @override
   Future<bool> isGuideDismissed() async {
@@ -69,10 +53,19 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
     await prefs.setBool(_keyGuideDismissed, dismissed);
   }
 
+  @override
+  Future<String?> getLastNotificationDate() async {
+    return prefs.getString(_keyLastNotificationDate);
+  }
+
+  @override
+  Future<void> saveLastNotificationDate(String dateKey) async {
+    await prefs.setString(_keyLastNotificationDate, dateKey);
+  }
+
   String _getTodayKey() {
-    final now = DateTime.now();
     // Shift logical day by 4 hours backwards to match SalahRepositoryImpl
-    final logicalNow = now.subtract(const Duration(hours: 4));
+    final logicalNow = DateTime.now().subtract(const Duration(hours: 4));
     return '${logicalNow.year}-${logicalNow.month}-${logicalNow.day}';
   }
 }

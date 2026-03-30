@@ -1,129 +1,157 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/set_up_di.dart';
 import '../../../../components/app_background_widget.dart';
+import '../cubit/leaderboard_cubit.dart';
+import '../../domain/entities/leaderboard_entry_entity.dart';
 
-class LeaderboardScreen extends StatefulWidget {
+class LeaderboardScreen extends StatelessWidget {
   const LeaderboardScreen({super.key});
 
   @override
-  State<LeaderboardScreen> createState() => _LeaderboardScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => getIt<LeaderboardCubit>()..load(),
+      child: const _LeaderboardView(),
+    );
+  }
 }
 
-class _LeaderboardScreenState extends State<LeaderboardScreen> {
+class _LeaderboardView extends StatefulWidget {
+  const _LeaderboardView();
+
+  @override
+  State<_LeaderboardView> createState() => _LeaderboardViewState();
+}
+
+class _LeaderboardViewState extends State<_LeaderboardView> {
   String _activeTab = 'global';
 
-  final Map<String, List<LeaderboardUser>> _leaderboardData = {
-    'global': [
-      LeaderboardUser(
-        rank: 1,
-        name: 'Abdullah',
-        country: '🇸🇦',
-        points: 12500,
-      ),
-      LeaderboardUser(rank: 2, name: 'Hasan', country: '🇧🇩', points: 9420),
-      LeaderboardUser(rank: 3, name: 'Umar', country: '🇮🇩', points: 8900),
-      LeaderboardUser(rank: 4, name: 'Fatima', country: '🇵🇰', points: 8200),
-      LeaderboardUser(rank: 5, name: 'Aisha', country: '🇹🇷', points: 7850),
-      LeaderboardUser(rank: 6, name: 'Ali', country: '🇪🇬', points: 7320),
-      LeaderboardUser(rank: 7, name: 'Zainab', country: '🇲🇾', points: 6900),
-      LeaderboardUser(rank: 8, name: 'Omar', country: '🇦🇪', points: 6450),
-    ],
-    'country': [
-      LeaderboardUser(rank: 1, name: 'Hasan', country: '🇧🇩', points: 9420),
-      LeaderboardUser(
-        rank: 2,
-        name: 'Habib',
-        country: '🇧🇩',
-        points: 4582,
-        isYou: true,
-      ),
-      LeaderboardUser(rank: 3, name: 'Karim', country: '🇧🇩', points: 3890),
-      LeaderboardUser(rank: 4, name: 'Nadia', country: '🇧🇩', points: 3200),
-      LeaderboardUser(rank: 5, name: 'Rashid', country: '🇧🇩', points: 2950),
-    ],
-  };
-
   Color _getRankColor(int rank) {
-    if (rank == 1) return const Color(0xFFD4AF37); // Gold
-    if (rank == 2) return const Color(0xFFC0C0C0); // Silver
-    if (rank == 3) return const Color(0xFFCD7F32); // Bronze
-    return const Color(0xFF6B7280); // Gray
+    if (rank == 1) return const Color(0xFFD4AF37);
+    if (rank == 2) return const Color(0xFFC0C0C0);
+    if (rank == 3) return const Color(0xFFCD7F32);
+    return const Color(0xFF6B7280);
   }
 
   @override
   Widget build(BuildContext context) {
-    final data = _leaderboardData[_activeTab]!;
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
           appBackgroundWidget(),
-          CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 180.h,
-                pinned: true,
-                stretch: true,
-                backgroundColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent,
-                elevation: 0,
-                flexibleSpace: FlexibleSpaceBar(
-                  stretchModes: const [
-                    StretchMode.blurBackground,
-                    StretchMode.zoomBackground,
-                  ],
-                  background: SafeArea(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20.w),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: 20.h),
-                          Text(
-                            'Leaderboard',
-                            style: TextStyle(
-                              fontSize: 32.sp,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: -0.5,
-                            ),
+          BlocBuilder<LeaderboardCubit, LeaderboardState>(
+            builder: (context, state) {
+              return CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    expandedHeight: 180.h,
+                    pinned: true,
+                    stretch: true,
+                    backgroundColor: Colors.transparent,
+                    surfaceTintColor: Colors.transparent,
+                    elevation: 0,
+                    flexibleSpace: FlexibleSpaceBar(
+                      stretchModes: const [
+                        StretchMode.blurBackground,
+                        StretchMode.zoomBackground,
+                      ],
+                      background: SafeArea(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20.w),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 20.h),
+                              Text(
+                                'Leaderboard',
+                                style: TextStyle(
+                                  fontSize: 32.sp,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              Text(
+                                'Top performers of all time',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const Spacer(),
+                              _buildTabSwitcher(),
+                              SizedBox(height: 20.h),
+                            ],
                           ),
-                          Text(
-                            'Top performers of this week',
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const Spacer(),
-                          _buildTabSwitcher(),
-                          SizedBox(height: 20.h),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 100.h),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    if (data.isNotEmpty) ...[
-                      _buildTopPerformerCard(data[0]),
-                      SizedBox(height: 25.h),
-                      _buildLeaderboardHeader(),
-                      SizedBox(height: 15.h),
-                    ],
-                    ...data.sublist(1).map((user) => _buildUserCard(user)),
-                  ]),
-                ),
-              ),
-            ],
+                  if (state is LeaderboardLoading)
+                    SliverFillRemaining(
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryGreen,
+                        ),
+                      ),
+                    )
+                  else if (state is LeaderboardError)
+                    SliverFillRemaining(
+                      child: _buildError(context, state.message),
+                    )
+                  else if (state is LeaderboardLoaded)
+                    _buildContent(state)
+                  else
+                    SliverFillRemaining(child: const SizedBox()),
+                ],
+              );
+            },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildContent(LeaderboardLoaded state) {
+    if (_activeTab == 'country') {
+      return SliverFillRemaining(child: _buildCountryComingSoon());
+    }
+
+    final entries = state.globalEntries;
+    if (entries.isEmpty) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Text(
+            'No data yet. Be the first!',
+            style: TextStyle(color: Colors.white54, fontSize: 16.sp),
+          ),
+        ),
+      );
+    }
+
+    return SliverPadding(
+      padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 100.h),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          _buildTopPerformerCard(entries.first, state.currentUserId),
+          SizedBox(height: 25.h),
+          // Current user's rank card if not in top list
+          if (state.currentUserRank != null &&
+              !entries.any((e) => e.userId == state.currentUserId))
+            _buildMyRankBanner(state.currentUserRank!),
+          if (entries.length > 1) ...[
+            _buildLeaderboardHeader(),
+            SizedBox(height: 15.h),
+            ...entries
+                .sublist(1)
+                .map((e) => _buildUserCard(e, state.currentUserId)),
+          ],
+        ]),
       ),
     );
   }
@@ -143,31 +171,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           _buildTabButton('Country', 'country'),
         ],
       ),
-    );
-  }
-
-  Widget _buildLeaderboardHeader() {
-    return Row(
-      children: [
-        Container(
-          width: 4.w,
-          height: 18.h,
-          decoration: BoxDecoration(
-            color: AppColors.goldAccent,
-            borderRadius: BorderRadius.circular(2.r),
-          ),
-        ),
-        SizedBox(width: 10.w),
-        Text(
-          'RANKINGS',
-          style: TextStyle(
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w900,
-            color: AppColors.goldAccent,
-            letterSpacing: 1.5,
-          ),
-        ),
-      ],
     );
   }
 
@@ -207,7 +210,33 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     );
   }
 
-  Widget _buildTopPerformerCard(LeaderboardUser user) {
+  Widget _buildLeaderboardHeader() {
+    return Row(
+      children: [
+        Container(
+          width: 4.w,
+          height: 18.h,
+          decoration: BoxDecoration(
+            color: AppColors.goldAccent,
+            borderRadius: BorderRadius.circular(2.r),
+          ),
+        ),
+        SizedBox(width: 10.w),
+        Text(
+          'RANKINGS',
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w900,
+            color: AppColors.goldAccent,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopPerformerCard(LeaderboardEntryEntity user, String currentUserId) {
+    final isYou = user.userId == currentUserId;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(24.w),
@@ -260,7 +289,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     width: 2.w,
                   ),
                 ),
-                child: Text('👑', style: TextStyle(fontSize: 45.sp)),
+                child: user.photoUrl != null
+                    ? ClipOval(
+                        child: Image.network(
+                          user.photoUrl!,
+                          width: 60.w,
+                          height: 60.w,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) =>
+                              Text('👑', style: TextStyle(fontSize: 45.sp)),
+                        ),
+                      )
+                    : Text('👑', style: TextStyle(fontSize: 45.sp)),
               ),
               Positioned(
                 bottom: 0,
@@ -272,40 +312,42 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.black, width: 3.w),
                   ),
-                  child: Icon(
-                    Icons.emoji_events,
-                    size: 16.sp,
-                    color: Colors.black,
-                  ),
+                  child: Icon(Icons.emoji_events, size: 16.sp, color: Colors.black),
                 ),
               ),
             ],
           ),
           SizedBox(height: 20.h),
-          Text(
-            user.name,
-            style: TextStyle(
-              fontSize: 26.sp,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: 0.5,
-            ),
-          ),
-          SizedBox(height: 4.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(user.country, style: TextStyle(fontSize: 18.sp)),
-              SizedBox(width: 8.w),
               Text(
-                'TOP RECOVERER',
+                user.userName,
                 style: TextStyle(
-                  fontSize: 10.sp,
+                  fontSize: 26.sp,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.goldAccent,
-                  letterSpacing: 1.5,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
                 ),
               ),
+              if (isYou) ...[
+                SizedBox(width: 8.w),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryGreen,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                  child: Text(
+                    'YOU',
+                    style: TextStyle(
+                      fontSize: 9.sp,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           SizedBox(height: 24.h),
@@ -319,10 +361,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             child: Column(
               children: [
                 Text(
-                  user.points.toString().replaceAllMapped(
-                    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                    (Match m) => '${m[1]},',
-                  ),
+                  _formatPoints(user.totalPoints),
                   style: TextStyle(
                     fontSize: 32.sp,
                     fontWeight: FontWeight.w900,
@@ -331,7 +370,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   ),
                 ),
                 Text(
-                  'RECOVERY POINTS',
+                  'NEKI POINTS',
                   style: TextStyle(
                     fontSize: 10.sp,
                     fontWeight: FontWeight.w800,
@@ -347,20 +386,21 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     );
   }
 
-  Widget _buildUserCard(LeaderboardUser user) {
+  Widget _buildUserCard(LeaderboardEntryEntity user, String currentUserId) {
+    final isYou = user.userId == currentUserId;
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: user.isYou
+        color: isYou
             ? AppColors.primaryGreen.withValues(alpha: 0.15)
             : Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
-          color: user.isYou
+          color: isYou
               ? AppColors.primaryGreen.withValues(alpha: 0.5)
               : Colors.white.withValues(alpha: 0.08),
-          width: user.isYou ? 2.w : 1.w,
+          width: isYou ? 2.w : 1.w,
         ),
       ),
       child: Row(
@@ -375,8 +415,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               borderRadius: BorderRadius.circular(15.r),
               border: user.rank <= 3
                   ? Border.all(
-                      color: _getRankColor(user.rank).withValues(alpha: 0.3),
-                    )
+                      color: _getRankColor(user.rank).withValues(alpha: 0.3))
                   : null,
             ),
             alignment: Alignment.center,
@@ -390,58 +429,77 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             ),
           ),
           SizedBox(width: 16.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      user.name,
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                    if (user.isYou) ...[
-                      SizedBox(width: 8.w),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 6.w,
-                          vertical: 2.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryGreen,
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
+          // Avatar
+          Container(
+            width: 38.w,
+            height: 38.w,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.08),
+            ),
+            child: user.photoUrl != null
+                ? ClipOval(
+                    child: Image.network(
+                      user.photoUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Center(
                         child: Text(
-                          'YOU',
+                          user.userName.isNotEmpty
+                              ? user.userName[0].toUpperCase()
+                              : '?',
                           style: TextStyle(
-                            fontSize: 9.sp,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16.sp,
                           ),
                         ),
                       ),
-                    ],
-                  ],
-                ),
-                SizedBox(height: 2.h),
-                Row(
-                  children: [
-                    Text(user.country, style: TextStyle(fontSize: 14.sp)),
-                    SizedBox(width: 6.w),
-                    Text(
-                      'Recoverer',
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                      user.userName.isNotEmpty
+                          ? user.userName[0].toUpperCase()
+                          : '?',
                       style: TextStyle(
-                        fontSize: 12.sp,
-                        color: Colors.white38,
-                        fontWeight: FontWeight.w600,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16.sp,
                       ),
                     ),
-                  ],
+                  ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Row(
+              children: [
+                Text(
+                  user.userName,
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
+                if (isYou) ...[
+                  SizedBox(width: 6.w),
+                  Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGreen,
+                      borderRadius: BorderRadius.circular(4.r),
+                    ),
+                    child: Text(
+                      'YOU',
+                      style: TextStyle(
+                        fontSize: 9.sp,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -449,10 +507,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                user.points.toString().replaceAllMapped(
-                  RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                  (Match m) => '${m[1]},',
-                ),
+                _formatPoints(user.totalPoints),
                 style: TextStyle(
                   fontSize: 17.sp,
                   fontWeight: FontWeight.w800,
@@ -473,20 +528,130 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       ),
     );
   }
-}
 
-class LeaderboardUser {
-  const LeaderboardUser({
-    required this.rank,
-    required this.name,
-    required this.country,
-    required this.points,
-    this.isYou = false,
-  });
+  Widget _buildMyRankBanner(LeaderboardEntryEntity entry) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 20.h),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: AppColors.primaryGreen.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: AppColors.primaryGreen.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Text(
+              '#${entry.rank}',
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primaryGreen,
+              ),
+            ),
+          ),
+          SizedBox(width: 14.w),
+          Expanded(
+            child: Text(
+              'Your rank',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            _formatPoints(entry.totalPoints),
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          Text(
+            ' pts',
+            style: TextStyle(fontSize: 11.sp, color: Colors.white38),
+          ),
+        ],
+      ),
+    );
+  }
 
-  final int rank;
-  final String name;
-  final String country;
-  final int points;
-  final bool isYou;
+  Widget _buildCountryComingSoon() {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(40.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('🌍', style: TextStyle(fontSize: 60.sp)),
+            SizedBox(height: 20.h),
+            Text(
+              'Country Rankings',
+              style: TextStyle(
+                fontSize: 22.sp,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 10.h),
+            Text(
+              'Coming soon! Country-based rankings will appear here once we collect enough data.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.white54,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildError(BuildContext context, String message) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(40.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.wifi_off_rounded, color: Colors.white38, size: 48.sp),
+            SizedBox(height: 16.h),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white54, fontSize: 14.sp),
+            ),
+            SizedBox(height: 24.h),
+            TextButton(
+              onPressed: () => context.read<LeaderboardCubit>().load(),
+              child: Text(
+                'Try again',
+                style: TextStyle(
+                  color: AppColors.primaryGreen,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15.sp,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatPoints(int points) {
+    return points.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]},',
+        );
+  }
 }

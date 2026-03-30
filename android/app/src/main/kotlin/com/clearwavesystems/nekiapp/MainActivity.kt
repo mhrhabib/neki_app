@@ -1,5 +1,6 @@
 package com.clearwavesystems.nekiapp
 
+import android.app.PendingIntent
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -98,6 +99,88 @@ class MainActivity : FlutterActivity() {
                     Log.d(TAG, "stopAppBlocker called")
                     stopService(Intent(this, AppBlockerService::class.java))
                     result.success(true)
+                }
+                "schedulePrayerAlarms" -> {
+                    val prayerTimes = call.argument<List<Long>>("prayerTimes") ?: emptyList()
+                    val prayerNames = call.argument<List<String>>("prayerNames") ?: emptyList()
+                    
+                    Log.d(TAG, "Scheduling ${prayerTimes.size} alarms")
+                    val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+                    
+                    for (i in prayerTimes.indices) {
+                        val time = prayerTimes[i]
+                        val name = prayerNames[i]
+                        
+                        val intent = Intent(this, SalahAlarmReceiver::class.java)
+                        intent.action = "com.clearwavesystems.nekiapp.ACTION_PRAYER_ALARM"
+                        intent.putExtra("salahName", name)
+                        
+                        val pendingIntent = PendingIntent.getBroadcast(
+                            this, i, intent, 
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                        
+                        try {
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                                if (alarmManager.canScheduleExactAlarms()) {
+                                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, time, pendingIntent)
+                                    Log.d(TAG, "Scheduled exact alarm for $name at $time")
+                                } else {
+                                    alarmManager.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, time, pendingIntent)
+                                    Log.d(TAG, "Scheduled inexact alarm for $name (exact permission missing)")
+                                }
+                            } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, time, pendingIntent)
+                                Log.d(TAG, "Scheduled exact alarm for $name at $time")
+                            } else {
+                                alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, time, pendingIntent)
+                                Log.d(TAG, "Scheduled exact alarm for $name at $time")
+                            }
+                        } catch (e: SecurityException) {
+                            Log.e(TAG, "SecurityException scheduling alarm: ${e.message}")
+                            // Fallback to inexact if possible
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                alarmManager.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, time, pendingIntent)
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error scheduling alarm: ${e.message}")
+                        }
+                    }
+                    result.success(true)
+                }
+                "cancelPrayerAlarms" -> {
+                    Log.d(TAG, "Cancelling all prayer alarms")
+                    val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+                    for (i in 0..5) { // Assuming 5 prayers
+                        val intent = Intent(this, SalahAlarmReceiver::class.java)
+                        intent.action = "com.clearwavesystems.nekiapp.ACTION_PRAYER_ALARM"
+                        val pendingIntent = PendingIntent.getBroadcast(
+                            this, i, intent, 
+                            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+                        )
+                        if (pendingIntent != null) {
+                            alarmManager.cancel(pendingIntent)
+                        }
+                    }
+                    result.success(true)
+                }
+                "checkExactAlarmPermission" -> {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                        val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+                        result.success(alarmManager.canScheduleExactAlarms())
+                    } else {
+                        result.success(true)
+                    }
+                }
+                "requestExactAlarmPermission" -> {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                        val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                        intent.data = android.net.Uri.parse("package:$packageName")
+                        startActivity(intent)
+                        result.success(true)
+                    } else {
+                        result.success(true)
+                    }
                 }
                 else -> {
                     Log.w(TAG, "Unknown method: ${call.method}")

@@ -30,6 +30,7 @@ class SalahLockCubit extends Cubit<SalahLockState> {
   SalahLockSettings _settings = SalahLockSettings();
   bool _isGuideDismissed = false;
   List<Map<String, String>> _ayahs = [];
+  DateTime? _snoozedUntil;
 
   SalahLockCubit({
     required this.repository,
@@ -105,7 +106,22 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     debugPrint('   - Maghrib: ${prayerTimes.maghrib}');
     debugPrint('   - Isha: ${prayerTimes.isha}');
 
+    // Schedule background alarms for the day
+    if (_settings.isEnabled) {
+      _scheduleBackgroundAlarms(prayerTimes);
+    }
+
     return prayerTimes;
+  }
+
+  Future<void> _scheduleBackgroundAlarms(PrayerTimes prayerTimes) async {
+    await deviceManager.scheduleBackgroundAlarms({
+      'Fajr': prayerTimes.fajr,
+      'Dhuhr': prayerTimes.dhuhr,
+      'Asr': prayerTimes.asr,
+      'Maghrib': prayerTimes.maghrib,
+      'Isha': prayerTimes.isha,
+    });
   }
 
   Future<void> checkPrayerLock(PrayerTimes prayerTimes, String userId) async {
@@ -115,6 +131,11 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     }
     if (state is SalahLockUnlocked) {
       debugPrint('🔓 SalahLock: Already unlocked by user for this window');
+      return;
+    }
+    // Check snooze
+    if (_snoozedUntil != null && DateTime.now().isBefore(_snoozedUntil!)) {
+      debugPrint('💤 SalahLock: Snoozed until $_snoozedUntil, skipping lock check');
       return;
     }
 
@@ -239,13 +260,18 @@ class SalahLockCubit extends Cubit<SalahLockState> {
   }
 
   Future<void> remindLater(String salahName) async {
-    try {
-      await notificationService.scheduleReminder(salahName, const Duration(minutes: 10));
-    } catch (e) {
-      // Ignore notification failures to ensure the app still unlocks
-    }
+    // Set snooze period so the lock doesn't immediately re-appear
+    _snoozedUntil = DateTime.now().add(const Duration(minutes: 10));
+    debugPrint('💤 SalahLock: Snoozing until $_snoozedUntil');
+
+    // Immediately dismiss overlay and stop blocker so app doesn't hang
     await deviceManager.stopAppBlocker();
-    emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed)); // Temporarily dismiss overlay
+    emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
+
+    // Schedule reminder notification in background (don't await - prevents hang)
+    notificationService.scheduleReminder(salahName, const Duration(minutes: 10)).catchError((e) {
+      debugPrint('⚠️ SalahLock: Reminder notification failed (non-critical): $e');
+    });
   }
 
   Future<void> updateSettings(SalahLockSettings settings) async {
@@ -257,6 +283,10 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     await repository.saveSettings(settings);
     _settings = settings;
     debugPrint('✅ SalahLock: Settings saved successfully');
+
+    if (!_settings.isEnabled) {
+      deviceManager.cancelBackgroundAlarms();
+    }
 
     // Re-emit current state with new settings so UI will rebuild.
     if (state is SalahLockActive) {
@@ -302,6 +332,14 @@ class SalahLockCubit extends Cubit<SalahLockState> {
       await deviceManager.requestOverlayPermission();
       return false;
     }
+
+    final exactAlarm = await deviceManager.checkExactAlarmPermission();
+    debugPrint('🔎 SalahLock: Exact Alarm check? $exactAlarm');
+    if (!exactAlarm) {
+      await deviceManager.requestExactAlarmPermission();
+      return false;
+    }
+
     return true;
   }
 

@@ -57,9 +57,6 @@ class _NekiAppState extends State<NekiApp> {
         BlocProvider(
           create: (context) => getIt<LocationCubit>()..fetchLocation(),
         ),
-        // Create SalahLockCubit using the same SalahCubit and LocationCubit
-        // instances that are provided above so they can communicate and
-        // SalahLock can listen to location/salah updates correctly.
         BlocProvider(
           create: (context) => SalahLockCubit(
             repository: getIt<SalahLockRepository>(),

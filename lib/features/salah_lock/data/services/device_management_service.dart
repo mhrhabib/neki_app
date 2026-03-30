@@ -67,6 +67,56 @@ class DeviceManagementService {
     }
   }
 
+  Future<bool> checkExactAlarmPermission() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      return await _channel.invokeMethod('checkExactAlarmPermission') ?? false;
+    } catch (e) {
+      debugPrint('❌ DeviceManager: Error checking exact alarm permission - $e');
+      return false;
+    }
+  }
+
+  Future<void> requestExactAlarmPermission() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod('requestExactAlarmPermission');
+    } catch (e) {
+      debugPrint('❌ DeviceManager: Error requesting exact alarm permission - $e');
+    }
+  }
+
+  Future<void> scheduleBackgroundAlarms(Map<String, DateTime> prayerTimes) async {
+    if (!Platform.isAndroid && !Platform.isIOS) return;
+    try {
+      final List<dynamic> times = [];
+      final List<String> names = [];
+
+      prayerTimes.forEach((name, time) {
+        times.add(time.millisecondsSinceEpoch);
+        names.add(name);
+      });
+
+      debugPrint('⏰ DeviceManager: Scheduling ${names.length} background alarms/activities');
+      await _channel.invokeMethod('schedulePrayerAlarms', {
+        'prayerTimes': times,
+        'prayerNames': names,
+      });
+    } catch (e) {
+      debugPrint('❌ DeviceManager: Error scheduling background alarms - $e');
+    }
+  }
+
+  Future<void> cancelBackgroundAlarms() async {
+    if (!Platform.isAndroid && !Platform.isIOS) return;
+    try {
+      debugPrint('⏰ DeviceManager: Cancelling background alarms/activities');
+      await _channel.invokeMethod('cancelPrayerAlarms');
+    } catch (e) {
+      debugPrint('❌ DeviceManager: Error cancelling background alarms - $e');
+    }
+  }
+
   // --- Unified / Universal ---
 
   Future<void> startAppBlocker(List<String> blockedApps) async {

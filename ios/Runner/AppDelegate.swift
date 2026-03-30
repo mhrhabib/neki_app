@@ -3,6 +3,7 @@ import UIKit
 import FamilyControls
 import ManagedSettings
 import SwiftUI
+import DeviceActivity
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -60,6 +61,15 @@ import SwiftUI
       case "stopAppBlocker":
         // On iOS, stopping means clearing the shield
         self.removeShield(result: result)
+
+      case "schedulePrayerAlarms":
+        if #available(iOS 15.0, *) {
+            let prayerTimes = call.argument<[Double]>("prayerTimes") ?? []
+            let prayerNames = call.argument<[String]>("prayerNames") ?? []
+            self.scheduleActivities(times: prayerTimes, names: prayerNames, result: result)
+        } else {
+            result(FlutterError(code: "UNSUPPORTED", message: "iOS 15.0+ required", details: nil))
+        }
 
       default:
         result(FlutterMethodNotImplemented)
@@ -126,6 +136,47 @@ import SwiftUI
             self.selection = loaded
         }
     }
+  }
+
+  // MARK: - DeviceActivity Monitoring
+
+  @available(iOS 15.0, *)
+  private func scheduleActivities(times: [Double], names: [String], result: FlutterResult) {
+      let center = DeviceActivityCenter()
+      
+      // Clear existing activities first
+      center.stopMonitoring()
+      
+      for (index, timeInterval) in times.enumerated() {
+          let date = Date(timeIntervalSince1970: timeInterval / 1000)
+          let name = names[index]
+          
+          let calendar = Calendar.current
+          let components = calendar.dateComponents([.hour, .minute], from: date)
+          
+          guard let hour = components.hour, let minute = components.minute else { continue }
+          
+          // Create a schedule for a 20-minute window around the prayer time
+          // (e.g., 5 mins before, 15 mins after, or just 20 mins total)
+          let startComponents = DateComponents(hour: hour, minute: minute)
+          let endComponents = calendar.dateComponents([.hour, .minute], from: date.addingTimeInterval(20 * 60))
+          
+          let schedule = DeviceActivitySchedule(
+              intervalStart: startComponents,
+              intervalEnd: endComponents,
+              repeats: true
+          )
+          
+          let activityName = DeviceActivityName("neki.prayer.\(name)")
+          
+          do {
+              try center.startMonitoring(activityName, during: schedule)
+              print("✅ iOS: Scheduled activity for \(name) at \(hour):\(minute)")
+          } catch {
+              print("❌ iOS: Failed to schedule activity for \(name): \(error.localizedDescription)")
+          }
+      }
+      result(true)
   }
 }
 

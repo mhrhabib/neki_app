@@ -1,8 +1,12 @@
+import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/location/cubit/location_cubit.dart';
+import '../../../../core/location/cubit/location_state.dart';
 import '../cubit/salah_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../points/presentation/cubit/points_cubit.dart';
@@ -17,15 +21,31 @@ class SalahScreen extends StatefulWidget {
 }
 
 class SalahScreenState extends State<SalahScreen> {
-  final List<Map<String, String>> prayers = [
-    {'id': 'fajr', 'name': 'Fajr', 'time': '5:30 AM'},
-    {'id': 'dhuha', 'name': 'Dhuha', 'time': '7:00 AM'},
-    {'id': 'zuhr', 'name': 'Zuhr', 'time': '1:15 PM'},
-    {'id': 'asr', 'name': 'Asr', 'time': '4:45 PM'},
-    {'id': 'maghrib', 'name': 'Maghrib', 'time': '6:30 PM'},
-    {'id': 'isha', 'name': 'Isha', 'time': '8:00 PM'},
-    {'id': 'tahajjud', 'name': 'Tahajjud', 'time': '2:00 AM'},
-  ];
+  List<Map<String, String>> get prayers {
+    final locationState = context.read<LocationCubit>().state;
+    if (locationState is LocationLoaded) {
+      final coords = Coordinates(locationState.latitude, locationState.longitude);
+      final params = CalculationMethod.karachi.getParameters()
+        ..madhab = Madhab.hanafi;
+      final pt = PrayerTimes(coords, DateComponents.from(DateTime.now()), params);
+      final fmt = DateFormat('h:mm a');
+      return [
+        {'name': 'Fajr',    'time': fmt.format(pt.fajr)},
+        {'name': 'Dhuhr',   'time': fmt.format(pt.dhuhr)},
+        {'name': 'Asr',     'time': fmt.format(pt.asr)},
+        {'name': 'Maghrib', 'time': fmt.format(pt.maghrib)},
+        {'name': 'Isha',    'time': fmt.format(pt.isha)},
+      ];
+    }
+    // Fallback until location loads
+    return [
+      {'name': 'Fajr',    'time': '--:--'},
+      {'name': 'Dhuhr',   'time': '--:--'},
+      {'name': 'Asr',     'time': '--:--'},
+      {'name': 'Maghrib', 'time': '--:--'},
+      {'name': 'Isha',    'time': '--:--'},
+    ];
+  }
 
   @override
   void initState() {

@@ -117,9 +117,19 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
     );
   }
 
+  /// Converts a 2-letter ISO country code to a flag emoji.
+  /// e.g. 'BD' → '🇧🇩', 'US' → '🇺🇸'
+  String _countryFlag(String? code) {
+    if (code == null || code.length != 2) return '';
+    const base = 0x1F1E6 - 0x41;
+    final upper = code.toUpperCase();
+    return String.fromCharCode(base + upper.codeUnitAt(0)) +
+        String.fromCharCode(base + upper.codeUnitAt(1));
+  }
+
   Widget _buildContent(LeaderboardLoaded state) {
     if (_activeTab == 'country') {
-      return SliverFillRemaining(child: _buildCountryComingSoon());
+      return _buildCountryContent(state);
     }
 
     final entries = state.globalEntries;
@@ -140,12 +150,102 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
         delegate: SliverChildListDelegate([
           _buildTopPerformerCard(entries.first, state.currentUserId),
           SizedBox(height: 25.h),
-          // Current user's rank card if not in top list
           if (state.currentUserRank != null &&
               !entries.any((e) => e.userId == state.currentUserId))
             _buildMyRankBanner(state.currentUserRank!),
           if (entries.length > 1) ...[
-            _buildLeaderboardHeader(),
+            _buildLeaderboardHeader('GLOBAL RANKINGS'),
+            SizedBox(height: 15.h),
+            ...entries
+                .sublist(1)
+                .map((e) => _buildUserCard(e, state.currentUserId)),
+          ],
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildCountryContent(LeaderboardLoaded state) {
+    final entries = state.countryEntries;
+    final flag = _countryFlag(state.userCountry);
+    final countryLabel =
+        flag.isNotEmpty ? '$flag  ${state.userCountry ?? ''}' : 'Your Country';
+
+    if (state.userCountry == null || state.userCountry!.isEmpty) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(40.w),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('🌍', style: TextStyle(fontSize: 60.sp)),
+                SizedBox(height: 20.h),
+                Text(
+                  'Country not detected',
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                Text(
+                  'Your country could not be determined from your device settings.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14.sp, color: Colors.white54, height: 1.5),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (entries.isEmpty) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(40.w),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(flag.isNotEmpty ? flag : '🌍',
+                    style: TextStyle(fontSize: 60.sp)),
+                SizedBox(height: 20.h),
+                Text(
+                  'No one from $countryLabel yet',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                Text(
+                  'Be the first from your country to earn NEKI points!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14.sp, color: Colors.white54, height: 1.5),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SliverPadding(
+      padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 100.h),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          _buildTopPerformerCard(entries.first, state.currentUserId),
+          SizedBox(height: 25.h),
+          if (state.currentUserRank != null &&
+              !entries.any((e) => e.userId == state.currentUserId))
+            _buildMyRankBanner(state.currentUserRank!),
+          if (entries.length > 1) ...[
+            _buildLeaderboardHeader(countryLabel),
             SizedBox(height: 15.h),
             ...entries
                 .sublist(1)
@@ -210,7 +310,7 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
     );
   }
 
-  Widget _buildLeaderboardHeader() {
+  Widget _buildLeaderboardHeader(String label) {
     return Row(
       children: [
         Container(
@@ -223,7 +323,7 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
         ),
         SizedBox(width: 10.w),
         Text(
-          'RANKINGS',
+          label.toUpperCase(),
           style: TextStyle(
             fontSize: 12.sp,
             fontWeight: FontWeight.w900,
@@ -321,6 +421,13 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              if (_countryFlag(user.country).isNotEmpty) ...[
+                Text(
+                  _countryFlag(user.country),
+                  style: TextStyle(fontSize: 20.sp),
+                ),
+                SizedBox(width: 8.w),
+              ],
               Text(
                 user.userName,
                 style: TextStyle(
@@ -471,35 +578,49 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
           ),
           SizedBox(width: 12.w),
           Expanded(
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  user.userName,
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                if (isYou) ...[
-                  SizedBox(width: 6.w),
-                  Container(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryGreen,
-                      borderRadius: BorderRadius.circular(4.r),
-                    ),
-                    child: Text(
-                      'YOU',
-                      style: TextStyle(
-                        fontSize: 9.sp,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        user.userName,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
+                    if (isYou) ...[
+                      SizedBox(width: 6.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 6.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryGreen,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                        child: Text(
+                          'YOU',
+                          style: TextStyle(
+                            fontSize: 9.sp,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                if (_countryFlag(user.country).isNotEmpty)
+                  Text(
+                    _countryFlag(user.country),
+                    style: TextStyle(fontSize: 13.sp),
                   ),
-                ],
               ],
             ),
           ),
@@ -579,39 +700,6 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
             style: TextStyle(fontSize: 11.sp, color: Colors.white38),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCountryComingSoon() {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(40.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('🌍', style: TextStyle(fontSize: 60.sp)),
-            SizedBox(height: 20.h),
-            Text(
-              'Country Rankings',
-              style: TextStyle(
-                fontSize: 22.sp,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(height: 10.h),
-            Text(
-              'Coming soon! Country-based rankings will appear here once we collect enough data.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: Colors.white54,
-                height: 1.5,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

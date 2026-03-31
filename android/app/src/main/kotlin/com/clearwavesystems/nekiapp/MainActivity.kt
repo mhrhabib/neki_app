@@ -1,6 +1,10 @@
 package com.clearwavesystems.nekiapp
 
 import android.content.Context
+import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
@@ -16,7 +20,7 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "checkExactAlarmPermission" -> {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
                         result.success(alarmManager.canScheduleExactAlarms())
                     } else {
@@ -24,9 +28,24 @@ class MainActivity : FlutterActivity() {
                     }
                 }
                 "requestExactAlarmPermission" -> {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                        val intent = android.content.Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                        intent.data = android.net.Uri.parse("package:$packageName")
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val intent = android.content.Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                        intent.data = Uri.parse("package:$packageName")
+                        startActivity(intent)
+                    }
+                    result.success(true)
+                }
+                "isBatteryOptimizationIgnored" -> {
+                    val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+                    result.success(pm.isIgnoringBatteryOptimizations(packageName))
+                }
+                "requestIgnoreBatteryOptimization" -> {
+                    if (!( (getSystemService(Context.POWER_SERVICE) as PowerManager)
+                            .isIgnoringBatteryOptimizations(packageName))) {
+                        val intent = android.content.Intent(
+                            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                            Uri.parse("package:$packageName")
+                        )
                         startActivity(intent)
                     }
                     result.success(true)

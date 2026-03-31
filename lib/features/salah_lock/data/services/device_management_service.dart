@@ -23,4 +23,23 @@ class DeviceManagementService {
       debugPrint('❌ DeviceManager: Error requesting exact alarm permission - $e');
     }
   }
+
+  Future<bool> isBatteryOptimizationIgnored() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      return await _channel.invokeMethod('isBatteryOptimizationIgnored') ?? false;
+    } catch (e) {
+      debugPrint('❌ DeviceManager: Error checking battery optimization - $e');
+      return false;
+    }
+  }
+
+  Future<void> requestIgnoreBatteryOptimization() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod('requestIgnoreBatteryOptimization');
+    } catch (e) {
+      debugPrint('❌ DeviceManager: Error requesting battery optimization exemption - $e');
+    }
+  }
 }

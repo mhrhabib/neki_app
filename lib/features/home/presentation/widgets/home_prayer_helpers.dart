@@ -11,11 +11,11 @@ String formatTimeOnly(DateTime? time) {
 String getPrayerName(Prayer prayer) {
   switch (prayer) {
     case Prayer.fajr:
-      return 'Fazr';
+      return 'Fajr';
     case Prayer.sunrise:
       return 'Sunrise';
     case Prayer.dhuhr:
-      return 'Johuur';
+      return 'Dhuhr';
     case Prayer.asr:
       return 'Asr';
     case Prayer.maghrib:
@@ -31,11 +31,11 @@ String getPrayerName(Prayer prayer) {
 String getNextPrayerLabel(Prayer prayer) {
   switch (prayer) {
     case Prayer.fajr:
-      return 'Fazr (dawn prayer)';
+      return 'Fajr (dawn prayer)';
     case Prayer.sunrise:
       return 'Sunrise';
     case Prayer.dhuhr:
-      return 'Johuur (noon prayer)';
+      return 'Dhuhr (noon prayer)';
     case Prayer.asr:
       return 'Asr (afternoon prayer)';
     case Prayer.maghrib:

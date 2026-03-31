@@ -76,7 +76,9 @@ class SetUpDI {
     getIt.registerLazySingleton<OnboardingRepository>(
       () => OnboardingRepositoryImpl(),
     );
-    getIt.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
+    getIt.registerLazySingleton<AuthRepository>(
+      () => AuthRepositoryImpl(firestoreService: getIt<FirestoreService>()),
+    );
     getIt.registerLazySingleton<SalahRepository>(
       () => SalahRepositoryImpl(getIt<FirestoreService>()),
     );

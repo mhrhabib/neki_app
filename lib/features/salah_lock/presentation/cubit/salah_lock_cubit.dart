@@ -49,6 +49,7 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     debugPrint('⚙️ SalahLock: Settings loaded - isEnabled: ${_settings.isEnabled}');
 
     SalahNotificationService.onPrayedAction = _onNotificationPrayed;
+    SalahNotificationService.onSkipAction = _onNotificationSkip;
     _isGuideDismissed = await repository.isGuideDismissed();
     _lastScheduledDate = await repository.getLastNotificationDate();
 
@@ -69,6 +70,11 @@ class SalahLockCubit extends Cubit<SalahLockState> {
       }
     });
 
+    if (_settings.isEnabled) {
+      // Ensure alarm + battery permissions are granted silently on startup
+      checkAndRequestBasicPermissions();
+    }
+
     if (locationCubit.state is LocationLoaded) {
       startMonitoring(userId: '', locationState: locationCubit.state as LocationLoaded);
     }
@@ -80,7 +86,8 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     _monitoringTimer?.cancel();
 
     final prayerTimes = _getPrayerTimes(locationState);
-    _scheduleNotificationsIfNewDay(prayerTimes);
+    // Always reschedule on app start so missed/stale notifications are refreshed
+    _forceScheduleNotifications(prayerTimes);
     checkPrayerLock(prayerTimes, userId);
 
     _monitoringTimer = Timer.periodic(const Duration(minutes: 1), (_) {
@@ -95,6 +102,17 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     final coordinates = Coordinates(state.latitude, state.longitude);
     final params = CalculationMethod.karachi.getParameters()..madhab = Madhab.hanafi;
     return PrayerTimes(coordinates, DateComponents.from(DateTime.now()), params);
+  }
+
+  /// Called on every app start — always reschedules today's notifications.
+  void _forceScheduleNotifications(PrayerTimes prayerTimes) {
+    final today = DateTime.now();
+    final dateKey = '${today.year}-${today.month}-${today.day}';
+    _lastScheduledDate = dateKey;
+    repository.saveLastNotificationDate(dateKey).catchError((_) {});
+    notificationService.scheduleAllPrayerNotifications(prayerTimes).catchError((e) {
+      debugPrint('⚠️ SalahLock: Failed to schedule prayer notifications: $e');
+    });
   }
 
   void _scheduleNotificationsIfNewDay(PrayerTimes prayerTimes) {
@@ -152,10 +170,18 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     confirmPrayed('', salahName);
   }
 
+  void _onNotificationSkip(String salahName) {
+    notificationService.cancelPrayerByName(salahName);
+    repository.markSalahCompletedLocally(salahName);
+    if (state is SalahLockActive) {
+      emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
+    }
+  }
+
   Future<void> confirmPrayed(String userId, String salahName) async {
     await salahCubit.markSalahComplete(userId: userId, salahName: salahName);
     await repository.markSalahCompletedLocally(salahName);
-    await notificationService.cancelPrayerNotifications();
+    await notificationService.cancelPrayerByName(salahName);
     emit(SalahLockUnlocked(_settings, isGuideDismissed: _isGuideDismissed));
 
     Future.delayed(const Duration(seconds: 2), () {
@@ -201,15 +227,24 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     updateSettings(_settings);
   }
 
-  /// Requests exact alarm permission on Android so notifications fire on time.
+  /// Requests exact alarm + battery optimization permissions so notifications
+  /// fire on time even when the app is in the background.
   Future<bool> checkAndRequestBasicPermissions() async {
     if (!Platform.isAndroid) return true;
-    final granted = await deviceManager.checkExactAlarmPermission();
-    if (!granted) {
+
+    // 1. Exact alarm permission (Android 12+)
+    final exactGranted = await deviceManager.checkExactAlarmPermission();
+    if (!exactGranted) {
       await deviceManager.requestExactAlarmPermission();
-      return false;
     }
-    return true;
+
+    // 2. Battery optimization exemption — critical for background alarms
+    final batteryIgnored = await deviceManager.isBatteryOptimizationIgnored();
+    if (!batteryIgnored) {
+      await deviceManager.requestIgnoreBatteryOptimization();
+    }
+
+    return exactGranted && batteryIgnored;
   }
 
   SalahLockSettings get settings => _settings;

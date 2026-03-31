@@ -7,7 +7,7 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:io' show Platform;
-
+import '../../../../core/services/firestore_service.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../models/user_model.dart';
@@ -18,11 +18,18 @@ import '../models/user_model.dart';
 /// - Requires `Firebase.initializeApp()` to be called before using this class.
 class AuthRepositoryImpl implements AuthRepository {
   final fb_auth.FirebaseAuth _firebaseAuth = fb_auth.FirebaseAuth.instance;
+  final FirestoreService _firestoreService;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     serverClientId: '327642350514-4lcqmvbq71fa8ojuilcd8uklm2lua0q8.apps.googleusercontent.com',
     scopes: ['email', 'profile'],
   );
   final FacebookAuth _facebookAuth = FacebookAuth.instance;
+
+  AuthRepositoryImpl({required FirestoreService firestoreService})
+      : _firestoreService = firestoreService;
+
+  // Ensures profile sync runs at most once per app session.
+  bool _profileSynced = false;
 
   UserModel? _mapFirebaseUser(fb_auth.User? user) {
     if (user == null) return null;
@@ -40,6 +47,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<UserEntity> login({required String email, required String password}) async {
     final credential = await _firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
     final user = credential.user;
+    if (user != null) await _ensureFirestoreDocs(user);
     final mapped = _mapFirebaseUser(user);
     if (mapped == null) throw Exception('Failed to sign in');
     return mapped;
@@ -56,6 +64,7 @@ class AuthRepositoryImpl implements AuthRepository {
     await user.updateDisplayName(name);
     await user.reload();
     final refreshed = _firebaseAuth.currentUser;
+    if (refreshed != null) await _ensureFirestoreDocs(refreshed);
     final mapped = _mapFirebaseUser(refreshed);
     if (mapped == null) throw Exception('Failed to map created user');
     return mapped;
@@ -210,6 +219,79 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  /// Returns the 2-letter ISO country code from the device locale,
+  /// e.g. 'BD' from 'en_BD', 'US' from 'en_US'. Returns '' if unknown.
+  String _detectCountryCode() {
+    try {
+      final locale = Platform.localeName; // e.g. 'en_BD', 'bn_BD', 'en_US'
+      final parts = locale.split('_');
+      if (parts.length >= 2) return parts.last.toUpperCase();
+    } catch (_) {}
+    return '';
+  }
+
+  Future<void> _ensureFirestoreDocs(fb_auth.User user) async {
+    final uid = user.uid;
+    final now = DateTime.now().toIso8601String();
+
+    final existingUser = await _firestoreService.getDocument(
+      collectionPath: 'users',
+      documentId: uid,
+    );
+    if (existingUser == null || !existingUser.exists) {
+      await _firestoreService.setDocument(
+        collectionPath: 'users',
+        documentId: uid,
+        data: {
+          'name': user.displayName ?? '',
+          'email': user.email ?? '',
+          'photoUrl': user.photoURL,
+          'country': _detectCountryCode(),
+          'createdAt': now,
+        },
+      );
+    }
+
+    final existingPoints = await _firestoreService.getDocument(
+      collectionPath: 'users_points',
+      documentId: uid,
+    );
+    final profileData = {
+      'name': user.displayName ?? '',
+      'photoUrl': user.photoURL,
+      'country': _detectCountryCode(),
+    };
+    if (existingPoints == null || !existingPoints.exists) {
+      await _firestoreService.setDocument(
+        collectionPath: 'users_points',
+        documentId: uid,
+        data: {
+          'userId': uid,
+          ...profileData,
+          'totalPoints': 0,
+          'todayPoints': 0,
+          'weekPoints': 0,
+          'monthPoints': 0,
+          'currentStreak': 0,
+          'longestStreak': 0,
+          'lastActiveDate': now,
+        },
+      );
+    } else {
+      // Patch name/country into existing doc if they're missing
+      final existing = existingPoints.data() ?? {};
+      final needsUpdate = (existing['name'] as String?)?.isEmpty != false ||
+          existing['country'] == null;
+      if (needsUpdate) {
+        await _firestoreService.updateDocument(
+          collectionPath: 'users_points',
+          documentId: uid,
+          data: profileData,
+        );
+      }
+    }
+  }
+
   /// Generates a cryptographically secure random nonce
   String _generateNonce([int length = 32]) {
     const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
@@ -259,6 +341,10 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<UserEntity?> getCurrentUser() async {
     final user = _firebaseAuth.currentUser;
+    if (user != null && !_profileSynced) {
+      _profileSynced = true;
+      await _ensureFirestoreDocs(user);
+    }
     return _mapFirebaseUser(user);
   }
 

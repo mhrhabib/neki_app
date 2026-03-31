@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,6 +21,7 @@ import '../widgets/home_prayer_times_row.dart';
 import '../widgets/home_top_bar.dart';
 import '../widgets/home_setup_guide_card.dart';
 import '../../../salah/presentation/cubit/salah_cubit.dart';
+import '../../../salah_lock/presentation/cubit/salah_lock_cubit.dart';
 
 /// Home dashboard screen.
 ///
@@ -36,10 +39,16 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Check if we are already authenticated on startup and trigger loads
     final authState = context.read<AuthCubit>().state;
     if (authState is Authenticated) {
       _triggerDataLoads(authState.user.id);
+    }
+    // Request alarm + battery permissions after the first frame so the
+    // Activity is fully ready to launch system dialogs.
+    if (Platform.isAndroid) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<SalahLockCubit>().checkAndRequestBasicPermissions();
+      });
     }
   }
 

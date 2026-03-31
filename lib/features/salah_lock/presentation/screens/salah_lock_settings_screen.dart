@@ -17,6 +17,31 @@ class SalahLockSettingsScreen extends StatefulWidget {
 class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
   bool _exactAlarmGranted = false;
   bool _batteryIgnored = false;
+  bool _testScheduled = false;
+
+  Future<void> _scheduleTestNotification() async {
+    final svc = context.read<SalahLockCubit>().notificationService;
+    if (!mounted) return;
+
+    // First show immediately so we know basic notifications work
+    // await svc.showTestNotificationNow();
+
+    // Then schedule one in 10s to verify exact-alarm scheduling
+    await svc.scheduleTestNotification(seconds: 10);
+
+    if (!mounted) return;
+    setState(() => _testScheduled = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('✅ Immediate notification sent + scheduled one in 10s. Check logs for timezone info.'),
+        backgroundColor: Color(0xFF1A6B3C),
+        duration: Duration(seconds: 5),
+      ),
+    );
+    Future.delayed(const Duration(seconds: 15), () {
+      if (mounted) setState(() => _testScheduled = false);
+    });
+  }
 
   @override
   void initState() {
@@ -142,6 +167,51 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
                           onTap: () {
                             // Picker logic
                           },
+                        ),
+                        SizedBox(height: 24.h),
+                        _buildSectionHeader('TEST'),
+                        GestureDetector(
+                          onTap: _testScheduled ? null : _scheduleTestNotification,
+                          child: Container(
+                            margin: EdgeInsets.only(bottom: 12.h),
+                            padding: EdgeInsets.all(18.w),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(20.r),
+                              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(10.w),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12.r),
+                                  ),
+                                  child: Icon(CupertinoIcons.bell_fill, color: Colors.blue, size: 20.sp),
+                                ),
+                                SizedBox(width: 14.w),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _testScheduled ? 'Notification scheduled!' : 'Fire Test Notification',
+                                        style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w700),
+                                      ),
+                                      Text(
+                                        'Fires in 10 seconds — lock your screen now',
+                                        style: TextStyle(color: Colors.white54, fontSize: 12.sp),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                _testScheduled
+                                    ? Icon(Icons.check_circle_rounded, color: AppColors.primaryGreen, size: 22.sp)
+                                    : Icon(CupertinoIcons.chevron_right, color: Colors.blue, size: 16.sp),
+                              ],
+                            ),
+                          ),
                         ),
                         SizedBox(height: 40.h),
                       ]),

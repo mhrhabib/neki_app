@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:adhan/adhan.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -60,6 +61,14 @@ class SalahNotificationService {
 
   Future<void> initialize() async {
     tz.initializeTimeZones();
+    // Set the local timezone from the device so scheduled times are correct.
+    try {
+      final tzInfo = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(tzInfo.identifier));
+      debugPrint('🕐 Timezone set to: $tzInfo');
+    } catch (e) {
+      debugPrint('⚠️ Could not set timezone: $e');
+    }
 
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -126,6 +135,101 @@ class SalahNotificationService {
     }
   }
 
+  // ─── Test ──────────────────────────────────────────────────────────────────
+
+  /// Shows a notification immediately (for testing — no scheduling required).
+  Future<void> showTestNotificationNow() async {
+    debugPrint('🧪 Showing test notification immediately...');
+    await _notificationsPlugin.show(
+      999,
+      '🕌 TEST — Fajr Time',
+      'This is a test notification. If you see this, notifications work!',
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _reminderChannelId,
+          _reminderChannelName,
+          channelDescription: 'Salah Lock Mode reminders',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          actions: const [
+            AndroidNotificationAction(
+              _actionIdPrayed,
+              "I've Prayed ✅",
+              showsUserInterface: true,
+            ),
+            AndroidNotificationAction(
+              _actionIdSkip,
+              "Not Praying ✕",
+              showsUserInterface: false,
+              cancelNotification: true,
+            ),
+          ],
+        ),
+        iOS: const DarwinNotificationDetails(
+          categoryIdentifier: 'salah_prayer_category',
+        ),
+      ),
+      payload: 'Fajr',
+    );
+    debugPrint('🧪 Test notification shown.');
+  }
+
+  /// Schedules a test notification in [seconds] seconds.
+ Future<void> scheduleTestNotification({int seconds = 10}) async {
+  final location = _tzLocation();
+  
+  // ✅ Use TZDateTime.now instead of mixing DateTime types
+  final scheduled = tz.TZDateTime.now(location).add(Duration(seconds: seconds));
+  final scheduleMode = await _canUseExactAlarms()
+      ? AndroidScheduleMode.exactAllowWhileIdle
+      : AndroidScheduleMode.inexactAllowWhileIdle;
+
+  debugPrint('🧪 Scheduling test notification at ${scheduled.toLocal()}');
+  debugPrint('🧪 Current TZ time: ${tz.TZDateTime.now(location).toLocal()}');
+  debugPrint('🧪 Schedule mode: $scheduleMode');
+
+  await _notificationsPlugin.zonedSchedule(
+    998,
+    '🕌 TEST — Asr Reminder',
+    'Scheduled test fired! Notifications + timezone are working correctly.',
+    scheduled,
+    NotificationDetails(
+      android: AndroidNotificationDetails(
+        _reminderChannelId,
+        _reminderChannelName,
+        channelDescription: 'Salah Lock Mode reminders',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        actions: const [
+          AndroidNotificationAction(
+            _actionIdPrayed,
+            "I've Prayed ✅",
+            showsUserInterface: true,
+          ),
+          AndroidNotificationAction(
+            _actionIdSkip,
+            "Not Praying ✕",
+            showsUserInterface: false,
+            cancelNotification: true,
+          ),
+        ],
+      ),
+      iOS: const DarwinNotificationDetails(
+        categoryIdentifier: 'salah_prayer_category',
+      ),
+    ),
+    payload: 'Asr',
+    androidScheduleMode: scheduleMode,
+    uiLocalNotificationDateInterpretation:
+        UILocalNotificationDateInterpretation.absoluteTime,
+    matchDateTimeComponents: DateTimeComponents.time
+  );
+  debugPrint('🧪 Test notification scheduled.');
+}
   // ─── Scheduling ────────────────────────────────────────────────────────────
 
   /// Schedule repeating 5-minute notifications for all 5 prayers today.
@@ -134,11 +238,12 @@ class SalahNotificationService {
   Future<void> scheduleAllPrayerNotifications(PrayerTimes prayerTimes) async {
     await cancelPrayerNotifications();
 
-    final now = DateTime.now();
     final tz.Location location = _tzLocation();
+    final now = tz.TZDateTime.now(location);
     final scheduleMode = await _canUseExactAlarms()
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
+    debugPrint('🕐 Scheduling prayers: TZ=${location.name}, now=$now, mode=$scheduleMode');
 
     final orderedPrayers = [
       ('Fajr', prayerTimes.fajr),
@@ -152,17 +257,20 @@ class SalahNotificationService {
       final (name, prayerTime) = orderedPrayers[p];
       final base = _prayerBaseIds[name]!;
 
-      // The window ends at the next prayer time (or midnight for Isha)
-      final DateTime windowEnd = p + 1 < orderedPrayers.length
-          ? orderedPrayers[p + 1].$2
-          : DateTime(prayerTime.year, prayerTime.month, prayerTime.day, 23, 59);
+      // Convert prayer time to timezone-aware for consistent comparisons
+      final tzPrayerTime = tz.TZDateTime.from(prayerTime, location);
+
+      // The window ends at the next prayer time (or 23:59 local for Isha)
+      final tz.TZDateTime windowEnd = p + 1 < orderedPrayers.length
+          ? tz.TZDateTime.from(orderedPrayers[p + 1].$2, location)
+          : tz.TZDateTime(location, tzPrayerTime.year, tzPrayerTime.month, tzPrayerTime.day, 23, 59);
 
       int slot = 0;
-      DateTime fireAt = prayerTime;
+      tz.TZDateTime fireAt = tzPrayerTime;
 
       while (slot < _maxReminders && fireAt.isBefore(windowEnd)) {
         if (fireAt.isAfter(now)) {
-          final scheduled = tz.TZDateTime.from(fireAt, location);
+          final scheduled = fireAt;
           final isFirst = slot == 0;
           await _notificationsPlugin.zonedSchedule(
             base + slot,
@@ -180,7 +288,7 @@ class SalahNotificationService {
           debugPrint('🔔 $name [slot $slot] scheduled at ${scheduled.toLocal()}');
         }
         slot++;
-        fireAt = prayerTime.add(_interval * slot);
+        fireAt = tzPrayerTime.add(_interval * slot);
       }
 
       if (slot == 0) {

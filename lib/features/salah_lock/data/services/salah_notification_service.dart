@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:adhan/adhan.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -90,7 +92,10 @@ class SalahNotificationService {
             DarwinNotificationAction.plain(
               _actionIdSkip,
               "Not Praying ✕",
-              options: {DarwinNotificationActionOption.destructive},
+              options: {
+                DarwinNotificationActionOption.destructive,
+                DarwinNotificationActionOption.foreground,
+              },
             ),
           ],
         ),
@@ -125,13 +130,44 @@ class SalahNotificationService {
   }
 
   @pragma('vm:entry-point')
-  static void _onBackgroundNotificationResponse(NotificationResponse response) {
+  static Future<void> _onBackgroundNotificationResponse(
+      NotificationResponse response) async {
     final payload = response.payload;
     if (payload == null) return;
-    if (response.actionId == _actionIdPrayed) {
-      onPrayedAction?.call(payload);
-    } else if (response.actionId == _actionIdSkip) {
-      onSkipAction?.call(payload);
+
+    final bool isPrayed = response.actionId == _actionIdPrayed;
+    final bool isSkip = response.actionId == _actionIdSkip;
+    if (!isPrayed && !isSkip) return;
+
+    // This runs in a background isolate on Android (static fields are null here).
+    // We must do all work directly via SharedPreferences + the plugin.
+    try {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      // 1. Persist completion so the next checkPrayerLock call sees it as done.
+      final prefs = await SharedPreferences.getInstance();
+      final logicalNow = DateTime.now().subtract(const Duration(hours: 4));
+      final dateKey =
+          '${logicalNow.year}-${logicalNow.month}-${logicalNow.day}';
+      await prefs.setBool('salah_lock_done_${payload}_$dateKey', true);
+
+      // 2. Cancel all remaining reminder slots for this prayer so they stop firing.
+      final base = _prayerBaseIds[payload];
+      if (base != null) {
+        final plugin = FlutterLocalNotificationsPlugin();
+        await plugin.initialize(
+          const InitializationSettings(
+            android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+            iOS: DarwinInitializationSettings(),
+          ),
+        );
+        for (int i = 0; i < _maxReminders; i++) {
+          await plugin.cancel(base + i);
+        }
+      }
+    } catch (e) {
+      // Non-fatal: the app will reconcile state on next open via checkPrayerLock.
+      debugPrint('⚠️ Background notification handler error: $e');
     }
   }
 
@@ -226,7 +262,6 @@ class SalahNotificationService {
     androidScheduleMode: scheduleMode,
     uiLocalNotificationDateInterpretation:
         UILocalNotificationDateInterpretation.absoluteTime,
-    matchDateTimeComponents: DateTimeComponents.time
   );
   debugPrint('🧪 Test notification scheduled.');
 }

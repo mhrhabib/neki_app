@@ -73,10 +73,16 @@ class SalahLockCubit extends Cubit<SalahLockState> {
       }
     });
 
-    _salahSubscription = salahCubit.stream.listen((salahState) {
-      if (salahState is SalahLoaded && locationCubit.state is LocationLoaded) {
-        final prayerTimes = _getPrayerTimes(locationCubit.state as LocationLoaded);
-        checkPrayerLock(prayerTimes, '');
+    _salahSubscription = salahCubit.stream.listen((salahState) async {
+      if (salahState is SalahLoaded) {
+        // Always reconcile — even before the location/prayer-times are ready —
+        // so notifications are cancelled for prayers marked complete via the
+        // Salah screen or another device.
+        await _syncCompletedPrayersFromSalahState();
+        if (locationCubit.state is LocationLoaded) {
+          final prayerTimes = _getPrayerTimes(locationCubit.state as LocationLoaded);
+          await checkPrayerLock(prayerTimes, '');
+        }
       }
     });
 
@@ -166,6 +172,12 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     if (state is SalahLockUnlocked) return;
     if (_snoozedUntil != null && DateTime.now().isBefore(_snoozedUntil!)) return;
 
+    // ✅ Always sync any remotely-completed prayers to the local flag
+    // and cancel their notifications. Prevents notifications from firing
+    // for prayers the user marked via the Salah screen or another device,
+    // regardless of which prayer window we are currently in.
+    await _syncCompletedPrayersFromSalahState();
+
     final currentPrayer = prayerTimes.currentPrayer();
 
     if (currentPrayer == Prayer.none || currentPrayer == Prayer.sunrise) {
@@ -176,15 +188,17 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     }
 
     final prayerName = _getPrayerName(currentPrayer);
-    bool isDone = await repository.isSalahCompletedLocally(prayerName);
+    final bool isDone = await repository.isSalahCompletedLocally(prayerName);
 
-    if (!isDone && salahCubit.state is SalahLoaded) {
-      final loadedState = salahCubit.state as SalahLoaded;
-      isDone = loadedState.salahs.any((s) => s.salahName == prayerName && s.isCompleted);
-      if (isDone) {
-        await repository.markSalahCompletedLocally(prayerName);
-        await notificationService.cancelPrayerByName(prayerName);
-      }
+    // ✅ Avoid flashing the overlay before SalahCubit has finished its first
+    // load. Without this, the lock briefly shows SalahLockActive on cold start
+    // and then disappears once SalahLoaded arrives and reveals the prayer is
+    // already done. Still proceed if SalahCubit errored — we don't want the
+    // user to miss their prayer just because Firestore is unreachable.
+    if (!isDone &&
+        (salahCubit.state is SalahInitial ||
+            salahCubit.state is SalahLoading)) {
+      return;
     }
 
     if (!isDone) {
@@ -200,15 +214,48 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     } else {
       // ✅ Also cancel notifications here in case local state was marked done elsewhere
       await notificationService.cancelPrayerByName(prayerName);
-      
+
       if (state is SalahLockActive) {
         emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
       }
     }
   }
 
+  /// Reconcile the SalahCubit's loaded state with the local "done" flag and
+  /// notification queue. Called from [checkPrayerLock] and from the salah
+  /// stream listener. Ensures that whenever a prayer is marked complete —
+  /// from the Salah screen, a notification action, the overlay, or any other
+  /// entry point — its notifications are cancelled and local state is in sync.
+  Future<void> _syncCompletedPrayersFromSalahState() async {
+    final salahState = salahCubit.state;
+    if (salahState is! SalahLoaded) return;
+
+    for (final salah in salahState.salahs) {
+      if (!salah.isCompleted) continue;
+      final name = salah.salahName;
+      final alreadyLocal = await repository.isSalahCompletedLocally(name);
+      if (alreadyLocal) continue;
+      await repository.markSalahCompletedLocally(name);
+      await notificationService.cancelPrayerByName(name);
+      debugPrint('🔕 Synced completed prayer $name → cancelled notifications');
+    }
+  }
+
+  /// Public entry point used by the Salah screen (and any other UI surface)
+  /// to mark a prayer as prayed. Cancels notifications and updates local
+  /// state immediately so the user doesn't keep getting reminders.
+  Future<void> markPrayerCompletedExternally(String salahName) async {
+    await repository.markSalahCompletedLocally(salahName);
+    await notificationService.cancelPrayerByName(salahName);
+    if (state is SalahLockActive &&
+        (state as SalahLockActive).salahName == salahName) {
+      emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
+    }
+  }
+
   void _onNotificationPrayed(String salahName) {
-    confirmPrayed('', salahName);
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    confirmPrayed(uid, salahName);
   }
 
   void _onNotificationSkip(String salahName) {
@@ -220,13 +267,38 @@ class SalahLockCubit extends Cubit<SalahLockState> {
   }
 
   Future<void> confirmPrayed(String userId, String salahName) async {
-    await salahCubit.markSalahComplete(userId: userId, salahName: salahName);
+    // Resolve a real userId if the caller didn't pass one (e.g. notification
+    // action handler). Without this, the Firestore write stores an empty
+    // userId and the Salah screen never sees the prayer as complete.
+    final effectiveUserId = userId.isNotEmpty
+        ? userId
+        : (FirebaseAuth.instance.currentUser?.uid ?? '');
+
+    // Mark locally + cancel notifications FIRST so any in-flight
+    // checkPrayerLock call (triggered by SalahCubit reloads) immediately
+    // sees this prayer as done and doesn't re-emit SalahLockActive.
     await repository.markSalahCompletedLocally(salahName);
     await notificationService.cancelPrayerByName(salahName);
     emit(SalahLockUnlocked(_settings, isGuideDismissed: _isGuideDismissed));
 
+    if (effectiveUserId.isNotEmpty) {
+      try {
+        await salahCubit.markSalahComplete(
+          userId: effectiveUserId,
+          salahName: salahName,
+        );
+      } catch (e) {
+        debugPrint('⚠️ SalahLock: markSalahComplete failed: $e');
+      }
+    } else {
+      debugPrint('⚠️ SalahLock: confirmPrayed called with no userId — '
+          'skipping Firestore write');
+    }
+
     Future.delayed(const Duration(seconds: 2), () {
-      emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
+      if (state is SalahLockUnlocked) {
+        emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
+      }
     });
   }
 

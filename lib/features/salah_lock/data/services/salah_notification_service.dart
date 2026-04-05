@@ -85,9 +85,16 @@ class SalahNotificationService {
             DarwinNotificationAction.plain(
               _actionIdSkip,
               "Not Praying ✕",
-              options: {DarwinNotificationActionOption.destructive, DarwinNotificationActionOption.foreground},
+              // Note: do NOT combine .destructive with .foreground — some
+              // iOS versions refuse to render the action when both are set.
+              // Keep it destructive (red text) and handle the tap in the
+              // background handler so the user isn't forced to open the app.
+              options: {DarwinNotificationActionOption.destructive},
             ),
           ],
+          options: {
+            DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
+          },
         ),
       ],
     );

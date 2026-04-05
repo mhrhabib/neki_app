@@ -10,6 +10,7 @@ import '../../../../core/location/cubit/location_state.dart';
 import '../cubit/salah_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../points/presentation/cubit/points_cubit.dart';
+import '../../../salah_lock/presentation/cubit/salah_lock_cubit.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../components/app_background_widget.dart';
 import '../../../../core/widgets/custom_back_button.dart';
@@ -112,8 +113,12 @@ class SalahScreenState extends State<SalahScreen> {
                         final userId = authState.user.id;
                         final salahCubit = context.read<SalahCubit>();
                         final pointsCubit = context.read<PointsCubit>();
+                        final salahLockCubit = context.read<SalahLockCubit>();
 
                         await salahCubit.markSalahComplete(userId: userId, salahName: prayer['name']!);
+                        // Cancel notifications + sync local state for this
+                        // prayer so the user isn't reminded again today.
+                        await salahLockCubit.markPrayerCompletedExternally(prayer['name']!);
                         await pointsCubit.refreshPoints(userId);
 
                         if (!mounted) return;

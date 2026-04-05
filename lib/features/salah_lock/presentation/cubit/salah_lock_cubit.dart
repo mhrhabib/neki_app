@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:adhan/adhan.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -57,8 +58,17 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     final List<dynamic> jsonList = json.decode(jsonString);
     _ayahs = jsonList.map((e) => Map<String, String>.from(e)).toList();
 
+    // ── Guard: don't start monitoring if no user is logged in ──
+    if (FirebaseAuth.instance.currentUser == null) {
+      debugPrint('⏭️ SalahLock: No user logged in, skipping monitoring');
+      emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
+      return;
+    }
+
     _locationSubscription = locationCubit.stream.listen((locationState) {
       if (locationState is LocationLoaded) {
+        // Re-check auth before starting monitoring
+        if (FirebaseAuth.instance.currentUser == null) return;
         startMonitoring(userId: '', locationState: locationState);
       }
     });
@@ -105,29 +115,54 @@ class SalahLockCubit extends Cubit<SalahLockState> {
   }
 
   /// Called on every app start — always reschedules today's notifications.
-  void _forceScheduleNotifications(PrayerTimes prayerTimes) {
+  Future<void> _forceScheduleNotifications(PrayerTimes prayerTimes) async {
     final today = DateTime.now();
     final dateKey = '${today.year}-${today.month}-${today.day}';
     _lastScheduledDate = dateKey;
     repository.saveLastNotificationDate(dateKey).catchError((_) {});
-    notificationService.scheduleAllPrayerNotifications(prayerTimes).catchError((e) {
+    final tomorrowPrayers = _getTomorrowPrayerTimes();
+    final completed = await _getCompletedPrayers();
+    notificationService.scheduleAllPrayerNotifications(prayerTimes, tomorrowPrayerTimes: tomorrowPrayers, completedPrayers: completed).catchError((e) {
       debugPrint('⚠️ SalahLock: Failed to schedule prayer notifications: $e');
     });
   }
 
-  void _scheduleNotificationsIfNewDay(PrayerTimes prayerTimes) {
+  Future<void> _scheduleNotificationsIfNewDay(PrayerTimes prayerTimes) async {
     final today = DateTime.now();
     final dateKey = '${today.year}-${today.month}-${today.day}';
     if (_lastScheduledDate == dateKey) return;
     _lastScheduledDate = dateKey;
     repository.saveLastNotificationDate(dateKey).catchError((_) {});
-    notificationService.scheduleAllPrayerNotifications(prayerTimes).catchError((e) {
+    final tomorrowPrayers = _getTomorrowPrayerTimes();
+    final completed = await _getCompletedPrayers();
+    notificationService.scheduleAllPrayerNotifications(prayerTimes, tomorrowPrayerTimes: tomorrowPrayers, completedPrayers: completed).catchError((e) {
       debugPrint('⚠️ SalahLock: Failed to schedule prayer notifications: $e');
     });
   }
 
+  Future<Set<String>> _getCompletedPrayers() async {
+    const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    final completed = <String>{};
+    for (final name in prayers) {
+      if (await repository.isSalahCompletedLocally(name)) {
+        completed.add(name);
+      }
+    }
+    return completed;
+  }
+
+  PrayerTimes? _getTomorrowPrayerTimes() {
+    if (locationCubit.state is! LocationLoaded) return null;
+    final locState = locationCubit.state as LocationLoaded;
+    final coordinates = Coordinates(locState.latitude, locState.longitude);
+    final params = CalculationMethod.karachi.getParameters()..madhab = Madhab.hanafi;
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    return PrayerTimes(coordinates, DateComponents.from(tomorrow), params);
+  }
+
   Future<void> checkPrayerLock(PrayerTimes prayerTimes, String userId) async {
     if (!_settings.isEnabled) return;
+    if (FirebaseAuth.instance.currentUser == null) return;
     if (state is SalahLockUnlocked) return;
     if (_snoozedUntil != null && DateTime.now().isBefore(_snoozedUntil!)) return;
 
@@ -146,7 +181,10 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     if (!isDone && salahCubit.state is SalahLoaded) {
       final loadedState = salahCubit.state as SalahLoaded;
       isDone = loadedState.salahs.any((s) => s.salahName == prayerName && s.isCompleted);
-      if (isDone) await repository.markSalahCompletedLocally(prayerName);
+      if (isDone) {
+        await repository.markSalahCompletedLocally(prayerName);
+        await notificationService.cancelPrayerByName(prayerName);
+      }
     }
 
     if (!isDone) {
@@ -160,6 +198,9 @@ class SalahLockCubit extends Cubit<SalahLockState> {
         ));
       }
     } else {
+      // ✅ Also cancel notifications here in case local state was marked done elsewhere
+      await notificationService.cancelPrayerByName(prayerName);
+      
       if (state is SalahLockActive) {
         emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
       }

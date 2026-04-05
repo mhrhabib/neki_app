@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/custom_back_button.dart';
 import '../cubit/zakat_cubit.dart';
 import '../cubit/zakat_state.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
@@ -30,6 +31,9 @@ class _ZakatScreenState extends State<ZakatScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leadingWidth: 70.w,
+        leading: const CustomBackButton(),
+        centerTitle: true,
         title: Text(
           "Zakat Calculator",
           style: TextStyle(
@@ -38,8 +42,6 @@ class _ZakatScreenState extends State<ZakatScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
       ),
       body: Stack(
         children: [

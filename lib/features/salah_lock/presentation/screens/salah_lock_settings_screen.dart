@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../components/app_background_widget.dart';
+import '../../../../core/widgets/custom_back_button.dart';
 import '../cubit/salah_lock_cubit.dart';
 
 class SalahLockSettingsScreen extends StatefulWidget {
@@ -94,17 +95,7 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
                     surfaceTintColor: Colors.transparent,
                     elevation: 0,
                     leadingWidth: 70.w,
-                    leading: Padding(
-                      padding: EdgeInsets.only(left: 16.w, top: 8.h, bottom: 8.h),
-                      child: IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: Icon(Icons.chevron_left, size: 24.sp, color: Colors.white),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.white.withValues(alpha: 0.1),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-                        ),
-                      ),
-                    ),
+                    leading: const CustomBackButton(),
                     centerTitle: true,
                     title: Text(
                       'Salah Lock Control',

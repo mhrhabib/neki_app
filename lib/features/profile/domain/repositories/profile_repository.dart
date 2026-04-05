@@ -7,4 +7,6 @@ abstract class ProfileRepository {
   Future<List<BadgeEntity>> getUserBadges(String userId);
   Future<void> updateProfile({required String userId, String? name, String? photoUrl});
   Future<String?> uploadProfilePicture(String userId, File file);
+  Future<bool> getLeaderboardVisibility(String userId);
+  Future<void> updateLeaderboardVisibility(String userId, bool value);
 }

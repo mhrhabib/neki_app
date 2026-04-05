@@ -6,6 +6,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../cubit/quran_cubit.dart';
 import '../../../../components/app_background_widget.dart';
+import '../../../../core/widgets/custom_back_button.dart';
+import '../../../../core/widgets/custom_icon_button.dart';
 
 class SurahDetailScreen extends StatelessWidget {
   final int surahNumber;
@@ -34,33 +36,20 @@ class SurahDetailScreen extends StatelessWidget {
                   surfaceTintColor: Colors.transparent,
                   elevation: 0,
                   leadingWidth: 70.w,
-                  leading: Padding(
-                    padding: EdgeInsets.only(left: 16.w, top: 8.h, bottom: 8.h),
-                    child: IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(
-                        Icons.chevron_left,
-                        size: 28.sp,
-                        color: Colors.white,
-                      ),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.white.withValues(alpha: 0.1),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.r),
+                  leading: const CustomBackButton(),
+                      actions: [
+                        BlocBuilder<QuranCubit, QuranState>(
+                          builder: (context, state) {
+                            return CustomIconButton(
+                              icon: Icons.settings,
+                              onPressed: () => _showSettingsSheet(context),
+                              baseColor: AppColors.goldAccent,
+                              size: 44,
+                              padding: EdgeInsets.only(right: 16.w),
+                            );
+                          },
                         ),
-                      ),
-                    ),
-                  ),
-                  actions: [
-                    BlocBuilder<QuranCubit, QuranState>(
-                      builder: (context, state) {
-                        return Padding(
-                          padding: EdgeInsets.only(right: 8.w),
-                          child: _buildSettingsMenu(context, state),
-                        );
-                      },
-                    ),
-                  ],
+                      ],
                   flexibleSpace: FlexibleSpaceBar(
                     collapseMode: CollapseMode.pin,
                     background: Padding(
@@ -135,19 +124,6 @@ class SurahDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsMenu(BuildContext context, QuranState state) {
-    return IconButton(
-      icon: Container(
-        padding: EdgeInsets.all(8.w),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(Icons.settings, color: AppColors.goldAccent, size: 20.sp),
-      ),
-      onPressed: () => _showSettingsSheet(context),
-    );
-  }
 
   Widget _buildSurahHeaderCard(int surahNumber) {
     return Container(

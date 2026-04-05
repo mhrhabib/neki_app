@@ -87,7 +87,7 @@ class _NekiAppState extends State<NekiApp> {
                 builder: (context, child) {
                   return Stack(
                     children: [
-                      if (child != null) child,
+                      ?child,
                       const SalahLockOverlay(),
                     ],
                   );

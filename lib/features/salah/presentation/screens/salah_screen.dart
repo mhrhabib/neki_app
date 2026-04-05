@@ -12,6 +12,8 @@ import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../points/presentation/cubit/points_cubit.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../components/app_background_widget.dart';
+import '../../../../core/widgets/custom_back_button.dart';
+import '../../../../core/widgets/custom_icon_button.dart';
 
 class SalahScreen extends StatefulWidget {
   const SalahScreen({super.key});
@@ -25,25 +27,24 @@ class SalahScreenState extends State<SalahScreen> {
     final locationState = context.read<LocationCubit>().state;
     if (locationState is LocationLoaded) {
       final coords = Coordinates(locationState.latitude, locationState.longitude);
-      final params = CalculationMethod.karachi.getParameters()
-        ..madhab = Madhab.hanafi;
+      final params = CalculationMethod.karachi.getParameters()..madhab = Madhab.hanafi;
       final pt = PrayerTimes(coords, DateComponents.from(DateTime.now()), params);
       final fmt = DateFormat('h:mm a');
       return [
-        {'name': 'Fajr',    'time': fmt.format(pt.fajr)},
-        {'name': 'Dhuhr',   'time': fmt.format(pt.dhuhr)},
-        {'name': 'Asr',     'time': fmt.format(pt.asr)},
+        {'name': 'Fajr', 'time': fmt.format(pt.fajr)},
+        {'name': 'Dhuhr', 'time': fmt.format(pt.dhuhr)},
+        {'name': 'Asr', 'time': fmt.format(pt.asr)},
         {'name': 'Maghrib', 'time': fmt.format(pt.maghrib)},
-        {'name': 'Isha',    'time': fmt.format(pt.isha)},
+        {'name': 'Isha', 'time': fmt.format(pt.isha)},
       ];
     }
     // Fallback until location loads
     return [
-      {'name': 'Fajr',    'time': '--:--'},
-      {'name': 'Dhuhr',   'time': '--:--'},
-      {'name': 'Asr',     'time': '--:--'},
+      {'name': 'Fajr', 'time': '--:--'},
+      {'name': 'Dhuhr', 'time': '--:--'},
+      {'name': 'Asr', 'time': '--:--'},
       {'name': 'Maghrib', 'time': '--:--'},
-      {'name': 'Isha',    'time': '--:--'},
+      {'name': 'Isha', 'time': '--:--'},
     ];
   }
 
@@ -77,11 +78,7 @@ class SalahScreenState extends State<SalahScreen> {
                 borderRadius: BorderRadius.circular(32.r),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 30,
-                    offset: const Offset(0, 15),
-                  ),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 30, offset: const Offset(0, 15)),
                 ],
               ),
               child: Column(
@@ -98,21 +95,13 @@ class SalahScreenState extends State<SalahScreen> {
                   SizedBox(height: 24.h),
                   Text(
                     'May Allah Accept',
-                    style: TextStyle(
-                      color: AppColors.goldAccent,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 24.sp,
-                    ),
+                    style: TextStyle(color: AppColors.goldAccent, fontWeight: FontWeight.w900, fontSize: 24.sp),
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 12.h),
                   Text(
                     'Your ${prayer['name']} prayer',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16.sp,
-                      height: 1.5,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 16.sp, height: 1.5),
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 32.h),
@@ -124,10 +113,7 @@ class SalahScreenState extends State<SalahScreen> {
                         final salahCubit = context.read<SalahCubit>();
                         final pointsCubit = context.read<PointsCubit>();
 
-                        await salahCubit.markSalahComplete(
-                          userId: userId,
-                          salahName: prayer['name']!,
-                        );
+                        await salahCubit.markSalahComplete(userId: userId, salahName: prayer['name']!);
                         await pointsCubit.refreshPoints(userId);
 
                         if (!mounted) return;
@@ -138,17 +124,12 @@ class SalahScreenState extends State<SalahScreen> {
                       backgroundColor: AppColors.primaryGreen,
                       foregroundColor: Colors.white,
                       minimumSize: Size(double.infinity, 56.h),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16.r),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
                       elevation: 0,
                     ),
                     child: Text(
                       'Add Neki +25',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16.sp,
-                      ),
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16.sp),
                     ),
                   ),
                   SizedBox(height: 12.h),
@@ -176,39 +157,20 @@ class SalahScreenState extends State<SalahScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: Padding(
-          padding: EdgeInsets.only(left: 12.w),
-          child: IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.white, size: 20.sp),
-            onPressed: () => context.go('/home'),
-          ),
-        ),
+        leadingWidth: 70.w,
+        leading: CustomBackButton(onPressed: () => context.go('/home')),
         centerTitle: true,
         title: Text(
           "Today's Prayers",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20.sp,
-            fontWeight: FontWeight.w800,
-          ),
+          style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w800),
         ),
         actions: [
-          Padding(
+          CustomIconButton(
+            icon: Icons.explore_outlined,
+            onPressed: () => context.push(RouteNames.qibla),
+            baseColor: AppColors.goldAccent,
+            size: 44,
             padding: EdgeInsets.only(right: 12.w),
-            child: IconButton(
-              onPressed: () => context.push(RouteNames.qibla),
-              icon: Icon(
-                Icons.explore_outlined,
-                size: 24.sp,
-                color: AppColors.goldAccent,
-              ),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-              ),
-            ),
           ),
         ],
       ),
@@ -227,20 +189,12 @@ class SalahScreenState extends State<SalahScreen> {
                   return BlocBuilder<SalahCubit, SalahState>(
                     builder: (context, state) {
                       if (state is SalahLoading) {
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primaryGreen,
-                          ),
-                        );
+                        return const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
                       }
 
                       if (state is SalahLoaded) {
                         final completedPrayers = prayers.where((prayer) {
-                          return state.salahs.any(
-                            (salah) =>
-                                salah.salahName == prayer['name'] &&
-                                salah.isCompleted,
-                          );
+                          return state.salahs.any((salah) => salah.salahName == prayer['name'] && salah.isCompleted);
                         }).length;
 
                         return SafeArea(
@@ -249,22 +203,14 @@ class SalahScreenState extends State<SalahScreen> {
                               _buildProgressCard(completedPrayers),
                               Expanded(
                                 child: ListView.builder(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 20.w,
-                                    vertical: 10.h,
-                                  ),
+                                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
                                   itemCount: prayers.length,
                                   itemBuilder: (context, index) {
                                     final prayer = prayers[index];
                                     final isCompleted = state.salahs.any(
-                                      (salah) =>
-                                          salah.salahName == prayer['name'] &&
-                                          salah.isCompleted,
+                                      (salah) => salah.salahName == prayer['name'] && salah.isCompleted,
                                     );
-                                    return _buildPrayerCard(
-                                      prayer,
-                                      isCompleted,
-                                    );
+                                    return _buildPrayerCard(prayer, isCompleted);
                                   },
                                 ),
                               ),
@@ -275,10 +221,7 @@ class SalahScreenState extends State<SalahScreen> {
 
                       if (state is SalahError) {
                         return Center(
-                          child: Text(
-                            'Error: ${state.message}',
-                            style: const TextStyle(color: Colors.white),
-                          ),
+                          child: Text('Error: ${state.message}', style: const TextStyle(color: Colors.white)),
                         );
                       }
 
@@ -286,11 +229,7 @@ class SalahScreenState extends State<SalahScreen> {
                     },
                   );
                 }
-                return const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.primaryGreen,
-                  ),
-                );
+                return const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
               },
             ),
           ),
@@ -308,13 +247,7 @@ class SalahScreenState extends State<SalahScreen> {
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(28.r),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, 10))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,19 +257,11 @@ class SalahScreenState extends State<SalahScreen> {
             children: [
               Text(
                 'Prayer Progress',
-                style: TextStyle(
-                  color: AppColors.goldAccent,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16.sp,
-                ),
+                style: TextStyle(color: AppColors.goldAccent, fontWeight: FontWeight.w800, fontSize: 16.sp),
               ),
               Text(
                 '$completed/${prayers.length}',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 18.sp,
-                ),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18.sp),
               ),
             ],
           ),
@@ -356,9 +281,7 @@ class SalahScreenState extends State<SalahScreen> {
                 child: Container(
                   height: 10.h,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primaryGreen, Color(0xFF50C878)],
-                    ),
+                    gradient: const LinearGradient(colors: [AppColors.primaryGreen, Color(0xFF50C878)]),
                     borderRadius: BorderRadius.circular(10.r),
                     boxShadow: [
                       BoxShadow(
@@ -389,14 +312,10 @@ class SalahScreenState extends State<SalahScreen> {
         margin: EdgeInsets.only(bottom: 12.h),
         padding: EdgeInsets.all(20.w),
         decoration: BoxDecoration(
-          color: isCompleted
-              ? AppColors.primaryGreen.withValues(alpha: 0.08)
-              : Colors.white.withValues(alpha: 0.05),
+          color: isCompleted ? AppColors.primaryGreen.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(24.r),
           border: Border.all(
-            color: isCompleted
-                ? AppColors.primaryGreen.withValues(alpha: 0.3)
-                : Colors.white.withValues(alpha: 0.08),
+            color: isCompleted ? AppColors.primaryGreen.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.08),
             width: 1.5.w,
           ),
         ),
@@ -407,25 +326,13 @@ class SalahScreenState extends State<SalahScreen> {
               height: 32.w,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: isCompleted ? AppColors.successGreen : Colors.white24,
-                  width: 2,
-                ),
-                color: isCompleted
-                    ? AppColors.successGreen
-                    : Colors.transparent,
+                border: Border.all(color: isCompleted ? AppColors.successGreen : Colors.white24, width: 2),
+                color: isCompleted ? AppColors.successGreen : Colors.transparent,
                 boxShadow: isCompleted
-                    ? [
-                        BoxShadow(
-                          color: AppColors.successGreen.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                        ),
-                      ]
+                    ? [BoxShadow(color: AppColors.successGreen.withValues(alpha: 0.3), blurRadius: 8)]
                     : [],
               ),
-              child: isCompleted
-                  ? Icon(Icons.check, size: 18.sp, color: Colors.white)
-                  : null,
+              child: isCompleted ? Icon(Icons.check, size: 18.sp, color: Colors.white) : null,
             ),
             SizedBox(width: 20.w),
             Expanded(
@@ -438,9 +345,7 @@ class SalahScreenState extends State<SalahScreen> {
                       fontSize: 18.sp,
                       fontWeight: FontWeight.w700,
                       color: isCompleted ? Colors.white60 : Colors.white,
-                      decoration: isCompleted
-                          ? TextDecoration.lineThrough
-                          : null,
+                      decoration: isCompleted ? TextDecoration.lineThrough : null,
                     ),
                   ),
                   SizedBox(height: 4.h),
@@ -457,9 +362,7 @@ class SalahScreenState extends State<SalahScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.goldAccent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8.r),
-                  border: Border.all(
-                    color: AppColors.goldAccent.withValues(alpha: 0.2),
-                  ),
+                  border: Border.all(color: AppColors.goldAccent.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
@@ -467,11 +370,7 @@ class SalahScreenState extends State<SalahScreen> {
                     SizedBox(width: 4.w),
                     Text(
                       '+25 Neki',
-                      style: TextStyle(
-                        color: AppColors.goldAccent,
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: TextStyle(color: AppColors.goldAccent, fontSize: 12.sp, fontWeight: FontWeight.w800),
                     ),
                   ],
                 ),

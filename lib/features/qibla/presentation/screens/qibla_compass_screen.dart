@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../widgets/qibla_compass_widget.dart';
 import '../../../../components/app_background_widget.dart';
+import '../../../../core/widgets/custom_back_button.dart';
 
 class QiblaCompassScreen extends StatefulWidget {
   const QiblaCompassScreen({super.key});
@@ -79,6 +80,9 @@ class _QiblaCompassScreenState extends State<QiblaCompassScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leadingWidth: 70.w,
+        leading: const CustomBackButton(),
+        centerTitle: true,
         title: Text(
           "Qibla Compass",
           style: TextStyle(
@@ -87,8 +91,6 @@ class _QiblaCompassScreenState extends State<QiblaCompassScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
       ),
       body: Stack(
         children: [

@@ -9,6 +9,7 @@ import '../../../../core/routes/route_names.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../cubit/challenge_cubit.dart';
 import '../../../../components/app_background_widget.dart';
+import '../../../../core/widgets/custom_back_button.dart';
 
 class GoalSelectionScreen extends StatelessWidget {
   const GoalSelectionScreen({super.key});
@@ -20,10 +21,8 @@ class GoalSelectionScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
-        ),
+        leadingWidth: 70.w,
+        leading: const CustomBackButton(),
       ),
       body: Stack(
         children: [

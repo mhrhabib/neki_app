@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/custom_back_button.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../points/presentation/cubit/points_cubit.dart';
 import '../cubit/dhikir_cubit.dart';
@@ -751,9 +752,9 @@ class _DhikirScreenState extends State<DhikirScreen>
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
       child: Row(
         children: [
-          _iconButton(
-            icon: Icons.arrow_back_ios_new,
-            onTap: () => Navigator.of(context).maybePop(),
+          CustomBackButton(
+            color: const Color(0xFF1A1A2E),
+            onPressed: () => Navigator.of(context).maybePop(),
           ),
           const Spacer(),
           Text(
@@ -1012,6 +1013,10 @@ class _DhikirScreenState extends State<DhikirScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF5EFE6),
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leadingWidth: 70.w,
+        leading: const CustomBackButton(color: AppColors.primaryGreen),
         title: Text(
           'Tashbih',
           style: TextStyle(
@@ -1020,9 +1025,7 @@ class _DhikirScreenState extends State<DhikirScreen>
             color: const Color(0xFF1A1A2E),
           ),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primaryGreen),
+        centerTitle: true,
       ),
       body: Padding(
         padding: EdgeInsets.all(20.w),
@@ -1219,14 +1222,10 @@ class _DhikirScreenState extends State<DhikirScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new,
-            size: 18.w,
-            color: const Color(0xFF1A1A2E),
-          ),
-          onPressed: () =>
-              context.read<DhikirCubit>().loadCurrentSession(userId),
+        leadingWidth: 70.w,
+        leading: CustomBackButton(
+          color: const Color(0xFF1A1A2E),
+          onPressed: () => context.read<DhikirCubit>().loadCurrentSession(userId),
         ),
         title: Text(
           'Dhikir History',

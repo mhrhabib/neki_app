@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import '../cubit/salah_lock_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../beat_satan_chalange/presentation/cubit/onboarding_cubit.dart';
 
 class SalahLockOverlay extends StatefulWidget {
   const SalahLockOverlay({super.key});
@@ -69,12 +70,22 @@ class _SalahLockOverlayState extends State<SalahLockOverlay>
         }
       },
       builder: (context, state) {
+        // ── Guard: only show when user is logged in AND onboarding is done ──
+        final authState = context.watch<AuthCubit>().state;
+        final onboardingState = context.watch<OnboardingCubit>().state;
+
+        final bool isLoggedIn = authState is Authenticated;
+        final bool onboardingDone = onboardingState is OnboardingCompleted;
+
+        if (!isLoggedIn || !onboardingDone) {
+          return const SizedBox.shrink();
+        }
+
         if (state is! SalahLockActive && _controller.isDismissed) {
           return const SizedBox.shrink();
         }
 
-        final authState = context.read<AuthCubit>().state;
-        final userId = authState is Authenticated ? authState.user.id : '';
+        final userId = authState.user.id;
 
         // Safely extract data from state (even if reversing)
         final salahName = (state is SalahLockActive)

@@ -7,6 +7,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../cubit/quran_cubit.dart';
 import '../../../../components/app_background_widget.dart';
+import '../../../../core/widgets/custom_back_button.dart';
 
 class QuranHomeScreen extends StatefulWidget {
   const QuranHomeScreen({super.key});
@@ -66,6 +67,9 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
             backgroundColor: Colors.transparent,
             appBar: AppBar(
               backgroundColor: Colors.transparent,
+              elevation: 0,
+              leadingWidth: 70.w,
+              leading: const CustomBackButton(),
               title: Text(
                 'Holy Qur\'an',
                 style: TextStyle(
@@ -75,12 +79,6 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
                 ),
               ),
               centerTitle: true,
-
-              elevation: 0,
-              leading: IconButton(
-                icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-                onPressed: () => context.pop(),
-              ),
             ),
             body: BlocBuilder<QuranCubit, QuranState>(
               builder: (context, state) {

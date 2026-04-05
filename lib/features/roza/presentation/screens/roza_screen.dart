@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/custom_back_button.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../cubit/roza_cubit.dart';
 import '../../../../components/app_background_widget.dart';
@@ -53,7 +54,8 @@ class _RozaScreenState extends State<RozaScreen> {
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        leadingWidth: 70.w,
+        leading: const CustomBackButton(),
         centerTitle: true,
       ),
       body: Stack(

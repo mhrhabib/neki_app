@@ -7,6 +7,7 @@ import '../cubit/challenge_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../widgets/challenge_progress_widget.dart';
 import '../../../../components/app_background_widget.dart';
+import '../../../../core/widgets/custom_back_button.dart';
 
 class HabitBuildingScreen extends StatelessWidget {
   const HabitBuildingScreen({super.key});
@@ -19,10 +20,8 @@ class HabitBuildingScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white, size: 20.sp),
-          onPressed: () => context.pop(),
-        ),
+        leadingWidth: 70.w,
+        leading: const CustomBackButton(),
         centerTitle: true,
         title: BlocBuilder<ChallengeCubit, ChallengeState>(
           builder: (context, state) {

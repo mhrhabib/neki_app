@@ -8,6 +8,7 @@
 ///   2. Set WEB_API_KEY below (Firebase Console > Project Settings > Web API key)
 ///   3. Fill in the real email/password for each account in seedUsers
 ///   4. Run: dart run tools/seed_leaderboard.dart
+library;
 
 import 'dart:convert';
 import 'dart:io';

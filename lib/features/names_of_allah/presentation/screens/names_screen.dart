@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../components/app_background_widget.dart';
+import '../../../../core/widgets/custom_back_button.dart';
 import '../../data/names_data.dart';
 
 class NamesScreen extends StatefulWidget {
@@ -37,6 +38,8 @@ class _NamesScreenState extends State<NamesScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leadingWidth: 70.w,
+        leading: const CustomBackButton(),
         title: Text(
           "99 Names of Allah",
           style: TextStyle(
@@ -45,7 +48,6 @@ class _NamesScreenState extends State<NamesScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
       ),
       body: Stack(

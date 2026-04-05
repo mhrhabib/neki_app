@@ -1,5 +1,7 @@
 import Flutter
 import UIKit
+import UserNotifications
+import flutter_local_notifications
 import FamilyControls
 import ManagedSettings
 import SwiftUI
@@ -9,9 +11,24 @@ import DeviceActivity
 @objc class AppDelegate: FlutterAppDelegate {
   
   // Storage for the selected apps to block
-  private var selection = FamilyActivitySelection()
-  private let store = ManagedSettingsStore()
+  private var _selection: Any?
+  private var _store: Any?
   private let activityKey = "neki_blocked_selection"
+
+  @available(iOS 15.0, *)
+  private var selection: FamilyActivitySelection {
+    get {
+      if _selection == nil { _selection = FamilyActivitySelection() }
+      return _selection as! FamilyActivitySelection
+    }
+    set { _selection = newValue }
+  }
+
+  @available(iOS 15.0, *)
+  private var store: ManagedSettingsStore {
+    if _store == nil { _store = ManagedSettingsStore() }
+    return _store as! ManagedSettingsStore
+  }
 
   override func application(
     _ application: UIApplication,
@@ -22,7 +39,9 @@ import DeviceActivity
                                               binaryMessenger: controller.binaryMessenger)
     
     // Load existing selection from UserDefaults if possible
-    loadSelection()
+    if #available(iOS 15.0, *) {
+      loadSelection()
+    }
 
     channel.setMethodCallHandler({
       [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
@@ -30,7 +49,7 @@ import DeviceActivity
       
       switch call.method {
       case "requestIOSAuthorization":
-        if #available(iOS 15.0, *) {
+        if #available(iOS 16.0, *) {
           Task {
             do {
               try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
@@ -64,8 +83,9 @@ import DeviceActivity
 
       case "schedulePrayerAlarms":
         if #available(iOS 15.0, *) {
-            let prayerTimes = call.argument<[Double]>("prayerTimes") ?? []
-            let prayerNames = call.argument<[String]>("prayerNames") ?? []
+            let args = call.arguments as? [String: Any]
+            let prayerTimes = args?["prayerTimes"] as? [Double] ?? []
+            let prayerNames = args?["prayerNames"] as? [String] ?? []
             self.scheduleActivities(times: prayerTimes, names: prayerNames, result: result)
         } else {
             result(FlutterError(code: "UNSUPPORTED", message: "iOS 15.0+ required", details: nil))
@@ -75,6 +95,10 @@ import DeviceActivity
         result(FlutterMethodNotImplemented)
       }
     })
+
+    // Set notification center delegate so flutter_local_notifications can
+    // display banners, play sounds, and handle actions on iOS
+    UNUserNotificationCenter.current().delegate = self
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
@@ -86,7 +110,7 @@ import DeviceActivity
     if #available(iOS 16.0, *) {
         // Apply the selection to ManagedSettings
         store.shield.applications = selection.applicationTokens
-        store.shield.applicationCategories = selection.categoryTokens.isEmpty ? nil : selection.categoryTokens
+        store.shield.applicationCategories = selection.categoryTokens.isEmpty ? nil : .specific(selection.categoryTokens)
         result(true)
     } else {
         result(FlutterError(code: "UNSUPPORTED", message: "Shielding requires iOS 16.0+", details: nil))
@@ -122,6 +146,7 @@ import DeviceActivity
     }
   }
 
+  @available(iOS 15.0, *)
   private func saveSelection() {
     let encoder = JSONEncoder()
     if let encoded = try? encoder.encode(selection) {
@@ -129,6 +154,7 @@ import DeviceActivity
     }
   }
 
+  @available(iOS 15.0, *)
   private func loadSelection() {
     if let data = UserDefaults.standard.data(forKey: activityKey) {
         let decoder = JSONDecoder()

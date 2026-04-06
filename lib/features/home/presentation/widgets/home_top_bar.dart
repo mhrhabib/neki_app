@@ -32,29 +32,47 @@ class _LocationPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<LocationCubit, LocationState>(
       builder: (context, state) {
+        final isError = state is LocationError;
         final locationText = switch (state) {
           LocationLoaded() => state.address,
-          LocationError() => 'Location Error',
+          LocationError() => 'Tap to retry',
           _ => 'Fetching...',
         };
 
-        return Container(
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(CupertinoIcons.location_fill, color: Colors.white70, size: 12.sp),
-              SizedBox(width: 4.w),
-              Text(
-                locationText,
-                style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w500),
+        return GestureDetector(
+          onTap: isError ? () => context.read<LocationCubit>().fetchLocation() : null,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: isError
+                  ? Colors.redAccent.withValues(alpha: 0.1)
+                  : Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20.r),
+              border: Border.all(
+                color: isError
+                    ? Colors.redAccent.withValues(alpha: 0.2)
+                    : Colors.white.withValues(alpha: 0.15),
               ),
-            ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isError ? CupertinoIcons.location_slash_fill : CupertinoIcons.location_fill,
+                  color: isError ? Colors.redAccent : Colors.white70,
+                  size: 12.sp,
+                ),
+                SizedBox(width: 4.w),
+                Text(
+                  locationText,
+                  style: TextStyle(
+                    color: isError ? Colors.redAccent : Colors.white,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

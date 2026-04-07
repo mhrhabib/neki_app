@@ -26,4 +26,13 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       prefs.setInt(_challengeTargetKey, targetPoints),
     ]);
   }
+
+  @override
+  Future<Map<String, int>?> getChallengeGoal() async {
+    final prefs = await SharedPreferences.getInstance();
+    final days = prefs.getInt(_challengeDaysKey);
+    final points = prefs.getInt(_challengeTargetKey);
+    if (days == null || points == null) return null;
+    return {'days': days, 'points': points};
+  }
 }

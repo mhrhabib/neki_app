@@ -404,11 +404,17 @@ class _DhikirScreenState extends State<DhikirScreen>
     super.dispose();
   }
 
+  int _tapGeneration = 0;
+
   void _onCounterTap(String userId, String sessionId, int currentCount) {
     HapticFeedback.lightImpact();
+    final thisTap = ++_tapGeneration;
     setState(() => _animatingBeadIndex = currentCount);
     _beadController.forward(from: 0).then((_) {
-      if (mounted) setState(() => _animatingBeadIndex = -1);
+      // Only clear the glow if no newer tap has started since this one
+      if (mounted && _tapGeneration == thisTap) {
+        setState(() => _animatingBeadIndex = -1);
+      }
     });
     context.read<DhikirCubit>().incrementCount(userId, sessionId);
   }
@@ -1151,7 +1157,7 @@ class _DhikirScreenState extends State<DhikirScreen>
               value: _targetCount.toDouble(),
               min: 10,
               max: 100,
-              divisions: 9,
+              divisions: 100 ,
               activeColor: AppColors.primaryGreen,
               inactiveColor: AppColors.primaryGreen.withValues(alpha: 0.2),
               onChanged: (v) => setState(() => _targetCount = v.toInt()),

@@ -79,9 +79,13 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
     if (authState is! Authenticated) return;
     final userId = authState.user.id;
 
-    // Reload location if it errored or is stale
+    // Reload location if it errored or is stale — but NOT if permission was denied
     final locState = context.read<LocationCubit>().state;
     if (locState is LocationError || locState is LocationInitial) {
+      context.read<LocationCubit>().fetchLocation();
+    }
+    // Re-check after returning from settings (user may have granted permission)
+    if (locState is LocationPermissionDenied || locState is LocationServiceDisabled) {
       context.read<LocationCubit>().fetchLocation();
     }
 
@@ -148,8 +152,12 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                                   ),
                                   SizedBox(height: 16.h),
 
-                                  // Location error banner
-                                  if (locationState is LocationError)
+                                  // Location permission / error prompt
+                                  if (locationState is LocationPermissionDenied)
+                                    _buildLocationPermissionCard(context, locationState)
+                                  else if (locationState is LocationServiceDisabled)
+                                    _buildLocationServiceCard(context)
+                                  else if (locationState is LocationError)
                                     _buildLocationErrorBanner(context),
 
                                   const HomeUserStatsCard(),
@@ -158,20 +166,28 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                                   BlocBuilder<ChallengeCubit, ChallengeState>(
                                     builder: (context, challengeState) {
                                       if (challengeState is ChallengeLoaded &&
-                                          challengeState.challenge != null &&
-                                          challengeState.challenge!.isActive) {
+                                          challengeState.hasActiveChallenge) {
                                         return Padding(
                                           padding: EdgeInsets.symmetric(
                                             horizontal: 20.w,
                                           ),
-                                          child: GestureDetector(
-                                            onTap: () => context.push(
-                                              RouteNames.habitBuilding,
-                                            ),
-                                            child: ChallengeProgressWidget(
-                                              challenge:
-                                                  challengeState.challenge!,
-                                            ),
+                                          child: Column(
+                                            children: challengeState.challenges.values
+                                                .where((c) => c.isActive)
+                                                .map(
+                                                  (c) => Padding(
+                                                    padding: EdgeInsets.only(bottom: 12.h),
+                                                    child: GestureDetector(
+                                                      onTap: () => context.push(
+                                                        RouteNames.habitBuilding,
+                                                      ),
+                                                      child: ChallengeProgressWidget(
+                                                        challenge: c,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                )
+                                                .toList(),
                                           ),
                                         );
                                       }
@@ -200,6 +216,162 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
             child: CupertinoActivityIndicator(color: Colors.white),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildLocationPermissionCard(
+    BuildContext context,
+    LocationPermissionDenied state,
+  ) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w).copyWith(bottom: 12.h),
+      child: Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: const Color(0xFF4ADE80).withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(
+            color: const Color(0xFF4ADE80).withValues(alpha: 0.2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  CupertinoIcons.location_fill,
+                  color: const Color(0xFF4ADE80),
+                  size: 20.sp,
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Text(
+                    'Location Permission Needed',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'We need your location to show accurate adhan times and send prayer notifications for your area.',
+              style: TextStyle(
+                color: Colors.white60,
+                fontSize: 13.sp,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 12.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  if (state.permanent) {
+                    context.read<LocationCubit>().openSettings();
+                  } else {
+                    context.read<LocationCubit>().requestAndFetch();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4ADE80),
+                  foregroundColor: Colors.black,
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  state.permanent ? 'Open Settings' : 'Allow Location',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationServiceCard(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w).copyWith(bottom: 12.h),
+      child: Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: Colors.orangeAccent.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(
+            color: Colors.orangeAccent.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  CupertinoIcons.location_slash_fill,
+                  color: Colors.orangeAccent,
+                  size: 20.sp,
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Text(
+                    'Location Service Off',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'Turn on location services to get accurate prayer times for your area.',
+              style: TextStyle(
+                color: Colors.white60,
+                fontSize: 13.sp,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 12.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () =>
+                    context.read<LocationCubit>().openLocationSettings(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                  foregroundColor: Colors.black,
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  'Turn On Location',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

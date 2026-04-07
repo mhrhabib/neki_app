@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/routes/route_names.dart';
 import '../cubit/onboarding_cubit.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../challenge/presentation/cubit/challenge_cubit.dart';
 import '../../../../components/app_background_widget.dart';
 
 class HabitBuildingScreen extends StatelessWidget {
@@ -70,10 +73,36 @@ class HabitBuildingScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        final cubit = context.read<OnboardingCubit>();
-                        cubit.completeOnboarding();
-                        context.go('/login');
+                      onPressed: () async {
+                        final onboardingCubit = context.read<OnboardingCubit>();
+                        final authState = context.read<AuthCubit>().state;
+
+                        // Mark onboarding as complete
+                        onboardingCubit.completeOnboarding();
+
+                        if (authState is Authenticated) {
+                          // User is already logged in — create the challenge
+                          // and go to home
+                          final goal = await onboardingCubit
+                              .onboardingRepository
+                              .getChallengeGoal();
+                          if (goal != null && context.mounted) {
+                            context.read<ChallengeCubit>().startChallenge(
+                              userId: authState.user.id,
+                              durationDays: goal['days'] as int,
+                              rewardPoints: goal['points'] as int,
+                              challengeType: 'beat_satan',
+                            );
+                          }
+                          if (context.mounted) {
+                            context.go(RouteNames.home);
+                          }
+                        } else {
+                          // First-time onboarding — send to login
+                          if (context.mounted) {
+                            context.go(RouteNames.login);
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.goldAccent,

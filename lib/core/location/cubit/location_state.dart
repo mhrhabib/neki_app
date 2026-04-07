@@ -26,6 +26,18 @@ class LocationLoaded extends LocationState {
   List<Object?> get props => [address, latitude, longitude];
 }
 
+class LocationPermissionDenied extends LocationState {
+  /// true when the user selected "Don't ask again" / permanently denied.
+  final bool permanent;
+
+  const LocationPermissionDenied({this.permanent = false});
+
+  @override
+  List<Object?> get props => [permanent];
+}
+
+class LocationServiceDisabled extends LocationState {}
+
 class LocationError extends LocationState {
   final String message;
 

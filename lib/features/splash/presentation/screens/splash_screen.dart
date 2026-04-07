@@ -9,14 +9,14 @@ import '../../../../core/routes/route_names.dart';
 import '../../../beat_satan_chalange/presentation/cubit/onboarding_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 
-class SplashPage extends StatefulWidget {
-  const SplashPage({super.key});
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
 
   @override
-  State<SplashPage> createState() => _SplashPageState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashPageState extends State<SplashPage> {
+class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();

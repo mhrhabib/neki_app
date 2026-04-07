@@ -56,9 +56,16 @@ class ChallengeModel extends ChallengeEntity {
     );
   }
 
-  /// Convert to string for debugging
+  /// Normalised key used as the Firestore document-ID suffix.
+  /// beat_satan → 'beat_satan', addiction_porn_7 → 'addiction'.
+  static String typeKey(String? challengeType) {
+    if (challengeType == null) return 'default';
+    if (challengeType.startsWith('addiction')) return 'addiction';
+    return challengeType;
+  }
+
   @override
   String toString() {
-    return 'ChallengeModel(durationDays: $durationDays, completedDays: $completedDays, status: ${status.name})';
+    return 'ChallengeModel(type: $challengeType, durationDays: $durationDays, completedDays: $completedDays, status: ${status.name})';
   }
 }

@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:neki_app/core/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../cubit/auth_cubit.dart';
 import '../../../../components/app_background_widget.dart';
@@ -12,9 +11,9 @@ import '../../../../components/app_background_widget.dart';
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
-  void _handleContinue(BuildContext context) {
-    context.go(RouteNames.home);
-  }
+  // void _handleContinue(BuildContext context) {
+  //   context.go(RouteNames.home);
+  // }
 
   void _handleGoogleSignIn(BuildContext context) {
     context.read<AuthCubit>().signInWithGoogle();
@@ -120,21 +119,21 @@ class LoginScreen extends StatelessWidget {
                       SizedBox(height: 40.h),
 
                       // Continue as Guest
-                      TextButton(
-                        onPressed: isAnyLoading
-                            ? null
-                            : () => _handleContinue(context),
-                        child: Text(
-                          'Continue as Guest',
-                          style: GoogleFonts.sanchez(
-                            color: Colors.white60,
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w500,
-                            decoration: TextDecoration.underline,
-                            decorationColor: Colors.white30,
-                          ),
-                        ),
-                      ),
+                      // TextButton(
+                      //   onPressed: isAnyLoading
+                      //       ? null
+                      //       : () => _handleContinue(context),
+                      //   child: Text(
+                      //     'Continue as Guest',
+                      //     style: GoogleFonts.sanchez(
+                      //       color: Colors.white60,
+                      //       fontSize: 14.sp,
+                      //       fontWeight: FontWeight.w500,
+                      //       decoration: TextDecoration.underline,
+                      //       decorationColor: Colors.white30,
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),

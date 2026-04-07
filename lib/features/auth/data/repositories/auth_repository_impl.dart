@@ -106,6 +106,7 @@ class AuthRepositoryImpl implements AuthRepository {
       debugPrint('✅ [GoogleSignIn] Firebase sign-in successful!');
 
       final user = userCredential.user;
+      if (user != null) await _ensureFirestoreDocs(user);
       final mapped = _mapFirebaseUser(user);
       if (mapped == null) throw Exception('Failed to sign in with Google');
 
@@ -149,6 +150,7 @@ class AuthRepositoryImpl implements AuthRepository {
       debugPrint('✅ [FacebookAuth] Firebase sign-in successful!');
 
       final user = userCredential.user;
+      if (user != null) await _ensureFirestoreDocs(user);
       final mapped = _mapFirebaseUser(user);
       if (mapped == null) throw Exception('Failed to sign in with Facebook');
 
@@ -219,13 +221,23 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  /// Returns the 2-letter ISO country code from the device locale,
-  /// e.g. 'BD' from 'en_BD', 'US' from 'en_US'. Returns '' if unknown.
+  /// Returns the 2-letter ISO country code from the device locale.
+  /// Prefers PlatformDispatcher locale (more reliable), falls back to
+  /// Platform.localeName.
   String _detectCountryCode() {
     try {
-      final locale = Platform.localeName; // e.g. 'en_BD', 'bn_BD', 'en_US'
-      final parts = locale.split('_');
-      if (parts.length >= 2) return parts.last.toUpperCase();
+      // PlatformDispatcher gives the user's configured region reliably
+      final code = PlatformDispatcher.instance.locale.countryCode;
+      if (code != null && code.length == 2) return code.toUpperCase();
+    } catch (_) {}
+    try {
+      // Fallback: parse Platform.localeName (e.g. 'en_BD', 'bn_BD.UTF-8')
+      final locale = Platform.localeName.split('.').first; // strip .UTF-8
+      final parts = locale.split(RegExp(r'[_\-]'));
+      if (parts.length >= 2) {
+        final candidate = parts.last.toUpperCase();
+        if (candidate.length == 2) return candidate;
+      }
     } catch (_) {}
     return '';
   }
@@ -278,17 +290,12 @@ class AuthRepositoryImpl implements AuthRepository {
         },
       );
     } else {
-      // Patch name/country into existing doc if they're missing
-      final existing = existingPoints.data() ?? {};
-      final needsUpdate = (existing['name'] as String?)?.isEmpty != false ||
-          existing['country'] == null;
-      if (needsUpdate) {
-        await _firestoreService.updateDocument(
-          collectionPath: 'users_points',
-          documentId: uid,
-          data: profileData,
-        );
-      }
+      // Always sync name/photo/country from Firebase Auth to keep leaderboard accurate
+      await _firestoreService.updateDocument(
+        collectionPath: 'users_points',
+        documentId: uid,
+        data: profileData,
+      );
     }
   }
 

@@ -34,7 +34,7 @@ class ChallengeProgressWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Current Marathon',
+                    _challengeLabel(challenge.challengeType),
                     style: TextStyle(color: Colors.white60, fontSize: 13.sp),
                   ),
                   SizedBox(height: 4.h),
@@ -177,6 +177,28 @@ class ChallengeProgressWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _challengeLabel(String? type) {
+    if (type == null) return 'Current Marathon';
+    if (type == 'beat_satan') return 'Beat Satan Challenge';
+    if (type.startsWith('addiction_')) {
+      final parts = type.split('_');
+      if (parts.length >= 2) {
+        switch (parts[1]) {
+          case 'porn':
+            return 'Porn Recovery';
+          case 'smoking':
+            return 'Smoking Recovery';
+          case 'alcohol':
+            return 'Alcohol Recovery';
+          case 'gambling':
+            return 'Gambling Recovery';
+        }
+      }
+      return 'Addiction Recovery';
+    }
+    return 'Current Marathon';
   }
 
   Widget _buildStatItem({

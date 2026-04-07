@@ -14,36 +14,70 @@ class UserLocation {
   });
 }
 
+/// Thrown when the device's location service is turned off.
+class LocationServiceOffException implements Exception {
+  @override
+  String toString() => 'Location services are disabled.';
+}
+
+/// Thrown when the user has denied location permission.
+class LocationPermissionDeniedException implements Exception {
+  /// Whether the denial is permanent ("Don't ask again" / settings-only).
+  final bool permanent;
+  const LocationPermissionDeniedException({this.permanent = false});
+
+  @override
+  String toString() => permanent
+      ? 'Location permission permanently denied.'
+      : 'Location permission denied.';
+}
+
 class LocationService {
+  /// Checks current permission status without requesting anything.
+  Future<LocationPermission> checkPermission() async {
+    return Geolocator.checkPermission();
+  }
+
+  /// Requests location permission from the OS.
+  Future<LocationPermission> requestPermission() async {
+    return Geolocator.requestPermission();
+  }
+
+  /// Opens the device's app settings so the user can grant permission manually.
+  Future<bool> openAppSettings() async {
+    return Geolocator.openAppSettings();
+  }
+
+  /// Opens the device's location settings.
+  Future<bool> openLocationSettings() async {
+    return Geolocator.openLocationSettings();
+  }
+
+  /// Fetches current location. Throws [LocationServiceOffException] or
+  /// [LocationPermissionDeniedException] when applicable.
   Future<UserLocation> getUserLocation() async {
     try {
       debugPrint('📍 [LocationService] Starting location fetch...');
-      bool serviceEnabled;
-      LocationPermission permission;
 
-      // Test if location services are enabled.
-      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      // 1. Check if location service is on
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       debugPrint('📍 [LocationService] Service enabled: $serviceEnabled');
       if (!serviceEnabled) {
-        throw Exception('Location services are disabled.');
+        throw LocationServiceOffException();
       }
 
-      permission = await Geolocator.checkPermission();
-      debugPrint('📍 [LocationService] Initial permission status: $permission');
+      // 2. Check permission (do NOT request here — the UI handles that)
+      var permission = await Geolocator.checkPermission();
+      debugPrint('📍 [LocationService] Permission status: $permission');
+
       if (permission == LocationPermission.denied) {
-        debugPrint('📍 [LocationService] Requesting permission...');
-        permission = await Geolocator.requestPermission();
-        debugPrint('📍 [LocationService] Status after request: $permission');
-        if (permission == LocationPermission.denied) {
-          throw Exception('Location permissions are denied');
-        }
+        throw const LocationPermissionDeniedException(permanent: false);
       }
-
       if (permission == LocationPermission.deniedForever) {
-        throw Exception('Location permissions are permanently denied');
+        throw const LocationPermissionDeniedException(permanent: true);
       }
 
-      // Use a slightly higher accuracy and a timeout to avoid hanging on iOS
+      // 3. Fetch position
       debugPrint(
         '📍 [LocationService] Fetching current position (Accuracy: Medium)...',
       );
@@ -62,7 +96,6 @@ class LocationService {
 
       try {
         debugPrint('📍 [LocationService] Starting reverse geocoding...');
-        // Reverse geocoding can be slow or fail on iOS, so we wrap it in its own try-catch
         List<Placemark> placemarks = await placemarkFromCoordinates(
           position.latitude,
           position.longitude,
@@ -74,8 +107,6 @@ class LocationService {
             '📍 [LocationService] Placemark detail — locality: "${place.locality}", subLocality: "${place.subLocality}", subAdmin: "${place.subAdministrativeArea}", admin: "${place.administrativeArea}", country: "${place.country}"',
           );
 
-          // iOS geocoder often returns empty strings instead of null,
-          // so we treat empty strings as missing values.
           String? nonEmpty(String? v) =>
               (v != null && v.trim().isNotEmpty) ? v.trim() : null;
 
@@ -97,10 +128,8 @@ class LocationService {
           } else if (area != null) {
             address = area;
           }
-          // else: keep the coordinate fallback set above
         }
       } catch (e) {
-        // Fallback already set to coordinates above if geocoding fails
         debugPrint(
           '📍 [LocationService] Geocoding failed, using coordinates: $e',
         );
@@ -112,6 +141,10 @@ class LocationService {
         latitude: position.latitude,
         longitude: position.longitude,
       );
+    } on LocationServiceOffException {
+      rethrow;
+    } on LocationPermissionDeniedException {
+      rethrow;
     } catch (e) {
       debugPrint('📍 [LocationService] ERROR in getUserLocation: $e');
       rethrow;

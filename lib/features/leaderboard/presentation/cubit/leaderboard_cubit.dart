@@ -1,5 +1,4 @@
 import 'dart:io' show Platform;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/leaderboard_entry_entity.dart';
@@ -22,8 +21,16 @@ class LeaderboardCubit extends Cubit<LeaderboardState> {
   /// Returns 2-letter ISO country code from device locale, e.g. 'BD', 'US'.
   String _deviceCountryCode() {
     try {
-      final parts = Platform.localeName.split('_');
-      if (parts.length >= 2) return parts.last.toUpperCase();
+      final code = PlatformDispatcher.instance.locale.countryCode;
+      if (code != null && code.length == 2) return code.toUpperCase();
+    } catch (_) {}
+    try {
+      final locale = Platform.localeName.split('.').first;
+      final parts = locale.split(RegExp(r'[_\-]'));
+      if (parts.length >= 2) {
+        final candidate = parts.last.toUpperCase();
+        if (candidate.length == 2) return candidate;
+      }
     } catch (_) {}
     return '';
   }

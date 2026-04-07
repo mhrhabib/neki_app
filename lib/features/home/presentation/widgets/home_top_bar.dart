@@ -32,15 +32,31 @@ class _LocationPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<LocationCubit, LocationState>(
       builder: (context, state) {
-        final isError = state is LocationError;
+        final isError = state is LocationError ||
+            state is LocationPermissionDenied ||
+            state is LocationServiceDisabled;
         final locationText = switch (state) {
           LocationLoaded() => state.address,
+          LocationPermissionDenied() => 'Location needed',
+          LocationServiceDisabled() => 'Enable location',
           LocationError() => 'Tap to retry',
           _ => 'Fetching...',
         };
 
+        void onTap() {
+          if (state is LocationPermissionDenied && state.permanent) {
+            context.read<LocationCubit>().openSettings();
+          } else if (state is LocationPermissionDenied) {
+            context.read<LocationCubit>().requestAndFetch();
+          } else if (state is LocationServiceDisabled) {
+            context.read<LocationCubit>().openLocationSettings();
+          } else if (state is LocationError) {
+            context.read<LocationCubit>().fetchLocation();
+          }
+        }
+
         return GestureDetector(
-          onTap: isError ? () => context.read<LocationCubit>().fetchLocation() : null,
+          onTap: isError ? onTap : null,
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
             decoration: BoxDecoration(

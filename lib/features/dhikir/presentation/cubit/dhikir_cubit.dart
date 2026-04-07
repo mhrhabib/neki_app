@@ -9,6 +9,9 @@ class DhikirCubit extends Cubit<DhikirState> {
   final DhikirRepository dhikirRepository;
   final PointsRepository pointsRepository;
 
+  /// Tracks how many optimistic increments haven't been confirmed by the server yet.
+  int _pendingIncrements = 0;
+
   DhikirCubit({
     required this.dhikirRepository,
     required this.pointsRepository,
@@ -42,13 +45,12 @@ class DhikirCubit extends Cubit<DhikirState> {
 
   Future<void> incrementCount(String userId, String sessionId) async {
     try {
-      // Optimistic update: if we have an active session in state, update it immediately
+      // Optimistic update: immediately show the new count in the UI
       if (state is DhikirSessionActive) {
         final current = state as DhikirSessionActive;
         if (current.sessionId == sessionId) {
           final optimisticCount = current.currentCount + 1;
           final optimisticCompleted = optimisticCount >= current.targetCount;
-          // Keep pointsEarned unchanged until confirmed by backend
           emit(DhikirSessionActive(
             sessionId: current.sessionId,
             dhikirText: current.dhikirText,
@@ -60,8 +62,12 @@ class DhikirCubit extends Cubit<DhikirState> {
         }
       }
 
-      // Persist increment (may be network-backed); update state from response
+      // Track that this increment is in-flight
+      _pendingIncrements++;
+
+      // Persist increment to the backend
       final session = await dhikirRepository.incrementDhikirCount(sessionId);
+      _pendingIncrements--;
 
       if (session.isCompleted && session.pointsEarned > 0) {
         // Award points when session is completed
@@ -79,7 +85,9 @@ class DhikirCubit extends Cubit<DhikirState> {
           pointsEarned: session.pointsEarned,
           isCompleted: session.isCompleted,
         ));
-      } else {
+      } else if (_pendingIncrements == 0) {
+        // Only emit server state when no more taps are in-flight,
+        // otherwise the server count would overwrite the optimistic count.
         emit(DhikirSessionActive(
           sessionId: session.id,
           dhikirText: session.dhikirText,
@@ -89,8 +97,10 @@ class DhikirCubit extends Cubit<DhikirState> {
           isCompleted: session.isCompleted,
         ));
       }
+      // If _pendingIncrements > 0, skip emitting — the last in-flight call
+      // will reconcile with the final server count.
     } catch (e) {
-      // On failure, try to surface an error and (optionally) refresh session
+      _pendingIncrements = (_pendingIncrements - 1).clamp(0, 999);
       debugPrint('❌ [DhikirCubit] incrementCount failed: $e');
       emit(DhikirError(message: e.toString()));
     }

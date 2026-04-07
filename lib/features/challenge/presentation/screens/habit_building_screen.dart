@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../data/models/challenge_model.dart';
+import '../../domain/entities/challenge_entity.dart';
 import '../cubit/challenge_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../widgets/challenge_progress_widget.dart';
@@ -11,6 +13,18 @@ import '../../../../core/widgets/custom_back_button.dart';
 
 class HabitBuildingScreen extends StatelessWidget {
   const HabitBuildingScreen({super.key});
+
+  /// Extract the challenge to display from the current cubit state.
+  /// Returns the first active challenge found.
+  ChallengeEntity? _resolveChallenge(ChallengeState state) {
+    if (state is ChallengeLoaded) {
+      final active = state.challenges.values.where((c) => c.isActive);
+      return active.isNotEmpty ? active.first : null;
+    }
+    if (state is ChallengeDayCompleted) return state.challenge;
+    if (state is ChallengeFullyCompleted) return state.challenge;
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,12 +39,13 @@ class HabitBuildingScreen extends StatelessWidget {
         centerTitle: true,
         title: BlocBuilder<ChallengeCubit, ChallengeState>(
           builder: (context, state) {
-            String title = 'Beat Satan Challenge';
-            if (state is ChallengeLoaded &&
-                state.challenge != null &&
-                state.challenge!.challengeType != null) {
-              final t = state.challenge!.challengeType!;
-              if (t.startsWith('addiction_')) {
+            final challenge = _resolveChallenge(state);
+            String title = 'Challenge';
+            if (challenge != null) {
+              final t = challenge.challengeType;
+              if (t == 'beat_satan') {
+                title = 'Beat Satan Challenge';
+              } else if (t != null && t.startsWith('addiction_')) {
                 final parts = t.split('_');
                 if (parts.length >= 3) {
                   final id = parts[1];
@@ -38,6 +53,8 @@ class HabitBuildingScreen extends StatelessWidget {
                   final label = _addictionLabel(id);
                   title = '$days-day: $label';
                 }
+              } else {
+                title = 'Beat Satan Challenge';
               }
             }
             return Text(
@@ -87,15 +104,7 @@ class HabitBuildingScreen extends StatelessWidget {
                 );
               }
 
-              if (state is ChallengeLoaded && state.challenge == null) {
-                return _buildNoChallengeView(context);
-              }
-
-              final challenge = state is ChallengeLoaded
-                  ? state.challenge
-                  : state is ChallengeDayCompleted
-                  ? state.challenge
-                  : null;
+              final challenge = _resolveChallenge(state);
 
               if (challenge == null) {
                 return _buildNoChallengeView(context);
@@ -118,7 +127,7 @@ class HabitBuildingScreen extends StatelessWidget {
                       SizedBox(height: 32.h),
                       if (challenge.canCompleteToday() &&
                           !challenge.isCompleted)
-                        _buildCompleteButton(context),
+                        _buildCompleteButton(context, challenge),
                       SizedBox(height: 40.h),
                     ],
                   ),
@@ -357,7 +366,7 @@ class HabitBuildingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCompleteButton(BuildContext context) {
+  Widget _buildCompleteButton(BuildContext context, ChallengeEntity challenge) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -376,6 +385,7 @@ class HabitBuildingScreen extends StatelessWidget {
           if (authState is Authenticated) {
             context.read<ChallengeCubit>().completeTodayChallenge(
               userId: authState.user.id,
+              typeKey: ChallengeModel.typeKey(challenge.challengeType),
             );
           }
         },

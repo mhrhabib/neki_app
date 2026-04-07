@@ -9,6 +9,8 @@ import '../../../../core/routes/route_names.dart';
 import '../../../../components/app_background_widget.dart';
 import '../../../../core/di/set_up_di.dart';
 import '../../../../core/services/iap_service.dart';
+import '../../../beat_satan_chalange/presentation/cubit/onboarding_cubit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class PremiumOnboardingScreen extends StatefulWidget {
   const PremiumOnboardingScreen({super.key});
@@ -64,6 +66,7 @@ class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
   }
 
   void _navigateToGoalSelection() {
+    context.read<OnboardingCubit>().completeOnboarding();
     context.go(RouteNames.login);
   }
 

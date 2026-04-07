@@ -37,7 +37,7 @@ class HomeFeatureCards extends StatelessWidget {
               SizedBox(width: 12.w),
               Expanded(
                 child: _FeatureCard(
-                  title: 'Best Satan\nChallenge',
+                  title: 'Beat Satan\nChallenge',
                   subtitle: _isChallengeActive(state)
                       ? 'Continue journey'
                       : 'Build your neki',
@@ -58,15 +58,11 @@ class HomeFeatureCards extends StatelessWidget {
   }
 
   bool _isAddictionActive(ChallengeState state) {
-    return state is ChallengeLoaded &&
-        state.hasActiveChallenge &&
-        state.challenge?.challengeType?.startsWith('addiction_') == true;
+    return state is ChallengeLoaded && state.hasType('addiction');
   }
 
   bool _isChallengeActive(ChallengeState state) {
-    if (state is! ChallengeLoaded) return false;
-    return state.hasActiveChallenge &&
-        !(state.challenge?.challengeType?.startsWith('addiction_') == true);
+    return state is ChallengeLoaded && state.hasType('beat_satan');
   }
 }
 

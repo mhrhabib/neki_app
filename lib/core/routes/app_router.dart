@@ -22,7 +22,7 @@ import '../../features/names_of_allah/presentation/screens/names_screen.dart';
 import '../../features/calendar/presentation/screens/calendar_screen.dart';
 import '../../features/dhikir/presentation/screens/dhikir_screen.dart';
 import '../../features/dhikir/presentation/cubit/dhikir_cubit.dart';
-import '../../features/splash/presentation/screens/splash_page.dart';
+import '../../features/splash/presentation/screens/splash_screen.dart';
 import '../../features/qibla/presentation/screens/qibla_compass_screen.dart';
 import '../../features/quran/presentation/screens/quran_home_screen.dart';
 import '../../features/quran/presentation/screens/surah_detail_screen.dart';
@@ -44,7 +44,7 @@ class AppRouter {
       GoRoute(
         path: RouteNames.splash,
         pageBuilder: (context, state) =>
-            _buildPageWithTransition(child: const SplashPage(), state: state),
+            _buildPageWithTransition(child: const SplashScreen(), state: state),
       ),
       GoRoute(
         path: RouteNames.login,

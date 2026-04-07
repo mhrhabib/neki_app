@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../data/models/challenge_model.dart';
 import '../../domain/entities/challenge_entity.dart';
 import '../../domain/repositories/challenge_repository.dart';
 import '../../../points/domain/repositories/points_repository.dart';
@@ -10,32 +11,50 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   final ChallengeRepository _challengeRepository;
   final PointsRepository _pointsRepository;
 
-  ChallengeCubit(this._challengeRepository, this._pointsRepository) : super(const ChallengeInitial());
+  ChallengeCubit(this._challengeRepository, this._pointsRepository)
+      : super(const ChallengeInitial());
 
-  /// Load the current active challenge
+  // ───────────────────────── helpers ─────────────────────────
+
+  Map<String, ChallengeEntity> get _currentMap {
+    if (state is ChallengeLoaded) return (state as ChallengeLoaded).challenges;
+    if (state is ChallengeDayCompleted) return (state as ChallengeDayCompleted).allChallenges;
+    if (state is ChallengeFullyCompleted) return (state as ChallengeFullyCompleted).allChallenges;
+    return {};
+  }
+
+  // ───────────────────────── load ─────────────────────────
+
+  /// Load ALL active challenges for this user.
   Future<void> loadChallenge(String userId) async {
     try {
       emit(const ChallengeLoading());
 
-      final challenge = await _challengeRepository.getActiveChallenge(userId);
+      final all = await _challengeRepository.getAllActiveChallenges(userId);
 
-      if (challenge != null && challenge.hasExpired()) {
-        // Challenge has expired, mark as failed
-        debugPrint('⚠️ [Challenge] Challenge expired, marking as failed');
-        await _challengeRepository.clearChallenge(userId);
-        emit(const ChallengeLoaded(null));
-        return;
+      // Expire stale challenges
+      final map = <String, ChallengeEntity>{};
+      for (final c in all) {
+        final key = ChallengeModel.typeKey(c.challengeType);
+        if (c.hasExpired()) {
+          debugPrint('⚠️ [Challenge] $key expired, clearing');
+          await _challengeRepository.clearChallenge(userId, typeKey: key);
+        } else {
+          map[key] = c;
+        }
       }
 
-      emit(ChallengeLoaded(challenge));
-      debugPrint('✅ [Challenge] Loaded challenge: ${challenge?.toString() ?? "None"}');
+      emit(ChallengeLoaded(map));
+      debugPrint('✅ [Challenge] Loaded ${map.length} challenges');
     } catch (e) {
-      debugPrint('❌ [Challenge] Error loading challenge: $e');
-      emit(ChallengeError('Failed to load challenge: $e'));
+      debugPrint('❌ [Challenge] Error loading challenges: $e');
+      emit(ChallengeError('Failed to load challenges: $e'));
     }
   }
 
-  /// Start a new challenge
+  // ───────────────────────── start ─────────────────────────
+
+  /// Start a new challenge. Each type key gets its own Firestore doc.
   Future<void> startChallenge({
     required String userId,
     required int durationDays,
@@ -55,25 +74,35 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       );
 
       await _challengeRepository.saveChallenge(userId, challenge);
-      emit(ChallengeLoaded(challenge));
 
-      debugPrint('🎯 [Challenge] Started: $durationDays days, $rewardPoints points');
+      final key = ChallengeModel.typeKey(challengeType);
+      final updated = Map<String, ChallengeEntity>.from(_currentMap);
+      updated[key] = challenge;
+      emit(ChallengeLoaded(updated));
+
+      debugPrint('🎯 [Challenge] Started $key: $durationDays days, $rewardPoints pts');
     } catch (e) {
       debugPrint('❌ [Challenge] Error starting challenge: $e');
       emit(ChallengeError('Failed to start challenge: $e'));
     }
   }
 
-  /// Complete today's challenge task
-  Future<void> completeTodayChallenge({required String userId}) async {
+  // ───────────────────────── complete today ─────────────────────────
+
+  /// Complete today's task for a specific challenge type.
+  Future<void> completeTodayChallenge({
+    required String userId,
+    String? typeKey,
+  }) async {
     try {
-      final currentState = state;
-      if (currentState is! ChallengeLoaded || currentState.challenge == null) {
+      final map = Map<String, ChallengeEntity>.from(_currentMap);
+      final key = typeKey ?? 'default';
+      final challenge = map[key];
+
+      if (challenge == null || !challenge.isActive) {
         emit(const ChallengeError('No active challenge found'));
         return;
       }
-
-      final challenge = currentState.challenge!;
 
       if (!challenge.canCompleteToday()) {
         emit(const ChallengeError('Challenge already completed today'));
@@ -82,32 +111,29 @@ class ChallengeCubit extends Cubit<ChallengeState> {
 
       emit(const ChallengeLoading());
 
-      // Complete the day
-      await _challengeRepository.completeTodayChallenge(userId);
+      await _challengeRepository.completeTodayChallenge(userId, typeKey: key);
 
-      // Reload to get updated challenge
-      final updatedChallenge = await _challengeRepository.getActiveChallenge(userId);
-
-      if (updatedChallenge == null) {
+      final updated = await _challengeRepository.getActiveChallenge(userId, typeKey: key);
+      if (updated == null) {
         emit(const ChallengeError('Failed to load updated challenge'));
         return;
       }
 
-      // Award points per day completed
       final pointsPerDay = challenge.rewardPoints ~/ challenge.durationDays;
       await _pointsRepository.addPoints(
         userId: userId,
         points: pointsPerDay,
-        source: 'challenge_day_${updatedChallenge.completedDays}',
+        source: 'challenge_${key}_day_${updated.completedDays}',
       );
 
-      // Check if challenge is fully completed
-      if (updatedChallenge.isCompleted) {
-        debugPrint('🎉 [Challenge] COMPLETED! Total points: ${challenge.rewardPoints}');
-        emit(ChallengeFullyCompleted(updatedChallenge, challenge.rewardPoints));
+      map[key] = updated;
+
+      if (updated.isCompleted) {
+        debugPrint('🎉 [Challenge] $key COMPLETED!');
+        emit(ChallengeFullyCompleted(updated, challenge.rewardPoints, map));
       } else {
-        debugPrint('✅ [Challenge] Day ${updatedChallenge.completedDays} completed, $pointsPerDay points earned');
-        emit(ChallengeDayCompleted(updatedChallenge, pointsPerDay));
+        debugPrint('✅ [Challenge] $key day ${updated.completedDays}, $pointsPerDay pts');
+        emit(ChallengeDayCompleted(updated, pointsPerDay, map));
       }
     } catch (e) {
       debugPrint('❌ [Challenge] Error completing today: $e');
@@ -115,26 +141,28 @@ class ChallengeCubit extends Cubit<ChallengeState> {
     }
   }
 
-  /// Abandon current challenge
-  Future<void> abandonChallenge(String userId) async {
+  // ───────────────────────── abandon ─────────────────────────
+
+  Future<void> abandonChallenge(String userId, {String? typeKey}) async {
     try {
       emit(const ChallengeLoading());
-      await _challengeRepository.clearChallenge(userId);
-      emit(const ChallengeLoaded(null));
-      debugPrint('🗑️ [Challenge] Abandoned');
+      final key = typeKey ?? 'default';
+      await _challengeRepository.clearChallenge(userId, typeKey: key);
+
+      final map = Map<String, ChallengeEntity>.from(_currentMap);
+      map.remove(key);
+      emit(ChallengeLoaded(map));
+      debugPrint('🗑️ [Challenge] Abandoned $key');
     } catch (e) {
       debugPrint('❌ [Challenge] Error abandoning challenge: $e');
       emit(ChallengeError('Failed to abandon challenge: $e'));
     }
   }
 
-  /// Reset to loaded state after showing completion message
+  // ───────────────────────── reset ─────────────────────────
+
   void resetToLoaded() {
-    if (state is ChallengeFullyCompleted) {
-      emit(const ChallengeLoaded(null));
-    } else if (state is ChallengeDayCompleted) {
-      final completedState = state as ChallengeDayCompleted;
-      emit(ChallengeLoaded(completedState.challenge));
-    }
+    final map = _currentMap;
+    emit(ChallengeLoaded(map));
   }
 }

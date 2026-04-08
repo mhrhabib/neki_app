@@ -139,7 +139,7 @@ class GoalSelectionScreen extends StatelessWidget {
       );
 
       // Navigate to habit building screen
-      context.push(RouteNames.habitBuilding);
+      context.push('${RouteNames.habitBuilding}?type=beat_satan');
     } else {
       ScaffoldMessenger.of(
         context,

@@ -11,13 +11,20 @@ import '../widgets/challenge_progress_widget.dart';
 import '../../../../components/app_background_widget.dart';
 import '../../../../core/widgets/custom_back_button.dart';
 
-class HabitBuildingScreen extends StatelessWidget {
-  const HabitBuildingScreen({super.key});
+class HabitBuildingScreenForAddiction extends StatelessWidget {
+  final String? typeKey;
+
+  const HabitBuildingScreenForAddiction({super.key, this.typeKey});
 
   /// Extract the challenge to display from the current cubit state.
-  /// Returns the first active challenge found.
+  /// If [typeKey] is provided, looks up that specific challenge;
+  /// otherwise falls back to the first active challenge.
   ChallengeEntity? _resolveChallenge(ChallengeState state) {
     if (state is ChallengeLoaded) {
+      if (typeKey != null && state.challenges.containsKey(typeKey)) {
+        final c = state.challenges[typeKey]!;
+        return c.isActive ? c : null;
+      }
       final active = state.challenges.values.where((c) => c.isActive);
       return active.isNotEmpty ? active.first : null;
     }
@@ -121,19 +128,88 @@ class HabitBuildingScreen extends StatelessWidget {
                     children: [
                       ChallengeProgressWidget(challenge: challenge),
                       SizedBox(height: 24.h),
-                      _buildDailyTaskCard(context, challenge),
-                      SizedBox(height: 24.h),
-                      _buildMotivationSection(context, challenge),
-                      SizedBox(height: 32.h),
-                      if (challenge.canCompleteToday() &&
-                          !challenge.isCompleted)
-                        _buildCompleteButton(context, challenge),
+                      if (challenge.hasExpired()) ...[
+                        _buildExpiredSection(context, challenge),
+                      ] else ...[
+                        _buildDailyTaskCard(context, challenge),
+                        SizedBox(height: 24.h),
+                        _buildMotivationSection(context, challenge),
+                        SizedBox(height: 32.h),
+                        if (challenge.canCompleteToday() &&
+                            !challenge.isCompleted)
+                          _buildCompleteButton(context, challenge),
+                      ],
                       SizedBox(height: 40.h),
                     ],
                   ),
                 ),
               );
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpiredSection(BuildContext context, ChallengeEntity challenge) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(24.w),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(28.r),
+        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.warning_rounded, color: Colors.redAccent, size: 48.sp),
+          SizedBox(height: 16.h),
+          Text(
+            'Streak Missed',
+            style: TextStyle(
+              color: Colors.redAccent,
+              fontSize: 24.sp,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            'You missed a day in your journey, but do not give up. Start again right now and renew your commitment!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14.sp,
+              height: 1.5,
+            ),
+          ),
+          SizedBox(height: 24.h),
+          ElevatedButton(
+            onPressed: () {
+              final authState = context.read<AuthCubit>().state;
+              if (authState is Authenticated) {
+                context.read<ChallengeCubit>().startChallenge(
+                  userId: authState.user.id,
+                  durationDays: challenge.durationDays,
+                  rewardPoints: challenge.rewardPoints,
+                  challengeType: challenge.challengeType,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              minimumSize: Size(double.infinity, 56.h),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+            ),
+            child: Text(
+              'Restart Challenge ↻',
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ),
         ],
       ),

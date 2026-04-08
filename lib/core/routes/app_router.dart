@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
-import '../../features/challenge/presentation/screens/habit_building_screen.dart';
+import '../../features/challenge/presentation/screens/habit_building_screen_for_addiction.dart';
 import '../../features/beat_satan_chalange/presentation/screens/goal_selection_screen.dart'
     as onboarding;
-import '../../features/beat_satan_chalange/presentation/screens/habit_building_screen.dart'
+import '../../features/beat_satan_chalange/presentation/screens/habit_building_screen_beat_satan.dart'
     as onboarding;
 import '../../features/onboarding/presentation/screens/premium_onboarding_screen.dart'
     as onboarding;
@@ -61,7 +61,7 @@ class AppRouter {
       GoRoute(
         path: RouteNames.habitBuildingOnboarding,
         pageBuilder: (context, state) => _buildPageWithTransition(
-          child: const onboarding.HabitBuildingScreen(),
+          child: const onboarding.HabitBuildingScreenBeatSatan(),
           state: state,
         ),
       ),
@@ -74,10 +74,13 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.habitBuilding,
-        pageBuilder: (context, state) => _buildPageWithTransition(
-          child: const HabitBuildingScreen(),
-          state: state,
-        ),
+        pageBuilder: (context, state) {
+          final typeKey = state.uri.queryParameters['type'];
+          return _buildPageWithTransition(
+            child: HabitBuildingScreenForAddiction(typeKey: typeKey),
+            state: state,
+          );
+        },
       ),
       ShellRoute(
         builder: (context, state, child) => MainScreen(child: child),

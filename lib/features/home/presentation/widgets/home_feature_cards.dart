@@ -28,7 +28,7 @@ class HomeFeatureCards extends StatelessWidget {
                   imagePath: 'assets/images/features/addiction_recovery.png',
                   onTap: () => context.push(
                     _isAddictionActive(state)
-                        ? RouteNames.habitBuilding
+                        ? '${RouteNames.habitBuilding}?type=addiction'
                         : RouteNames.addiction,
                   ),
                   gradient: const [Color(0xFF1E4D35), Color(0xFF0D2818)],
@@ -44,7 +44,7 @@ class HomeFeatureCards extends StatelessWidget {
                   imagePath: 'assets/images/features/satan_challenge.png',
                   onTap: () => context.push(
                     _isChallengeActive(state)
-                        ? RouteNames.habitBuilding
+                        ? '${RouteNames.habitBuilding}?type=beat_satan'
                         : RouteNames.goalSelection,
                   ),
                   gradient: const [Color(0xFF1A3D50), Color(0xFF0D2030)],

@@ -8,6 +8,7 @@ class ChallengeModel extends ChallengeEntity {
     required super.completedDays,
     required super.status,
     super.challengeType,
+    super.userId,
   });
 
   /// Convert to JSON for persistence
@@ -19,6 +20,7 @@ class ChallengeModel extends ChallengeEntity {
       'completedDays': completedDays,
       'status': status.name,
       'challengeType': challengeType,
+      'userId': userId,
     };
   }
 
@@ -34,6 +36,7 @@ class ChallengeModel extends ChallengeEntity {
         orElse: () => ChallengeStatus.notStarted,
       ),
       challengeType: json['challengeType'] as String?,
+      userId: json['userId'] as String?,
     );
   }
 
@@ -45,6 +48,7 @@ class ChallengeModel extends ChallengeEntity {
     int? completedDays,
     ChallengeStatus? status,
     String? challengeType,
+    String? userId,
   }) {
     return ChallengeModel(
       durationDays: durationDays ?? this.durationDays,
@@ -53,6 +57,7 @@ class ChallengeModel extends ChallengeEntity {
       completedDays: completedDays ?? this.completedDays,
       status: status ?? this.status,
       challengeType: challengeType ?? this.challengeType,
+      userId: userId ?? this.userId,
     );
   }
 

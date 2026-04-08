@@ -21,6 +21,9 @@ class ChallengeLoaded extends ChallengeState {
   /// Backwards-compat: check if any challenge is active.
   bool get hasActiveChallenge => challenges.values.any((c) => c.isActive);
 
+  /// Check if there are any challenges at all (active or expired/completed/etc).
+  bool get hasAnyChallenge => challenges.isNotEmpty;
+
   /// Get a specific challenge by type key.
   ChallengeEntity? operator [](String typeKey) => challenges[typeKey];
 

@@ -32,13 +32,12 @@ class ChallengeCubit extends Cubit<ChallengeState> {
 
       final all = await _challengeRepository.getAllActiveChallenges(userId);
 
-      // Expire stale challenges
       final map = <String, ChallengeEntity>{};
       for (final c in all) {
         final key = ChallengeModel.typeKey(c.challengeType);
         if (c.hasExpired()) {
-          debugPrint('⚠️ [Challenge] $key expired, clearing');
-          await _challengeRepository.clearChallenge(userId, typeKey: key);
+          debugPrint('⚠️ [Challenge] $key expired — keeping to show missed streak');
+          map[key] = c;
         } else {
           map[key] = c;
         }
@@ -62,6 +61,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
     String? challengeType,
   }) async {
     try {
+      final previousMap = Map<String, ChallengeEntity>.from(_currentMap);
       emit(const ChallengeLoading());
 
       final challenge = ChallengeEntity(
@@ -76,7 +76,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       await _challengeRepository.saveChallenge(userId, challenge);
 
       final key = ChallengeModel.typeKey(challengeType);
-      final updated = Map<String, ChallengeEntity>.from(_currentMap);
+      final updated = Map<String, ChallengeEntity>.from(previousMap);
       updated[key] = challenge;
       emit(ChallengeLoaded(updated));
 
@@ -145,11 +145,12 @@ class ChallengeCubit extends Cubit<ChallengeState> {
 
   Future<void> abandonChallenge(String userId, {String? typeKey}) async {
     try {
+      final previousMap = Map<String, ChallengeEntity>.from(_currentMap);
       emit(const ChallengeLoading());
       final key = typeKey ?? 'default';
       await _challengeRepository.clearChallenge(userId, typeKey: key);
 
-      final map = Map<String, ChallengeEntity>.from(_currentMap);
+      final map = Map<String, ChallengeEntity>.from(previousMap);
       map.remove(key);
       emit(ChallengeLoaded(map));
       debugPrint('🗑️ [Challenge] Abandoned $key');

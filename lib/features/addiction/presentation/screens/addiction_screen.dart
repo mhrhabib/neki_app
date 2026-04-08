@@ -413,7 +413,7 @@ class AddictionScreen extends StatelessWidget {
                   challengeType: 'addiction_${item.id}_$days',
                 );
                 Navigator.pop(context);
-                context.push('/habit-building');
+                context.push('/habit-building?type=addiction');
               } else {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(

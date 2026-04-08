@@ -7,6 +7,7 @@ class ChallengeEntity {
   final int completedDays;
   final ChallengeStatus status;
   final String? challengeType; // e.g., 'beat_satan', 'daily_prayers'
+  final String? userId;
 
   ChallengeEntity({
     required this.durationDays,
@@ -15,6 +16,7 @@ class ChallengeEntity {
     required this.completedDays,
     required this.status,
     this.challengeType,
+    this.userId,
   });
 
   DateTime get endDate => startDate.add(Duration(days: durationDays));
@@ -30,6 +32,7 @@ class ChallengeEntity {
   /// Check if user can complete today's challenge
   bool canCompleteToday() {
     if (status != ChallengeStatus.active) return false;
+    if (hasExpired()) return false;
 
     final today = DateTime.now();
 
@@ -48,13 +51,20 @@ class ChallengeEntity {
         today.year != lastCompletionDate.year;
   }
 
-  /// Check if challenge has expired (missed a day)
+  /// Check if challenge has expired (missed too many days).
+  /// Uses calendar days and gives a 1-day grace period so users
+  /// don't lose progress due to timezone/time-of-day edge cases.
   bool hasExpired() {
     if (status != ChallengeStatus.active) return false;
+    if (isCompleted) return false;
 
-    final today = DateTime.now();
-    final expectedCompletionDate = startDate.add(Duration(days: completedDays + 1));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final startDay = DateTime(startDate.year, startDate.month, startDate.day);
+    final daysSinceStart = today.difference(startDay).inDays;
 
-    return today.isAfter(expectedCompletionDate) && !isCompleted;
+    // User gets a 1-day grace period: if they're more than 1 full
+    // calendar day behind on completions, the challenge is expired.
+    return daysSinceStart > completedDays + 1;
   }
 }

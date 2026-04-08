@@ -11,8 +11,8 @@ import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../challenge/presentation/cubit/challenge_cubit.dart';
 import '../../../../components/app_background_widget.dart';
 
-class HabitBuildingScreen extends StatelessWidget {
-  const HabitBuildingScreen({super.key});
+class HabitBuildingScreenBeatSatan extends StatelessWidget {
+  const HabitBuildingScreenBeatSatan({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +87,7 @@ class HabitBuildingScreen extends StatelessWidget {
                               .onboardingRepository
                               .getChallengeGoal();
                           if (goal != null && context.mounted) {
-                            context.read<ChallengeCubit>().startChallenge(
+                            await context.read<ChallengeCubit>().startChallenge(
                               userId: authState.user.id,
                               durationDays: goal['days'] as int,
                               rewardPoints: goal['points'] as int,

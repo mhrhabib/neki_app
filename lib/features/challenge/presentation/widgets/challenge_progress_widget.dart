@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../challenge/domain/entities/challenge_entity.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../cubit/challenge_cubit.dart';
 
 class ChallengeProgressWidget extends StatelessWidget {
   final ChallengeEntity challenge;
@@ -10,12 +13,20 @@ class ChallengeProgressWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isExpired = challenge.hasExpired();
+    
     return Container(
       padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: isExpired 
+            ? Colors.redAccent.withValues(alpha: 0.1) 
+            : Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(28.r),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: isExpired 
+              ? Colors.redAccent.withValues(alpha: 0.3) 
+              : Colors.white.withValues(alpha: 0.08),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.2),
@@ -48,7 +59,7 @@ class ChallengeProgressWidget extends StatelessWidget {
                   ),
                 ],
               ),
-              if (challenge.isCompleted)
+           if (challenge.isCompleted)
                 Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: 14.w,
@@ -83,97 +94,170 @@ class ChallengeProgressWidget extends StatelessWidget {
             ],
           ),
           SizedBox(height: 28.h),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          
+          if (isExpired) ...[
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+              ),
+              child: Column(
                 children: [
+                  Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 24.sp),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Text(
+                          'You missed your streak!',
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8.h),
                   Text(
-                    'Day ${challenge.completedDays} of ${challenge.durationDays}',
+                    'Don\'t feel discouraged. The true victory is continually returning to the good path. Start again right now.',
                     style: TextStyle(
                       color: Colors.white70,
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 13.sp,
+                      height: 1.4,
                     ),
                   ),
-                  Text(
-                    '${(challenge.progress * 100).toInt()}%',
-                    style: TextStyle(
-                      color: AppColors.goldAccent,
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 14.h),
-              Stack(
-                children: [
-                  Container(
-                    height: 10.h,
+                  SizedBox(height: 16.h),
+                  SizedBox(
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                  ),
-                  FractionallySizedBox(
-                    widthFactor: challenge.progress,
-                    child: Container(
-                      height: 10.h,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.primaryGreen, Color(0xFF50C878)],
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final authState = context.read<AuthCubit>().state;
+                        if (authState is Authenticated) {
+                          context.read<ChallengeCubit>().startChallenge(
+                            userId: authState.user.id,
+                            durationDays: challenge.durationDays,
+                            rewardPoints: challenge.rewardPoints,
+                            challengeType: challenge.challengeType,
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r),
                         ),
-                        borderRadius: BorderRadius.circular(10.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primaryGreen.withValues(
-                              alpha: 0.3,
-                            ),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                      ),
+                      child: Text(
+                        'Restart Challenge ↻',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
-          SizedBox(height: 28.h),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatItem(
-                  icon: Icons.local_fire_department,
-                  label: 'Streak',
-                  value: '${challenge.completedDays}',
-                  color: Colors.orangeAccent,
+            ),
+          ] else ...[
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Day ${challenge.completedDays} of ${challenge.durationDays}',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      '${(challenge.progress * 100).toInt()}%',
+                      style: TextStyle(
+                        color: AppColors.goldAccent,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: _buildStatItem(
-                  icon: Icons.stars_rounded,
-                  label: 'Neki Pts',
-                  value: '${challenge.rewardPoints}',
-                  color: AppColors.goldAccent,
+                SizedBox(height: 14.h),
+                Stack(
+                  children: [
+                    Container(
+                      height: 10.h,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: challenge.progress,
+                      child: Container(
+                        height: 10.h,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AppColors.primaryGreen, Color(0xFF50C878)],
+                          ),
+                          borderRadius: BorderRadius.circular(10.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primaryGreen.withValues(
+                                alpha: 0.3,
+                              ),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: _buildStatItem(
-                  icon: Icons.calendar_today_rounded,
-                  label: 'To Go',
-                  value: '${challenge.remainingDays}',
-                  color: Colors.blueAccent,
+              ],
+            ),
+            SizedBox(height: 28.h),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatItem(
+                    icon: Icons.local_fire_department,
+                    label: 'Streak',
+                    value: '${challenge.completedDays}',
+                    color: Colors.orangeAccent,
+                  ),
                 ),
-              ),
-            ],
-          ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: _buildStatItem(
+                    icon: Icons.stars_rounded,
+                    label: 'Neki Pts',
+                    value: '${challenge.rewardPoints}',
+                    color: AppColors.goldAccent,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: _buildStatItem(
+                    icon: Icons.calendar_today_rounded,
+                    label: 'To Go',
+                    value: '${challenge.remainingDays}',
+                    color: Colors.blueAccent,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

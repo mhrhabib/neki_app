@@ -47,14 +47,14 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
 
       for (final key in typeKeys) {
         final challenge = await getActiveChallenge(userId, typeKey: key);
-        if (challenge != null && challenge.isActive) {
+        if (challenge != null) {
           challenges.add(challenge);
         }
       }
 
       // Also check legacy doc (just userId, no suffix)
       final legacy = await getActiveChallenge(userId);
-      if (legacy != null && legacy.isActive) {
+      if (legacy != null) {
         // Only add if not a duplicate of a typed challenge
         final legacyKey = ChallengeModel.typeKey(legacy.challengeType);
         if (!challenges.any((c) => ChallengeModel.typeKey(c.challengeType) == legacyKey)) {
@@ -85,6 +85,7 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
               completedDays: challenge.completedDays,
               status: challenge.status,
               challengeType: challenge.challengeType,
+              userId: userId,
             );
 
       await _firestoreService.setDocument(
@@ -137,6 +138,7 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
               completedDays: challenge.completedDays,
               status: challenge.status,
               challengeType: challenge.challengeType,
+              userId: userId,
             );
 
       final newCompletedDays = model.completedDays + 1;

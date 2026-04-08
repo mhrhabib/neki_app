@@ -166,23 +166,22 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                                   BlocBuilder<ChallengeCubit, ChallengeState>(
                                     builder: (context, challengeState) {
                                       if (challengeState is ChallengeLoaded &&
-                                          challengeState.hasActiveChallenge) {
+                                          challengeState.hasAnyChallenge) {
                                         return Padding(
                                           padding: EdgeInsets.symmetric(
                                             horizontal: 20.w,
                                           ),
                                           child: Column(
-                                            children: challengeState.challenges.values
-                                                .where((c) => c.isActive)
+                                            children: challengeState.challenges.entries
                                                 .map(
-                                                  (c) => Padding(
+                                                  (e) => Padding(
                                                     padding: EdgeInsets.only(bottom: 12.h),
                                                     child: GestureDetector(
                                                       onTap: () => context.push(
-                                                        RouteNames.habitBuilding,
+                                                        '${RouteNames.habitBuilding}?type=${e.key}',
                                                       ),
                                                       child: ChallengeProgressWidget(
-                                                        challenge: c,
+                                                        challenge: e.value,
                                                       ),
                                                     ),
                                                   ),

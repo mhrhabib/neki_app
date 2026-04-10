@@ -8,13 +8,15 @@ class LeaderboardRepositoryImpl implements LeaderboardRepository {
   LeaderboardRepositoryImpl(this._firestore);
 
   LeaderboardEntryEntity _fromDoc(Map<String, dynamic> data, String docId, int rank) {
+    final bool isVisible = data['showOnLeaderboard'] ?? true;
+    
     return LeaderboardEntryEntity(
       rank: rank,
       userId: docId,
-      userName: (data['name'] as String?)?.isNotEmpty == true
+      userName: isVisible && (data['name'] as String?)?.isNotEmpty == true
           ? data['name'] as String
           : 'Anonymous',
-      photoUrl: data['photoUrl'] as String?,
+      photoUrl: isVisible ? data['photoUrl'] as String? : null,
       totalPoints: (data['totalPoints'] as num?)?.toInt() ?? 0,
       country: data['country'] as String?,
     );

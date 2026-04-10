@@ -37,4 +37,8 @@ class OnboardingCubit extends Cubit<OnboardingState> {
       emit(OnboardingError(message: e.toString()));
     }
   }
+
+  void clear() {
+    emit(OnboardingInitial());
+  }
 }

@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
+
 import '../../../../core/services/firebase_storage_service.dart';
 import '../../../../core/services/firestore_service.dart';
 import '../../../points/data/models/neki_points_model.dart';
@@ -101,7 +103,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
     // Check rank for top 10 - only need to check how many people are above
     final higherPointsSnapshot = await _firestoreService.getCollection(
       collectionPath: 'users_points',
-      queryBuilder: (q) => q.where('totalPoints', isGreaterThan: stats.totalPoints).limit(11),
+      queryBuilder: (q) =>
+          q.where('totalPoints', isGreaterThan: stats.totalPoints).limit(11),
     );
     final peopleAbove = higherPointsSnapshot.docs.length;
     final rank = peopleAbove + 1;
@@ -132,14 +135,16 @@ class ProfileRepositoryImpl implements ProfileRepository {
           break;
       }
 
-      badges.add(BadgeEntity(
-        id: def.id,
-        name: def.name,
-        description: def.description,
-        iconUrl: def.icon,
-        requiredPoints: def.requiredPoints,
-        isEarned: isEarned,
-      ));
+      badges.add(
+        BadgeEntity(
+          id: def.id,
+          name: def.name,
+          description: def.description,
+          iconUrl: def.icon,
+          requiredPoints: def.requiredPoints,
+          isEarned: isEarned,
+        ),
+      );
     }
 
     return badges;
@@ -161,11 +166,26 @@ class ProfileRepositoryImpl implements ProfileRepository {
 
   @override
   Future<void> updateLeaderboardVisibility(String userId, bool value) async {
+    // Update main profile
     await _firestoreService.updateDocument(
       collectionPath: 'users',
       documentId: userId,
       data: {'showOnLeaderboard': value},
     );
+
+    // Update points record for immediate leaderboard effect
+    try {
+      await _firestoreService.updateDocument(
+        collectionPath: 'users_points',
+        documentId: userId,
+        data: {'showOnLeaderboard': value},
+      );
+    } catch (e) {
+      // If users_points doesn't exist yet, it's fine
+      debugPrint(
+        'ℹ️ [Profile] No users_points document to sync privacy for yet.',
+      );
+    }
   }
 
   @override
@@ -197,7 +217,10 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<String?> uploadProfilePicture(String userId, File file) async {
     final path = 'profiles/$userId/profile_pic.jpg';
-    final downloadUrl = await _storageService.uploadFile(file: file, path: path);
+    final downloadUrl = await _storageService.uploadFile(
+      file: file,
+      path: path,
+    );
 
     if (downloadUrl != null) {
       await updateProfile(userId: userId, photoUrl: downloadUrl);

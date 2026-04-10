@@ -12,7 +12,12 @@ class LeaderboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(create: (_) => getIt<LeaderboardCubit>()..load(), child: const _LeaderboardView());
+    final cubit = getIt<LeaderboardCubit>();
+    // Always reload on entry, but only if not already loading
+    if (cubit.state is! LeaderboardLoading) {
+      cubit.load();
+    }
+    return BlocProvider.value(value: cubit, child: const _LeaderboardView());
   }
 }
 
@@ -52,7 +57,10 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
                     surfaceTintColor: Colors.transparent,
                     elevation: 0,
                     flexibleSpace: FlexibleSpaceBar(
-                      stretchModes: const [StretchMode.blurBackground, StretchMode.zoomBackground],
+                      stretchModes: const [
+                        StretchMode.blurBackground,
+                        StretchMode.zoomBackground,
+                      ],
                       background: SafeArea(
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -71,7 +79,11 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
                               ),
                               Text(
                                 'Top performers of all time',
-                                style: TextStyle(fontSize: 14.sp, color: Colors.white70, fontWeight: FontWeight.w500),
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                               const Spacer(),
                               _buildTabSwitcher(),
@@ -84,10 +96,16 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
                   ),
                   if (state is LeaderboardLoading)
                     SliverFillRemaining(
-                      child: Center(child: CircularProgressIndicator(color: AppColors.primaryGreen)),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryGreen,
+                        ),
+                      ),
                     )
                   else if (state is LeaderboardError)
-                    SliverFillRemaining(child: _buildError(context, state.message))
+                    SliverFillRemaining(
+                      child: _buildError(context, state.message),
+                    )
                   else if (state is LeaderboardLoaded)
                     _buildContent(state)
                   else
@@ -107,7 +125,8 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
     if (code == null || code.length != 2) return '';
     const base = 0x1F1E6 - 0x41;
     final upper = code.toUpperCase();
-    return String.fromCharCode(base + upper.codeUnitAt(0)) + String.fromCharCode(base + upper.codeUnitAt(1));
+    return String.fromCharCode(base + upper.codeUnitAt(0)) +
+        String.fromCharCode(base + upper.codeUnitAt(1));
   }
 
   Widget _buildContent(LeaderboardLoaded state) {
@@ -133,12 +152,15 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
         delegate: SliverChildListDelegate([
           _buildTopPerformerCard(entries.first, state.currentUserId),
           SizedBox(height: 25.h),
-          if (state.currentUserRank != null && !entries.any((e) => e.userId == state.currentUserId))
+          if (state.currentUserRank != null &&
+              !entries.any((e) => e.userId == state.currentUserId))
             _buildMyRankBanner(state.currentUserRank!),
           if (entries.length > 1) ...[
             _buildLeaderboardHeader('GLOBAL RANKINGS'),
             SizedBox(height: 15.h),
-            ...entries.sublist(1).map((e) => _buildUserCard(e, state.currentUserId)),
+            ...entries
+                .sublist(1)
+                .map((e) => _buildUserCard(e, state.currentUserId)),
           ],
         ]),
       ),
@@ -148,7 +170,9 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
   Widget _buildCountryContent(LeaderboardLoaded state) {
     final entries = state.countryEntries;
     final flag = _countryFlag(state.userCountry);
-    final countryLabel = flag.isNotEmpty ? '$flag  ${state.userCountry ?? ''}' : 'Your Country';
+    final countryLabel = flag.isNotEmpty
+        ? '$flag  ${state.userCountry ?? ''}'
+        : 'Your Country';
 
     if (state.userCountry == null || state.userCountry!.isEmpty) {
       return SliverFillRemaining(
@@ -162,13 +186,21 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
                 SizedBox(height: 20.h),
                 Text(
                   'Country not detected',
-                  style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w800, color: Colors.white),
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
                 ),
                 SizedBox(height: 10.h),
                 Text(
                   'Your country could not be determined from your device settings.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14.sp, color: Colors.white54, height: 1.5),
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: Colors.white54,
+                    height: 1.5,
+                  ),
                 ),
               ],
             ),
@@ -185,18 +217,29 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(flag.isNotEmpty ? flag : '🌍', style: TextStyle(fontSize: 60.sp)),
+                Text(
+                  flag.isNotEmpty ? flag : '🌍',
+                  style: TextStyle(fontSize: 60.sp),
+                ),
                 SizedBox(height: 20.h),
                 Text(
                   'No one from $countryLabel yet',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w800, color: Colors.white),
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
                 ),
                 SizedBox(height: 10.h),
                 Text(
                   'Be the first from your country to earn NEKI points!',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14.sp, color: Colors.white54, height: 1.5),
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: Colors.white54,
+                    height: 1.5,
+                  ),
                 ),
               ],
             ),
@@ -211,12 +254,15 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
         delegate: SliverChildListDelegate([
           _buildTopPerformerCard(entries.first, state.currentUserId),
           SizedBox(height: 25.h),
-          if (state.currentUserRank != null && !entries.any((e) => e.userId == state.currentUserId))
+          if (state.currentUserRank != null &&
+              !entries.any((e) => e.userId == state.currentUserId))
             _buildMyRankBanner(state.currentUserRank!),
           if (entries.length > 1) ...[
             _buildLeaderboardHeader(countryLabel),
             SizedBox(height: 15.h),
-            ...entries.sublist(1).map((e) => _buildUserCard(e, state.currentUserId)),
+            ...entries
+                .sublist(1)
+                .map((e) => _buildUserCard(e, state.currentUserId)),
           ],
         ]),
       ),
@@ -232,7 +278,12 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
         borderRadius: BorderRadius.circular(14.r),
         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
-      child: Row(children: [_buildTabButton('Global', 'global'), _buildTabButton('Country', 'country')]),
+      child: Row(
+        children: [
+          _buildTabButton('Global', 'global'),
+          _buildTabButton('Country', 'country'),
+        ],
+      ),
     );
   }
 
@@ -244,10 +295,18 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: isActive ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
+            color: isActive
+                ? Colors.white.withValues(alpha: 0.15)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(10.r),
             boxShadow: isActive
-                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4.r, offset: const Offset(0, 2))]
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 4.r,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
                 : [],
           ),
           alignment: Alignment.center,
@@ -270,7 +329,10 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
         Container(
           width: 4.w,
           height: 18.h,
-          decoration: BoxDecoration(color: AppColors.goldAccent, borderRadius: BorderRadius.circular(2.r)),
+          decoration: BoxDecoration(
+            color: AppColors.goldAccent,
+            borderRadius: BorderRadius.circular(2.r),
+          ),
         ),
         SizedBox(width: 10.w),
         Text(
@@ -286,21 +348,31 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
     );
   }
 
-  Widget _buildTopPerformerCard(LeaderboardEntryEntity user, String currentUserId) {
+  Widget _buildTopPerformerCard(
+    LeaderboardEntryEntity user,
+    String currentUserId,
+  ) {
     final isYou = user.userId == currentUserId;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.white.withValues(alpha: 0.1), Colors.white.withValues(alpha: 0.05)],
+          colors: [
+            Colors.white.withValues(alpha: 0.1),
+            Colors.white.withValues(alpha: 0.05),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(30.r),
         border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20.r, offset: const Offset(0, 10)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 20.r,
+            offset: const Offset(0, 10),
+          ),
         ],
       ),
       child: Column(
@@ -314,7 +386,10 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [AppColors.goldAccent.withValues(alpha: 0.3), AppColors.goldAccent.withValues(alpha: 0.0)],
+                    colors: [
+                      AppColors.goldAccent.withValues(alpha: 0.3),
+                      AppColors.goldAccent.withValues(alpha: 0.0),
+                    ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -325,7 +400,10 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.goldAccent.withValues(alpha: 0.3), width: 2.w),
+                  border: Border.all(
+                    color: AppColors.goldAccent.withValues(alpha: 0.3),
+                    width: 2.w,
+                  ),
                 ),
                 child: user.photoUrl != null
                     ? ClipOval(
@@ -334,7 +412,8 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
                           width: 60.w,
                           height: 60.w,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Text('👑', style: TextStyle(fontSize: 45.sp)),
+                          errorBuilder: (_, _, _) =>
+                              Text('👑', style: TextStyle(fontSize: 45.sp)),
                         ),
                       )
                     : Text('👑', style: TextStyle(fontSize: 45.sp)),
@@ -349,7 +428,11 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.black, width: 3.w),
                   ),
-                  child: Icon(Icons.emoji_events, size: 16.sp, color: Colors.black),
+                  child: Icon(
+                    Icons.emoji_events,
+                    size: 16.sp,
+                    color: Colors.black,
+                  ),
                 ),
               ),
             ],
@@ -360,7 +443,10 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (_countryFlag(user.country).isNotEmpty) ...[
-                  Text(_countryFlag(user.country), style: TextStyle(fontSize: 20.sp)),
+                  Text(
+                    _countryFlag(user.country),
+                    style: TextStyle(fontSize: 20.sp),
+                  ),
                   SizedBox(width: 8.w),
                 ],
                 Text(
@@ -375,11 +461,21 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
                 if (isYou) ...[
                   SizedBox(width: 8.w),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                    decoration: BoxDecoration(color: AppColors.primaryGreen, borderRadius: BorderRadius.circular(4.r)),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 6.w,
+                      vertical: 2.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGreen,
+                      borderRadius: BorderRadius.circular(4.r),
+                    ),
                     child: Text(
                       'YOU',
-                      style: TextStyle(fontSize: 9.sp, color: Colors.white, fontWeight: FontWeight.w900),
+                      style: TextStyle(
+                        fontSize: 9.sp,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ],
@@ -398,7 +494,12 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
               children: [
                 Text(
                   _formatPoints(user.totalPoints),
-                  style: TextStyle(fontSize: 32.sp, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1),
+                  style: TextStyle(
+                    fontSize: 32.sp,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 1,
+                  ),
                 ),
                 Text(
                   'NEKI POINTS',
@@ -423,10 +524,14 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: isYou ? AppColors.primaryGreen.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
+        color: isYou
+            ? AppColors.primaryGreen.withValues(alpha: 0.15)
+            : Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
-          color: isYou ? AppColors.primaryGreen.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.08),
+          color: isYou
+              ? AppColors.primaryGreen.withValues(alpha: 0.5)
+              : Colors.white.withValues(alpha: 0.08),
           width: isYou ? 2.w : 1.w,
         ),
       ),
@@ -440,12 +545,20 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
                   ? _getRankColor(user.rank).withValues(alpha: 0.15)
                   : Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(15.r),
-              border: user.rank <= 3 ? Border.all(color: _getRankColor(user.rank).withValues(alpha: 0.3)) : null,
+              border: user.rank <= 3
+                  ? Border.all(
+                      color: _getRankColor(user.rank).withValues(alpha: 0.3),
+                    )
+                  : null,
             ),
             alignment: Alignment.center,
             child: Text(
               '${user.rank}',
-              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900, color: _getRankColor(user.rank)),
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w900,
+                color: _getRankColor(user.rank),
+              ),
             ),
           ),
           SizedBox(width: 16.w),
@@ -453,7 +566,10 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
           Container(
             width: 38.w,
             height: 38.w,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.08)),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.08),
+            ),
             child: user.photoUrl != null
                 ? ClipOval(
                     child: Image.network(
@@ -461,16 +577,28 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => Center(
                         child: Text(
-                          user.userName.isNotEmpty ? user.userName[0].toUpperCase() : '?',
-                          style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700, fontSize: 16.sp),
+                          user.userName.isNotEmpty
+                              ? user.userName[0].toUpperCase()
+                              : '?',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16.sp,
+                          ),
                         ),
                       ),
                     ),
                   )
                 : Center(
                     child: Text(
-                      user.userName.isNotEmpty ? user.userName[0].toUpperCase() : '?',
-                      style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700, fontSize: 16.sp),
+                      user.userName.isNotEmpty
+                          ? user.userName[0].toUpperCase()
+                          : '?',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16.sp,
+                      ),
                     ),
                   ),
           ),
@@ -486,27 +614,41 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
                       child: Text(
                         user.userName,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                     if (isYou) ...[
                       SizedBox(width: 6.w),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6.w,
+                          vertical: 2.h,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryGreen,
                           borderRadius: BorderRadius.circular(4.r),
                         ),
                         child: Text(
                           'YOU',
-                          style: TextStyle(fontSize: 9.sp, color: Colors.white, fontWeight: FontWeight.w900),
+                          style: TextStyle(
+                            fontSize: 9.sp,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                     ],
                   ],
                 ),
                 if (_countryFlag(user.country).isNotEmpty)
-                  Text(_countryFlag(user.country), style: TextStyle(fontSize: 13.sp)),
+                  Text(
+                    _countryFlag(user.country),
+                    style: TextStyle(fontSize: 13.sp),
+                  ),
               ],
             ),
           ),
@@ -515,11 +657,19 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
             children: [
               Text(
                 _formatPoints(user.totalPoints),
-                style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w800, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 17.sp,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
               ),
               Text(
                 'pts',
-                style: TextStyle(fontSize: 11.sp, color: Colors.white30, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  color: Colors.white30,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
@@ -535,7 +685,9 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
       decoration: BoxDecoration(
         color: AppColors.primaryGreen.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: AppColors.primaryGreen.withValues(alpha: 0.4),
+        ),
       ),
       child: Row(
         children: [
@@ -547,19 +699,31 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
             ),
             child: Text(
               '#${entry.rank}',
-              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900, color: AppColors.primaryGreen),
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primaryGreen,
+              ),
             ),
           ),
           SizedBox(width: 14.w),
           Expanded(
             child: Text(
               'Your rank',
-              style: TextStyle(color: Colors.white70, fontSize: 14.sp, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           Text(
             _formatPoints(entry.totalPoints),
-            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800, color: Colors.white),
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
           ),
           Text(
             ' pts',
@@ -589,7 +753,11 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
               onPressed: () => context.read<LeaderboardCubit>().load(),
               child: Text(
                 'Try again',
-                style: TextStyle(color: AppColors.primaryGreen, fontWeight: FontWeight.w700, fontSize: 15.sp),
+                style: TextStyle(
+                  color: AppColors.primaryGreen,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15.sp,
+                ),
               ),
             ),
           ],
@@ -599,6 +767,9 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
   }
 
   String _formatPoints(int points) {
-    return points.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
+    return points.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
   }
 }

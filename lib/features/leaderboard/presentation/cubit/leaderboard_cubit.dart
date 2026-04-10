@@ -75,4 +75,8 @@ class LeaderboardCubit extends Cubit<LeaderboardState> {
       emit(LeaderboardError('Failed to load leaderboard. Please try again.'));
     }
   }
+
+  void clear() {
+    emit(LeaderboardInitial());
+  }
 }

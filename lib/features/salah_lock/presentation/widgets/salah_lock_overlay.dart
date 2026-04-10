@@ -32,7 +32,9 @@ class _SalahLockOverlayState extends State<SalahLockOverlay>
     _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.dismissed && mounted) {
-        setState(() {}); // force builder to re-evaluate and return SizedBox.shrink()
+        setState(
+          () {},
+        ); // force builder to re-evaluate and return SizedBox.shrink()
       }
     });
   }
@@ -273,10 +275,14 @@ class _SalahLockOverlayState extends State<SalahLockOverlay>
                     ? null
                     : () async {
                         setState(() => _isConfirming = true);
-                        await context
-                            .read<SalahLockCubit>()
-                            .confirmPrayed(userId, salahName);
-                        if (mounted) setState(() => _isConfirming = false);
+                        try {
+                          await context.read<SalahLockCubit>().confirmPrayed(
+                            userId,
+                            salahName,
+                          );
+                        } finally {
+                          if (mounted) setState(() => _isConfirming = false);
+                        }
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4ADE80),
@@ -289,26 +295,55 @@ class _SalahLockOverlayState extends State<SalahLockOverlay>
                     borderRadius: BorderRadius.circular(30.r),
                   ),
                 ),
-                child: Text(
-                  'Yes, I prayed $salahName',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                child:
+                    _isConfirming
+                        ? SizedBox(
+                          height: 20.h,
+                          width: 20.h,
+                          child: const CircularProgressIndicator(
+                            color: Colors.black,
+                            strokeWidth: 2,
+                          ),
+                        )
+                        : Text(
+                          'Yes, I prayed $salahName',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
               ),
               SizedBox(height: 16.h),
               TextButton(
                 onPressed: _isConfirming
                     ? null
-                    : () {
+                    : () async {
                         setState(() => _isConfirming = true);
-                        context.read<SalahLockCubit>().remindLater(salahName);
+                        try {
+                          await context.read<SalahLockCubit>().remindLater(
+                            salahName,
+                          );
+                        } finally {
+                          if (mounted) setState(() => _isConfirming = false);
+                        }
                       },
-                child: Text(
-                  'Remind me in 10 minutes',
-                  style: TextStyle(color: Colors.white60, fontSize: 14.sp),
-                ),
+                child:
+                    _isConfirming
+                        ? SizedBox(
+                          height: 20.h,
+                          width: 20.h,
+                          child: const CircularProgressIndicator(
+                            color: Colors.white60,
+                            strokeWidth: 2,
+                          ),
+                        )
+                        : Text(
+                          'Remind me in 10 minutes',
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 14.sp,
+                          ),
+                        ),
               ),
             ],
           ),

@@ -7,6 +7,7 @@ abstract class AuthRepository {
   Future<UserEntity> signInWithFacebook();
   Future<UserEntity> signInWithApple();
   Future<void> logout();
+  Stream<UserEntity?> get authStateChanges;
   Future<UserEntity?> getCurrentUser();
   Future<bool> isLoggedIn();
 }

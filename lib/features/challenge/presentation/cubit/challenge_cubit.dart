@@ -27,6 +27,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
 
   /// Load ALL active challenges for this user.
   Future<void> loadChallenge(String userId) async {
+    if (userId.isEmpty) return;
     try {
       emit(const ChallengeLoading());
 
@@ -165,5 +166,9 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   void resetToLoaded() {
     final map = _currentMap;
     emit(ChallengeLoaded(map));
+  }
+
+  void clear() {
+    emit(const ChallengeInitial());
   }
 }

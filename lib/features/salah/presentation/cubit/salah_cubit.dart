@@ -16,6 +16,7 @@ class SalahCubit extends Cubit<SalahState> {
     : super(SalahInitial());
 
   Future<void> loadTodaysSalahs(String userId) async {
+    if (userId.isEmpty) return;
     try {
       emit(SalahLoading());
       final salahs = await salahRepository.getTodaysSalahs(userId);
@@ -48,5 +49,9 @@ class SalahCubit extends Cubit<SalahState> {
     } catch (e) {
       emit(SalahError(message: e.toString()));
     }
+  }
+
+  void clear() {
+    emit(SalahInitial());
   }
 }

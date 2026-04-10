@@ -346,6 +346,10 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Stream<UserEntity?> get authStateChanges =>
+      _firebaseAuth.authStateChanges().map(_mapFirebaseUser);
+
+  @override
   Future<UserEntity?> getCurrentUser() async {
     final user = _firebaseAuth.currentUser;
     if (user != null && !_profileSynced) {

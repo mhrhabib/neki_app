@@ -105,4 +105,8 @@ class ZakatCubit extends Cubit<ZakatState> {
       emit(ZakatError(e.toString()));
     }
   }
+
+  void clear() {
+    emit(ZakatInitial());
+  }
 }

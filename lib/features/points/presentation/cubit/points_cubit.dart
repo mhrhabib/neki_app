@@ -10,6 +10,7 @@ class PointsCubit extends Cubit<PointsState> {
   PointsCubit({required this.pointsRepository}) : super(PointsInitial());
 
   Future<void> loadUserPoints(String userId) async {
+    if (userId.isEmpty) return;
     try {
       emit(PointsLoading());
       final points = await pointsRepository.getUserPoints(userId);
@@ -21,5 +22,9 @@ class PointsCubit extends Cubit<PointsState> {
 
   Future<void> refreshPoints(String userId) async {
     await loadUserPoints(userId);
+  }
+
+  void clear() {
+    emit(PointsInitial());
   }
 }

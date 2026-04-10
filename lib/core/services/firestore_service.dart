@@ -46,15 +46,23 @@ class FirestoreService {
   }
 
   /// Generic method to get a document by ID.
+  /// Returns null ONLY if the document does not exist.
+  /// Throws an exception if the fetch fails (network, permissions, etc.)
+  /// so callers can tell the difference between "missing" and "error".
   Future<DocumentSnapshot<Map<String, dynamic>>?> getDocument({
     required String collectionPath,
     required String documentId,
   }) async {
     try {
-      return await _db.collection(collectionPath).doc(documentId).get();
+      final snapshot = await _db.collection(collectionPath).doc(documentId).get();
+      // Return null only when the document genuinely doesn't exist
+      return snapshot;
     } catch (e) {
       debugPrint('❌ [Firestore] Get Document Error: $e');
-      return null;
+      // Rethrow so callers know a network/permission error occurred.
+      // This prevents them from treating an error as "document not found"
+      // and accidentally overwriting real data with defaults.
+      rethrow;
     }
   }
 

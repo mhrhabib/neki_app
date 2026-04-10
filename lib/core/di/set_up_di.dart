@@ -121,51 +121,51 @@ class SetUpDI {
     getIt.registerLazySingleton<ThemeCubit>(
       () => ThemeCubit(themeRepository: getIt<ThemeRepository>())..loadTheme(),
     );
-    getIt.registerFactory<OnboardingCubit>(
+    getIt.registerLazySingleton<OnboardingCubit>(
       () =>
           OnboardingCubit(onboardingRepository: getIt<OnboardingRepository>()),
     );
-    getIt.registerFactory<AuthCubit>(
+    getIt.registerLazySingleton<AuthCubit>(
       () => AuthCubit(authRepository: getIt<AuthRepository>()),
     );
-    getIt.registerFactory<SalahCubit>(
+    getIt.registerLazySingleton<SalahCubit>(
       () => SalahCubit(
         salahRepository: getIt<SalahRepository>(),
         pointsRepository: getIt<PointsRepository>(),
         challengeRepository: getIt<ChallengeRepository>(),
       ),
     );
-    getIt.registerFactory<PointsCubit>(
+    getIt.registerLazySingleton<PointsCubit>(
       () => PointsCubit(pointsRepository: getIt<PointsRepository>()),
     );
-    getIt.registerFactory<RozaCubit>(
+    getIt.registerLazySingleton<RozaCubit>(
       () => RozaCubit(
         rozaRepository: getIt<RozaRepository>(),
         pointsRepository: getIt<PointsRepository>(),
       ),
     );
-    getIt.registerFactory<DhikirCubit>(
+    getIt.registerLazySingleton<DhikirCubit>(
       () => DhikirCubit(
         dhikirRepository: getIt<DhikirRepository>(),
         pointsRepository: getIt<PointsRepository>(),
       ),
     );
-    getIt.registerFactory<ChallengeCubit>(
+    getIt.registerLazySingleton<ChallengeCubit>(
       () => ChallengeCubit(
         getIt<ChallengeRepository>(),
         getIt<PointsRepository>(),
       ),
     );
-    getIt.registerFactory<ProfileCubit>(
+    getIt.registerLazySingleton<ProfileCubit>(
       () => ProfileCubit(profileRepository: getIt<ProfileRepository>()),
     );
-    getIt.registerFactory<ZakatCubit>(
+    getIt.registerLazySingleton<ZakatCubit>(
       () => ZakatCubit(getIt<PointsRepository>()),
     );
-    getIt.registerFactory<LocationCubit>(
+    getIt.registerLazySingleton<LocationCubit>(
       () => LocationCubit(getIt<LocationService>()),
     );
-    getIt.registerFactory<LeaderboardCubit>(
+    getIt.registerLazySingleton<LeaderboardCubit>(
       () => LeaderboardCubit(
         leaderboardRepository: getIt<LeaderboardRepository>(),
         authRepository: getIt<AuthRepository>(),

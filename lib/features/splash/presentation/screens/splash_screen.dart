@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:neki_app/components/app_background_widget.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/routes/route_names.dart';
 import '../../../beat_satan_chalange/presentation/cubit/onboarding_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 
@@ -24,38 +22,19 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateToNext() async {
-    await Future.delayed(const Duration(seconds: 3));
-    if (!mounted) return;
+    debugPrint('🚀 [SplashScreen] Starting initialization...');
+    // 1. Trigger initial status checks
+    context.read<OnboardingCubit>().checkOnboarding();
+    context.read<AuthCubit>().checkAuthStatus();
 
-    // Check onboarding status
-    final onboardingCubit = context.read<OnboardingCubit>();
-    final authCubit = context.read<AuthCubit>();
-
-    // Wait for both checks to complete
-    await Future.wait([
-      onboardingCubit.checkOnboarding(),
-      authCubit.checkAuthStatus(),
-    ]);
-
-    if (!mounted) return;
-
-    final onboardingState = onboardingCubit.state;
-    final authState = authCubit.state;
-
-    // Navigate based on onboarding and auth status
-    if (onboardingState is OnboardingCompleted) {
-      // User has completed onboarding
-      if (authState is Authenticated) {
-        // User is authenticated, go to home
-        context.go(RouteNames.home);
-      } else {
-        // User is not authenticated, go to login
-        context.go(RouteNames.login);
-      }
-    } else {
-      // User hasn't completed onboarding, show premium onboarding
-      context.go(RouteNames.premiumOnboarding);
-    }
+    // 2. Minimum splash delay for branding
+    debugPrint('🚀 [SplashScreen] Waiting for branding delay...');
+    await Future.delayed(const Duration(seconds: 2));
+    debugPrint('🚀 [SplashScreen] Branding delay finished.');
+    
+    // Note: No manual context.go() needed here. 
+    // GoRouter will automatically redirect based on the states 
+    // updated above because of the refreshListenable in AppRouter.
   }
 
   @override

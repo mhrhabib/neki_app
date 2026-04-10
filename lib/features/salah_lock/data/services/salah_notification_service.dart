@@ -9,14 +9,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-/// Callback type for when the user taps "I've Prayed" on a notification.
+/// Callback type for when the user taps "   I've prayed   " on a notification.
 typedef OnPrayedCallback = void Function(String salahName);
 
-/// Callback type for when the user taps "Not Praying" on a notification.
+/// Callback type for when the user taps "   not praying   " on a notification.
 typedef OnSkipCallback = void Function(String salahName);
 
 class SalahNotificationService {
-  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   /// Set by the cubit so notification actions work from any app state.
   static OnPrayedCallback? onPrayedAction;
@@ -24,7 +25,13 @@ class SalahNotificationService {
 
   // Each prayer has a base ID. We schedule up to _maxReminders notifications
   // per prayer (every 5 min), using IDs: base, base+1, base+2 ...
-  static const Map<String, int> _prayerBaseIds = {'Fajr': 100, 'Dhuhr': 200, 'Asr': 300, 'Maghrib': 400, 'Isha': 500};
+  static const Map<String, int> _prayerBaseIds = {
+    'Fajr': 100,
+    'Dhuhr': 200,
+    'Asr': 300,
+    'Maghrib': 400,
+    'Isha': 500,
+  };
 
   // How many 5-minute-interval notifications to schedule per prayer.
   // 10 × 5 min = 50 minutes of reminders max.
@@ -67,9 +74,11 @@ class SalahNotificationService {
       debugPrint('⚠️ Could not set timezone: $e');
     }
 
-    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const AndroidInitializationSettings androidSettings =
+        AndroidInitializationSettings('@mipmap/launcher_icon');
 
-    final DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
+    final DarwinInitializationSettings
+    iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
@@ -79,12 +88,12 @@ class SalahNotificationService {
           actions: [
             DarwinNotificationAction.plain(
               _actionIdPrayed,
-              "I've Prayed ✅",
+              "   I've prayed ✅   ",
               options: {DarwinNotificationActionOption.foreground},
             ),
             DarwinNotificationAction.plain(
               _actionIdSkip,
-              "Not Praying ✕",
+              "   not praying ✕   ",
               // Note: do NOT combine .destructive with .foreground — some
               // iOS versions refuse to render the action when both are set.
               // Keep it destructive (red text) and handle the tap in the
@@ -92,9 +101,7 @@ class SalahNotificationService {
               options: {DarwinNotificationActionOption.destructive},
             ),
           ],
-          options: {
-            DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
-          },
+          options: {DarwinNotificationCategoryOption.hiddenPreviewShowTitle},
         ),
       ],
     );
@@ -102,21 +109,28 @@ class SalahNotificationService {
     await _notificationsPlugin.initialize(
       InitializationSettings(android: androidSettings, iOS: iosSettings),
       onDidReceiveNotificationResponse: _onNotificationResponse,
-      onDidReceiveBackgroundNotificationResponse: _onBackgroundNotificationResponse,
+      onDidReceiveBackgroundNotificationResponse:
+          _onBackgroundNotificationResponse,
     );
 
     await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.requestNotificationsPermission();
 
     // Explicitly request iOS notification permissions
     await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >()
         ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
   static void _onNotificationResponse(NotificationResponse response) {
-    debugPrint('🔔 Notification: action=${response.actionId}, payload=${response.payload}');
+    debugPrint(
+      '🔔 Notification: action=${response.actionId}, payload=${response.payload}',
+    );
     final payload = response.payload;
     if (payload == null) return;
 
@@ -129,7 +143,9 @@ class SalahNotificationService {
   }
 
   @pragma('vm:entry-point')
-  static Future<void> _onBackgroundNotificationResponse(NotificationResponse response) async {
+  static Future<void> _onBackgroundNotificationResponse(
+    NotificationResponse response,
+  ) async {
     final payload = response.payload;
     if (payload == null) return;
 
@@ -145,7 +161,8 @@ class SalahNotificationService {
       // 1. Persist completion so the next checkPrayerLock call sees it as done.
       final prefs = await SharedPreferences.getInstance();
       final logicalNow = DateTime.now().subtract(const Duration(hours: 4));
-      final dateKey = '${logicalNow.year}-${logicalNow.month}-${logicalNow.day}';
+      final dateKey =
+          '${logicalNow.year}-${logicalNow.month}-${logicalNow.day}';
       await prefs.setBool('salah_lock_done_${payload}_$dateKey', true);
 
       // 2. Cancel all remaining reminder slots for this prayer so they stop firing.
@@ -154,7 +171,7 @@ class SalahNotificationService {
         final plugin = FlutterLocalNotificationsPlugin();
         await plugin.initialize(
           const InitializationSettings(
-            android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+            android: AndroidInitializationSettings('@mipmap/launcher_icon'),
             iOS: DarwinInitializationSettings(),
           ),
         );
@@ -187,10 +204,14 @@ class SalahNotificationService {
           playSound: true,
           enableVibration: true,
           actions: const [
-            AndroidNotificationAction(_actionIdPrayed, "I've Prayed ✅", showsUserInterface: true),
+            AndroidNotificationAction(
+              _actionIdPrayed,
+              "   I've prayed ✅   ",
+              showsUserInterface: true,
+            ),
             AndroidNotificationAction(
               _actionIdSkip,
-              "Not Praying ✕",
+              "   not praying ✕   ",
               showsUserInterface: false,
               cancelNotification: true,
             ),
@@ -214,7 +235,9 @@ class SalahNotificationService {
     final location = _tzLocation();
 
     // ✅ Use TZDateTime.now instead of mixing DateTime types
-    final scheduled = tz.TZDateTime.now(location).add(Duration(seconds: seconds));
+    final scheduled = tz.TZDateTime.now(
+      location,
+    ).add(Duration(seconds: seconds));
     final scheduleMode = await _canUseExactAlarms()
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
@@ -238,10 +261,14 @@ class SalahNotificationService {
           playSound: true,
           enableVibration: true,
           actions: const [
-            AndroidNotificationAction(_actionIdPrayed, "I've Prayed ✅", showsUserInterface: true),
+            AndroidNotificationAction(
+              _actionIdPrayed,
+              "   I've prayed ✅   ",
+              showsUserInterface: true,
+            ),
             AndroidNotificationAction(
               _actionIdSkip,
-              "Not Praying ✕",
+              "   not praying ✕   ",
               showsUserInterface: false,
               cancelNotification: true,
             ),
@@ -257,7 +284,8 @@ class SalahNotificationService {
       ),
       payload: 'Asr',
       androidScheduleMode: scheduleMode,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
     debugPrint('🧪 Test notification scheduled.');
   }
@@ -283,7 +311,9 @@ class SalahNotificationService {
     int totalScheduled = 0;
     const int iosMaxPending = 64;
 
-    debugPrint('🕐 Scheduling prayers: TZ=${location.name}, now=$now, mode=$scheduleMode');
+    debugPrint(
+      '🕐 Scheduling prayers: TZ=${location.name}, now=$now, mode=$scheduleMode',
+    );
 
     final orderedPrayers = [
       ('Fajr', prayerTimes.fajr),
@@ -309,17 +339,34 @@ class SalahNotificationService {
       // If this prayer time has fully passed and it's Fajr, schedule tomorrow's Fajr instead
       final tz.TZDateTime windowEnd = p + 1 < orderedPrayers.length
           ? tz.TZDateTime.from(orderedPrayers[p + 1].$2, location)
-          : tz.TZDateTime(location, tzPrayerTime.year, tzPrayerTime.month, tzPrayerTime.day, 23, 59);
+          : tz.TZDateTime(
+              location,
+              tzPrayerTime.year,
+              tzPrayerTime.month,
+              tzPrayerTime.day,
+              23,
+              59,
+            );
 
-      if (!windowEnd.isAfter(now) && name == 'Fajr' && tomorrowPrayerTimes != null) {
+      if (!windowEnd.isAfter(now) &&
+          name == 'Fajr' &&
+          tomorrowPrayerTimes != null) {
         // Today's Fajr window is over — schedule tomorrow's Fajr
         try {
-          final tomorrowFajr = tz.TZDateTime.from(tomorrowPrayerTimes.fajr, location);
-          final tomorrowDhuhr = tz.TZDateTime.from(tomorrowPrayerTimes.dhuhr, location);
+          final tomorrowFajr = tz.TZDateTime.from(
+            tomorrowPrayerTimes.fajr,
+            location,
+          );
+          final tomorrowDhuhr = tz.TZDateTime.from(
+            tomorrowPrayerTimes.dhuhr,
+            location,
+          );
 
           int slot = 0;
           tz.TZDateTime fireAt = tomorrowFajr;
-          while (slot < _maxReminders && fireAt.isBefore(tomorrowDhuhr) && (Platform.isAndroid || totalScheduled < iosMaxPending)) {
+          while (slot < _maxReminders &&
+              fireAt.isBefore(tomorrowDhuhr) &&
+              (Platform.isAndroid || totalScheduled < iosMaxPending)) {
             final isFirst = slot == 0;
             await _notificationsPlugin.zonedSchedule(
               base + slot,
@@ -331,10 +378,13 @@ class SalahNotificationService {
               _notificationDetails(name),
               payload: name,
               androidScheduleMode: scheduleMode,
-              uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+              uiLocalNotificationDateInterpretation:
+                  UILocalNotificationDateInterpretation.absoluteTime,
             );
             totalScheduled++;
-            debugPrint('🔔 $name [slot $slot] scheduled TOMORROW at ${fireAt.toLocal()} (total: $totalScheduled)');
+            debugPrint(
+              '🔔 $name [slot $slot] scheduled TOMORROW at ${fireAt.toLocal()} (total: $totalScheduled)',
+            );
             slot++;
             fireAt = tomorrowFajr.add(_interval * slot);
           }
@@ -347,7 +397,9 @@ class SalahNotificationService {
       int slot = 0;
       tz.TZDateTime fireAt = tzPrayerTime;
 
-      while (slot < _maxReminders && fireAt.isBefore(windowEnd) && (Platform.isAndroid || totalScheduled < iosMaxPending)) {
+      while (slot < _maxReminders &&
+          fireAt.isBefore(windowEnd) &&
+          (Platform.isAndroid || totalScheduled < iosMaxPending)) {
         if (fireAt.isAfter(now)) {
           final scheduled = fireAt;
           final isFirst = slot == 0;
@@ -361,10 +413,13 @@ class SalahNotificationService {
             _notificationDetails(name),
             payload: name,
             androidScheduleMode: scheduleMode,
-            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
           );
           totalScheduled++;
-          debugPrint('🔔 $name [slot $slot] scheduled at ${scheduled.toLocal()} (total: $totalScheduled)');
+          debugPrint(
+            '🔔 $name [slot $slot] scheduled at ${scheduled.toLocal()} (total: $totalScheduled)',
+          );
         }
         slot++;
         fireAt = tzPrayerTime.add(_interval * slot);
@@ -375,13 +430,18 @@ class SalahNotificationService {
       }
     }
 
-    debugPrint('📊 Total notifications scheduled: $totalScheduled (iOS limit: $iosMaxPending)');
+    debugPrint(
+      '📊 Total notifications scheduled: $totalScheduled (iOS limit: $iosMaxPending)',
+    );
   }
 
   /// Returns true if the device supports and has granted exact alarm permission.
   Future<bool> _canUseExactAlarms() async {
     if (!Platform.isAndroid) return true;
-    final plugin = _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final plugin = _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (plugin == null) return false;
     return await plugin.canScheduleExactNotifications() ?? false;
   }
@@ -400,10 +460,14 @@ class SalahNotificationService {
         enableVibration: true,
         vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
         actions: const [
-          AndroidNotificationAction(_actionIdPrayed, "I've Prayed ✅", showsUserInterface: true),
+          AndroidNotificationAction(
+            _actionIdPrayed,
+            "   I've prayed ✅   ",
+            showsUserInterface: true,
+          ),
           AndroidNotificationAction(
             _actionIdSkip,
-            "Not Praying ✕",
+            "   not praying ✕   ",
             showsUserInterface: false,
             cancelNotification: true,
           ),
@@ -439,10 +503,14 @@ class SalahNotificationService {
           importance: Importance.max,
           priority: Priority.high,
           actions: const [
-            AndroidNotificationAction(_actionIdPrayed, "I've Prayed ✅", showsUserInterface: true),
+            AndroidNotificationAction(
+              _actionIdPrayed,
+              "   I've prayed ✅   ",
+              showsUserInterface: true,
+            ),
             AndroidNotificationAction(
               _actionIdSkip,
-              "Not Praying ✕",
+              "   not praying ✕   ",
               showsUserInterface: false,
               cancelNotification: true,
             ),
@@ -458,7 +526,8 @@ class SalahNotificationService {
       ),
       payload: salahName,
       androidScheduleMode: scheduleMode,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 

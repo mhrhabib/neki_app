@@ -99,6 +99,7 @@ class SalahLockCubit extends Cubit<SalahLockState> {
   }
 
   void startMonitoring({required String userId, required LocationLoaded locationState}) {
+    if (FirebaseAuth.instance.currentUser == null) return;
     _monitoringTimer?.cancel();
 
     final prayerTimes = _getPrayerTimes(locationState);
@@ -107,6 +108,10 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     checkPrayerLock(prayerTimes, userId);
 
     _monitoringTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (FirebaseAuth.instance.currentUser == null) {
+        _monitoringTimer?.cancel();
+        return;
+      }
       final times = _getPrayerTimes(locationState);
       // Reschedule notifications when the calendar day rolls over
       _scheduleNotificationsIfNewDay(times);
@@ -375,9 +380,14 @@ class SalahLockCubit extends Cubit<SalahLockState> {
 
   @override
   Future<void> close() {
+    clear();
+    return super.close();
+  }
+
+  void clear() {
     _monitoringTimer?.cancel();
     _locationSubscription?.cancel();
     _salahSubscription?.cancel();
-    return super.close();
+    emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
   }
 }

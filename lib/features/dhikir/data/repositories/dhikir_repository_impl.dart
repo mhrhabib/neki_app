@@ -17,7 +17,9 @@ class DhikirRepositoryImpl implements DhikirRepository {
     required int targetCount,
   }) async {
     try {
-      debugPrint('📿 [Dhikir] Starting session: $dhikirText, target: $targetCount');
+      debugPrint(
+        '📿 [Dhikir] Starting session: $dhikirText, target: $targetCount',
+      );
 
       final sessionId = '${userId}_${DateTime.now().millisecondsSinceEpoch}';
       final session = DhikirModel(
@@ -85,7 +87,9 @@ class DhikirRepositoryImpl implements DhikirRepository {
         throw Exception('Failed to update Dhikir session');
       }
 
-      debugPrint('✅ [Dhikir] Count incremented: $newCount/${session.targetCount}');
+      debugPrint(
+        '✅ [Dhikir] Count incremented: $newCount/${session.targetCount}',
+      );
       return updatedSession;
     } catch (e) {
       debugPrint('❌ [Dhikir] Error incrementing count: $e');
@@ -102,16 +106,42 @@ class DhikirRepositoryImpl implements DhikirRepository {
         collectionPath: _collectionPath,
         queryBuilder: (query) => query
             .where('userId', isEqualTo: userId)
-            .where('isCompleted', isEqualTo: false)
-            .orderBy('date', descending: true)
-            .limit(1),
+            .where('isCompleted', isEqualTo: false),
       );
 
       if (querySnapshot.docs.isEmpty) {
         throw Exception('No active Dhikir session found');
       }
 
-      final session = DhikirModel.fromJson(querySnapshot.docs.first.data());
+      final sessions = querySnapshot.docs
+          .map((doc) => DhikirModel.fromJson(doc.data()))
+          .toList();
+
+      // Filter: Only include sessions from the CURRENT logical day (4:00 AM crossover)
+      final now = DateTime.now();
+      final logicalNow = now.subtract(const Duration(hours: 4));
+      final todayStr = DateTime(
+        logicalNow.year,
+        logicalNow.month,
+        logicalNow.day,
+      ).toIso8601String().split('T')[0];
+
+      final todaysSessions = sessions.where((s) {
+        final logicalSessionDate = s.date.subtract(const Duration(hours: 4));
+        final sessionDateStr = logicalSessionDate.toIso8601String().split(
+          'T',
+        )[0];
+        return sessionDateStr == todayStr;
+      }).toList();
+
+      if (todaysSessions.isEmpty) {
+        throw Exception('No active Dhikir session found for today');
+      }
+
+      // Sort in memory to pick the newest one from today
+      todaysSessions.sort((a, b) => b.date.compareTo(a.date));
+
+      final session = todaysSessions.first;
       debugPrint('✅ [Dhikir] Current session found: ${session.dhikirText}');
       return session;
     } catch (e) {
@@ -121,7 +151,10 @@ class DhikirRepositoryImpl implements DhikirRepository {
   }
 
   @override
-  Future<List<DhikirEntity>> getDhikirHistory(String userId, {DateTime? date}) async {
+  Future<List<DhikirEntity>> getDhikirHistory(
+    String userId, {
+    DateTime? date,
+  }) async {
     try {
       debugPrint('📿 [Dhikir] Getting history for user: $userId');
 
@@ -133,16 +166,22 @@ class DhikirRepositoryImpl implements DhikirRepository {
             final startOfDay = DateTime(date.year, date.month, date.day);
             final endOfDay = startOfDay.add(const Duration(days: 1));
             q = q
-                .where('date', isGreaterThanOrEqualTo: startOfDay.toIso8601String())
+                .where(
+                  'date',
+                  isGreaterThanOrEqualTo: startOfDay.toIso8601String(),
+                )
                 .where('date', isLessThan: endOfDay.toIso8601String());
           }
-          return q.orderBy('date', descending: true);
+          return q; // Removed server-side orderBy
         },
       );
 
       final sessions = querySnapshot.docs
           .map((doc) => DhikirModel.fromJson(doc.data()))
           .toList();
+
+      // Sort in memory to avoid missing index error
+      sessions.sort((a, b) => b.date.compareTo(a.date));
 
       debugPrint('✅ [Dhikir] Retrieved ${sessions.length} sessions');
       return sessions;

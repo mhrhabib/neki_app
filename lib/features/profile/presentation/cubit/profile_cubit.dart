@@ -124,4 +124,8 @@ class ProfileCubit extends Cubit<ProfileState> {
       emit(ProfileError(e.toString()));
     }
   }
+
+  void clear() {
+    emit(ProfileInitial());
+  }
 }

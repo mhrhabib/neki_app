@@ -33,6 +33,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../features/profile/presentation/cubit/profile_cubit.dart';
 import '../di/set_up_di.dart';
 import 'route_names.dart';
+import 'go_router_refresh_stream.dart';
+import '../../features/auth/presentation/cubit/auth_cubit.dart';
+import '../../features/beat_satan_chalange/presentation/cubit/onboarding_cubit.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -40,6 +43,60 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: RouteNames.splash,
     navigatorKey: navigatorKey,
+    refreshListenable: GoRouterRefreshStream([
+      getIt<AuthCubit>().stream,
+      getIt<OnboardingCubit>().stream,
+    ]),
+    redirect: (context, state) {
+      final authState = getIt<AuthCubit>().state;
+      final onboardingState = getIt<OnboardingCubit>().state;
+
+      debugPrint('🚀 [Router] Path: ${state.matchedLocation}');
+      debugPrint('🚀 [Router] Auth: ${authState.runtimeType}');
+      debugPrint('🚀 [Router] Onboarding: ${onboardingState.runtimeType}');
+
+      final isSplash = state.matchedLocation == RouteNames.splash;
+      final isLogin = state.matchedLocation == RouteNames.login;
+      final isOnboarding =
+          state.matchedLocation == RouteNames.premiumOnboarding ||
+          state.matchedLocation == RouteNames.goalSelection;
+
+      // 1. SPLASH GATE: Only block on Splash if we are still initializing
+      if (isSplash) {
+        if (authState is AuthInitial || onboardingState is OnboardingInitial) {
+          debugPrint('🚀 [Router] Still in Initial states, staying on Splash');
+          return null;
+        }
+      }
+
+      // If there's an error, we should probably allow navigation to Login/Home
+      // instead of being stuck.
+      if (authState is AuthError || onboardingState is OnboardingError) {
+        debugPrint(
+          '🚀 [Router] Found Error state, proceeding to check other flags',
+        );
+      }
+
+      // 2. Check Onboarding Status
+      if (onboardingState is OnboardingNotCompleted) {
+        if (!isOnboarding) return RouteNames.premiumOnboarding;
+        return null;
+      }
+
+      // 3. Check Auth Status
+      if (authState is Unauthenticated) {
+        if (!isLogin) return RouteNames.login;
+        return null;
+      }
+
+      if (authState is Authenticated &&
+          onboardingState is OnboardingCompleted) {
+        if (isLogin || isSplash || isOnboarding) return RouteNames.home;
+        return null;
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: RouteNames.splash,
@@ -95,8 +152,8 @@ class AppRouter {
           GoRoute(
             path: RouteNames.profile,
             pageBuilder: (context, state) => _buildPageWithTransition(
-              child: BlocProvider(
-                create: (context) => getIt<ProfileCubit>(),
+              child: BlocProvider.value(
+                value: getIt<ProfileCubit>(),
                 child: const ProfileScreen(),
               ),
               state: state,
@@ -119,8 +176,8 @@ class AppRouter {
       GoRoute(
         path: RouteNames.roza,
         pageBuilder: (context, state) => _buildPageWithTransition(
-          child: BlocProvider(
-            create: (context) => getIt<RozaCubit>(),
+          child: BlocProvider.value(
+            value: getIt<RozaCubit>(),
             child: const RozaScreen(),
           ),
           state: state,
@@ -129,8 +186,8 @@ class AppRouter {
       GoRoute(
         path: RouteNames.dhikir,
         pageBuilder: (context, state) => _buildPageWithTransition(
-          child: BlocProvider(
-            create: (context) => getIt<DhikirCubit>(),
+          child: BlocProvider.value(
+            value: getIt<DhikirCubit>(),
             child: const DhikirScreen(),
           ),
           state: state,
@@ -139,8 +196,8 @@ class AppRouter {
       GoRoute(
         path: RouteNames.zakat,
         pageBuilder: (context, state) => _buildPageWithTransition(
-          child: BlocProvider(
-            create: (context) => getIt<ZakatCubit>(),
+          child: BlocProvider.value(
+            value: getIt<ZakatCubit>(),
             child: const ZakatScreen(),
           ),
           state: state,

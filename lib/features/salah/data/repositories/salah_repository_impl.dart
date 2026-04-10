@@ -15,7 +15,11 @@ class SalahRepositoryImpl implements SalahRepository {
     // Shift logical day by 4 hours backwards.
     // So 3:00 AM Tuesday is treated as Monday for Salah tracking purposes.
     final logicalNow = now.subtract(const Duration(hours: 4));
-    final todayStr = DateTime(logicalNow.year, logicalNow.month, logicalNow.day).toIso8601String().split('T')[0];
+    final todayStr = DateTime(
+      logicalNow.year,
+      logicalNow.month,
+      logicalNow.day,
+    ).toIso8601String().split('T')[0];
 
     // Fetch all salahs for the user and filter in memory to avoid needing a composite index
     final snapshot = await _firestoreService.getCollection(
@@ -23,10 +27,14 @@ class SalahRepositoryImpl implements SalahRepository {
       queryBuilder: (query) => query.where('userId', isEqualTo: userId),
     );
 
-    final List<SalahEntity> allUserSalahs = snapshot.docs.map((doc) => SalahModel.fromJson(doc.data())).toList();
+    final List<SalahEntity> allUserSalahs = snapshot.docs
+        .map((doc) => SalahModel.fromJson(doc.data()))
+        .toList();
 
     final todaysSalahs = allUserSalahs.where((salah) {
-      final logicalSalahTime = salah.timestamp.subtract(const Duration(hours: 4));
+      final logicalSalahTime = salah.timestamp.subtract(
+        const Duration(hours: 4),
+      );
       final salahDateStr = logicalSalahTime.toIso8601String().split('T')[0];
       return salahDateStr == todayStr;
     }).toList();
@@ -39,18 +47,26 @@ class SalahRepositoryImpl implements SalahRepository {
   }
 
   @override
-  Future<SalahEntity> markSalahComplete({required String userId, required String salahName}) async {
-    final id = 'salah_${userId}_${salahName}_${DateTime.now().millisecondsSinceEpoch}';
+  Future<SalahEntity> markSalahComplete({
+    required String userId,
+    required String salahName,
+  }) async {
+    final id =
+        'salah_${userId}_${salahName}_${DateTime.now().millisecondsSinceEpoch}';
     final salah = SalahModel(
       id: id,
       userId: userId,
       salahName: salahName,
       timestamp: DateTime.now(),
       isCompleted: true,
-      pointsEarned: 25, // Updated to 25 as per UI modal
+      pointsEarned: 100,
     );
 
-    await _firestoreService.setDocument(collectionPath: _collectionPath, documentId: id, data: salah.toJson());
+    await _firestoreService.setDocument(
+      collectionPath: _collectionPath,
+      documentId: id,
+      data: salah.toJson(),
+    );
 
     return salah;
   }
@@ -68,7 +84,11 @@ class SalahRepositoryImpl implements SalahRepository {
 
     return snapshot.docs
         .map((doc) => SalahModel.fromJson(doc.data()))
-        .where((salah) => salah.timestamp.isAfter(startDate) && salah.timestamp.isBefore(endDate))
+        .where(
+          (salah) =>
+              salah.timestamp.isAfter(startDate) &&
+              salah.timestamp.isBefore(endDate),
+        )
         .toList();
   }
 

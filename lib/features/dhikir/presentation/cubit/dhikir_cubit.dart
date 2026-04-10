@@ -12,10 +12,8 @@ class DhikirCubit extends Cubit<DhikirState> {
   /// Tracks how many optimistic increments haven't been confirmed by the server yet.
   int _pendingIncrements = 0;
 
-  DhikirCubit({
-    required this.dhikirRepository,
-    required this.pointsRepository,
-  }) : super(DhikirInitial());
+  DhikirCubit({required this.dhikirRepository, required this.pointsRepository})
+    : super(DhikirInitial());
 
   Future<void> startDhikirSession({
     required String userId,
@@ -30,14 +28,16 @@ class DhikirCubit extends Cubit<DhikirState> {
         targetCount: targetCount,
       );
 
-      emit(DhikirSessionActive(
-        sessionId: session.id,
-        dhikirText: session.dhikirText,
-        targetCount: session.targetCount,
-        currentCount: session.currentCount,
-        pointsEarned: session.pointsEarned,
-        isCompleted: session.isCompleted,
-      ));
+      emit(
+        DhikirSessionActive(
+          sessionId: session.id,
+          dhikirText: session.dhikirText,
+          targetCount: session.targetCount,
+          currentCount: session.currentCount,
+          pointsEarned: session.pointsEarned,
+          isCompleted: session.isCompleted,
+        ),
+      );
     } catch (e) {
       emit(DhikirError(message: e.toString()));
     }
@@ -51,14 +51,16 @@ class DhikirCubit extends Cubit<DhikirState> {
         if (current.sessionId == sessionId) {
           final optimisticCount = current.currentCount + 1;
           final optimisticCompleted = optimisticCount >= current.targetCount;
-          emit(DhikirSessionActive(
-            sessionId: current.sessionId,
-            dhikirText: current.dhikirText,
-            targetCount: current.targetCount,
-            currentCount: optimisticCount,
-            pointsEarned: current.pointsEarned,
-            isCompleted: optimisticCompleted,
-          ));
+          emit(
+            DhikirSessionActive(
+              sessionId: current.sessionId,
+              dhikirText: current.dhikirText,
+              targetCount: current.targetCount,
+              currentCount: optimisticCount,
+              pointsEarned: current.pointsEarned,
+              isCompleted: optimisticCompleted,
+            ),
+          );
         }
       }
 
@@ -74,28 +76,33 @@ class DhikirCubit extends Cubit<DhikirState> {
         await pointsRepository.addPoints(
           userId: userId,
           points: session.pointsEarned,
-          source: 'dhikir_${session.dhikirText.replaceAll(' ', '_').toLowerCase()}',
+          source:
+              'dhikir_${session.dhikirText.replaceAll(' ', '_').toLowerCase()}',
         );
 
-        emit(DhikirSessionCompleted(
-          sessionId: session.id,
-          dhikirText: session.dhikirText,
-          targetCount: session.targetCount,
-          currentCount: session.currentCount,
-          pointsEarned: session.pointsEarned,
-          isCompleted: session.isCompleted,
-        ));
+        emit(
+          DhikirSessionCompleted(
+            sessionId: session.id,
+            dhikirText: session.dhikirText,
+            targetCount: session.targetCount,
+            currentCount: session.currentCount,
+            pointsEarned: session.pointsEarned,
+            isCompleted: session.isCompleted,
+          ),
+        );
       } else if (_pendingIncrements == 0) {
         // Only emit server state when no more taps are in-flight,
         // otherwise the server count would overwrite the optimistic count.
-        emit(DhikirSessionActive(
-          sessionId: session.id,
-          dhikirText: session.dhikirText,
-          targetCount: session.targetCount,
-          currentCount: session.currentCount,
-          pointsEarned: session.pointsEarned,
-          isCompleted: session.isCompleted,
-        ));
+        emit(
+          DhikirSessionActive(
+            sessionId: session.id,
+            dhikirText: session.dhikirText,
+            targetCount: session.targetCount,
+            currentCount: session.currentCount,
+            pointsEarned: session.pointsEarned,
+            isCompleted: session.isCompleted,
+          ),
+        );
       }
       // If _pendingIncrements > 0, skip emitting — the last in-flight call
       // will reconcile with the final server count.
@@ -111,14 +118,16 @@ class DhikirCubit extends Cubit<DhikirState> {
       emit(DhikirLoading());
       final session = await dhikirRepository.getCurrentSession(userId);
 
-      emit(DhikirSessionActive(
-        sessionId: session.id,
-        dhikirText: session.dhikirText,
-        targetCount: session.targetCount,
-        currentCount: session.currentCount,
-        pointsEarned: session.pointsEarned,
-        isCompleted: session.isCompleted,
-      ));
+      emit(
+        DhikirSessionActive(
+          sessionId: session.id,
+          dhikirText: session.dhikirText,
+          targetCount: session.targetCount,
+          currentCount: session.currentCount,
+          pointsEarned: session.pointsEarned,
+          isCompleted: session.isCompleted,
+        ),
+      );
     } catch (e) {
       // No active session found, stay in initial state
       emit(DhikirInitial());
@@ -128,17 +137,24 @@ class DhikirCubit extends Cubit<DhikirState> {
   Future<void> loadDhikirHistory(String userId, {DateTime? date}) async {
     try {
       emit(DhikirLoading());
-      final sessions = await dhikirRepository.getDhikirHistory(userId, date: date);
+      final sessions = await dhikirRepository.getDhikirHistory(
+        userId,
+        date: date,
+      );
 
-      final sessionMaps = sessions.map((session) => {
-        'id': session.id,
-        'dhikirText': session.dhikirText,
-        'targetCount': session.targetCount,
-        'currentCount': session.currentCount,
-        'pointsEarned': session.pointsEarned,
-        'date': session.date,
-        'isCompleted': session.isCompleted,
-      }).toList();
+      final sessionMaps = sessions
+          .map(
+            (session) => {
+              'id': session.id,
+              'dhikirText': session.dhikirText,
+              'targetCount': session.targetCount,
+              'currentCount': session.currentCount,
+              'pointsEarned': session.pointsEarned,
+              'date': session.date,
+              'isCompleted': session.isCompleted,
+            },
+          )
+          .toList();
 
       emit(DhikirHistoryLoaded(sessions: sessionMaps));
     } catch (e) {
@@ -166,5 +182,9 @@ class DhikirCubit extends Cubit<DhikirState> {
 
   List<String> getDhikirSuggestions() {
     return dhikirRepository.getDhikirSuggestions();
+  }
+
+  void clear() {
+    emit(DhikirInitial());
   }
 }

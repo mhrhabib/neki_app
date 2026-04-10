@@ -45,18 +45,12 @@ class _NekiAppState extends State<NekiApp> {
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: getIt<ThemeCubit>()),
-        BlocProvider(
-          create: (context) => getIt<OnboardingCubit>()..checkOnboarding(),
-        ),
-        BlocProvider(
-          create: (context) => getIt<AuthCubit>()..checkAuthStatus(),
-        ),
-        BlocProvider(create: (context) => getIt<SalahCubit>()),
-        BlocProvider(create: (context) => getIt<PointsCubit>()),
-        BlocProvider(create: (context) => getIt<ChallengeCubit>()),
-        BlocProvider(
-          create: (context) => getIt<LocationCubit>()..fetchLocation(),
-        ),
+        BlocProvider.value(value: getIt<OnboardingCubit>()..checkOnboarding()),
+        BlocProvider.value(value: getIt<AuthCubit>()..checkAuthStatus()),
+        BlocProvider.value(value: getIt<SalahCubit>()),
+        BlocProvider.value(value: getIt<PointsCubit>()),
+        BlocProvider.value(value: getIt<ChallengeCubit>()),
+        BlocProvider.value(value: getIt<LocationCubit>()..fetchLocation()),
         BlocProvider(
           create: (context) => SalahLockCubit(
             repository: getIt<SalahLockRepository>(),

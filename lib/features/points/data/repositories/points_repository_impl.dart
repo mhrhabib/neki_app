@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/services/firestore_service.dart';
 import '../../domain/entities/neki_points_entity.dart';
 import '../../domain/repositories/points_repository.dart';
@@ -53,6 +54,8 @@ class PointsRepositoryImpl implements PointsRepository {
                 ? (model.currentStreak + 1)
                 : model.longestStreak,
             lastActiveDate: now,
+            name: FirebaseAuth.instance.currentUser?.displayName,
+            photoUrl: FirebaseAuth.instance.currentUser?.photoURL,
           );
           needsUpdate = true;
         } else if (difference > 1) {
@@ -73,6 +76,8 @@ class PointsRepositoryImpl implements PointsRepository {
                 : 0, // Reset streak to 1 if enabled, else 0
             longestStreak: model.longestStreak,
             lastActiveDate: now,
+            name: FirebaseAuth.instance.currentUser?.displayName,
+            photoUrl: FirebaseAuth.instance.currentUser?.photoURL,
           );
           needsUpdate = true;
         } else if (difference == 0 && model.currentStreak == 0) {
@@ -88,6 +93,8 @@ class PointsRepositoryImpl implements PointsRepository {
                 ? 1
                 : model.longestStreak,
             lastActiveDate: now,
+            name: FirebaseAuth.instance.currentUser?.displayName,
+            photoUrl: FirebaseAuth.instance.currentUser?.photoURL,
           );
           needsUpdate = true;
         }
@@ -106,6 +113,37 @@ class PointsRepositoryImpl implements PointsRepository {
               ? 1
               : model.longestStreak,
           lastActiveDate: now,
+          name: FirebaseAuth.instance.currentUser?.displayName,
+          photoUrl: FirebaseAuth.instance.currentUser?.photoURL,
+        );
+        needsUpdate = true;
+      }
+
+      // Sync metadata (name/photo/privacy) if changed or missing
+      final currentUser = FirebaseAuth.instance.currentUser;
+      
+      // Fetch privacy flag from 'users' collection
+      final userDoc = await _firestoreService.getDocument(
+        collectionPath: 'users',
+        documentId: userId,
+      );
+      final bool showOnLeaderboard = userDoc?.data()?['showOnLeaderboard'] ?? true;
+
+      if (model.name != currentUser?.displayName ||
+          model.photoUrl != currentUser?.photoURL ||
+          model.showOnLeaderboard != showOnLeaderboard) {
+        model = NekiPointsModel(
+          userId: model.userId,
+          totalPoints: model.totalPoints,
+          todayPoints: model.todayPoints,
+          weekPoints: model.weekPoints,
+          monthPoints: model.monthPoints,
+          currentStreak: model.currentStreak,
+          longestStreak: model.longestStreak,
+          lastActiveDate: model.lastActiveDate,
+          name: currentUser?.displayName,
+          photoUrl: currentUser?.photoURL,
+          showOnLeaderboard: showOnLeaderboard,
         );
         needsUpdate = true;
       }
@@ -118,7 +156,15 @@ class PointsRepositoryImpl implements PointsRepository {
         );
       }
       return model;
+    } else if (doc == null) {
+      // doc is null only when getDocument() caught an exception (network error,
+      // permission denied, etc.). We must NOT create a new document here because
+      // that would OVERWRITE the real Firestore data with 0 points.
+      // Instead, throw so the Cubit shows an error state without destroying data.
+      throw Exception('Failed to load points: Firestore returned null. Check network and auth state.');
     } else {
+      // doc.exists == false: the document genuinely doesn't exist yet (new user).
+      // This is the ONLY safe time to create a default document.
       final defaultPoints = NekiPointsModel(
         userId: userId,
         totalPoints: 0,
@@ -128,6 +174,8 @@ class PointsRepositoryImpl implements PointsRepository {
         currentStreak: isStreakEnabled ? 1 : 0,
         longestStreak: isStreakEnabled ? 1 : 0,
         lastActiveDate: now,
+        name: FirebaseAuth.instance.currentUser?.displayName,
+        photoUrl: FirebaseAuth.instance.currentUser?.photoURL,
       );
       // Initialize in Firestore
       await _firestoreService.setDocument(
@@ -156,6 +204,8 @@ class PointsRepositoryImpl implements PointsRepository {
       currentStreak: currentPoints.currentStreak,
       longestStreak: currentPoints.longestStreak,
       lastActiveDate: DateTime.now(), // update last active on activity
+      name: FirebaseAuth.instance.currentUser?.displayName,
+      photoUrl: FirebaseAuth.instance.currentUser?.photoURL,
     );
 
     await _firestoreService.setDocument(
@@ -185,6 +235,8 @@ class PointsRepositoryImpl implements PointsRepository {
       currentStreak: currentPoints.currentStreak,
       longestStreak: currentPoints.longestStreak,
       lastActiveDate: DateTime.now(),
+      name: FirebaseAuth.instance.currentUser?.displayName,
+      photoUrl: FirebaseAuth.instance.currentUser?.photoURL,
     );
 
     await _firestoreService.setDocument(

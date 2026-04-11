@@ -162,6 +162,32 @@ class DhikirCubit extends Cubit<DhikirState> {
     }
   }
 
+  Future<void> loadDhikirInsights(
+    String userId, {
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      emit(DhikirLoading());
+      final sessions = await dhikirRepository.getDhikirHistoryInRange(
+        userId: userId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      // Aggregate data for the chart: { "YYYY-MM-DD": totalCount }
+      final Map<String, int> dailyCounts = {};
+      for (final session in sessions) {
+        final dateStr = session.date.toIso8601String().split('T')[0];
+        dailyCounts[dateStr] = (dailyCounts[dateStr] ?? 0) + session.currentCount;
+      }
+
+      emit(DhikirInsightsLoaded(dailyCounts: dailyCounts));
+    } catch (e) {
+      emit(DhikirError(message: e.toString()));
+    }
+  }
+
   Future<void> completeSession(String sessionId) async {
     try {
       await dhikirRepository.completeDhikirSession(sessionId);

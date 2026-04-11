@@ -18,16 +18,22 @@ class SalahActivityMonitor: DeviceActivityMonitor {
         
         // 1. Load the selection from shared UserDefaults (using App Group)
         // Note: You must set up an App Group to share data between the main app and the extension.
-        if let sharedDefaults = UserDefaults(suiteName: "group.com.clearwavesystems.nekiapp"),
-           let data = sharedDefaults.data(forKey: activityKey) {
-            
+        let suiteName = "group.com.clearwavesystems.nekiapp"
+        let sharedDefaults = UserDefaults(suiteName: suiteName) ?? UserDefaults.standard
+        
+        if let data = sharedDefaults.data(forKey: activityKey) {
             let decoder = JSONDecoder()
-            if let selection = try? decoder.decode(FamilyActivitySelection.self, from: data) {
+            do {
+                let selection = try decoder.decode(FamilyActivitySelection.self, from: data)
                 // 2. Apply the shield
                 store.shield.applications = selection.applicationTokens
                 store.shield.applicationCategories = selection.categoryTokens.isEmpty ? nil : selection.categoryTokens
-                print("🔒 Salah Lock: Shield applied")
+                print("🔒 Salah Lock: Shield applied successfully for \(selection.applicationTokens.count) apps")
+            } catch {
+                print("❌ Salah Lock: Failed to decode selection - \(error)")
             }
+        } else {
+            print("⚠️ Salah Lock: No selection found in shared storage (\(suiteName))")
         }
     }
 

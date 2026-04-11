@@ -14,6 +14,8 @@ import '../../../points/domain/entities/neki_points_entity.dart';
 import '../../domain/entities/badge_entity.dart';
 import '../cubit/profile_cubit.dart';
 import '../../../../components/app_background_widget.dart';
+import '../../../../core/di/set_up_di.dart';
+import '../../../auth/domain/repositories/premium_repository.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -83,7 +85,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           SizedBox(height: 10.h),
                           _buildProfileSection(context, state.user),
-                          SizedBox(height: 30.h),
+                          SizedBox(height: 16.h),
+                          _buildPremiumCard(context),
+                          SizedBox(height: 24.h),
                           _buildStatsSection(context),
                           SizedBox(height: 40.h),
                           _buildSectionLabel(context, 'ACHIEVEMENTS'),
@@ -235,6 +239,110 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(fontSize: 14.sp, color: Colors.white38, fontWeight: FontWeight.w500),
         ),
       ],
+    );
+  }
+
+  Widget _buildPremiumCard(BuildContext context) {
+    // Access the PremiumRepository directly via Service Locator
+    final premiumRepo = getIt<PremiumRepository>();
+    final isPremium = premiumRepo.isPremiumSync();
+    final isTrial = premiumRepo.isTrialActiveSync();
+    final daysLeft = premiumRepo.trialDaysRemainingSync();
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: GestureDetector(
+        onTap: isPremium && !isTrial
+            ? null
+            : () => context.push(RouteNames.premium),
+        child: Container(
+          padding: EdgeInsets.all(20.w),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isPremium && !isTrial
+                  ? [
+                      const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                      const Color(0xFFD4AF37).withValues(alpha: 0.1),
+                    ]
+                  : [
+                      AppColors.primaryGreen.withValues(alpha: 0.15),
+                      AppColors.primaryGreen.withValues(alpha: 0.05),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24.r),
+            border: Border.all(
+              color: isPremium && !isTrial
+                  ? AppColors.goldAccent.withValues(alpha: 0.3)
+                  : AppColors.primaryGreen.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(
+                  color: isPremium && !isTrial
+                      ? AppColors.goldAccent.withValues(alpha: 0.15)
+                      : AppColors.primaryGreen.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isPremium && !isTrial
+                      ? Icons.workspace_premium_rounded
+                      : Icons.star_rounded,
+                  color: isPremium && !isTrial
+                      ? AppColors.goldAccent
+                      : AppColors.primaryGreen,
+                  size: 24.sp,
+                ),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isPremium && !isTrial
+                          ? 'NEKI PREMIUM'
+                          : isTrial
+                              ? 'PREMIUM TRIAL'
+                              : 'UPGRADE TO PRO',
+                      style: TextStyle(
+                        color: isPremium && !isTrial
+                            ? AppColors.goldAccent
+                            : Colors.white,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      isPremium && !isTrial
+                          ? 'Active Member'
+                          : isTrial
+                              ? '$daysLeft days remaining'
+                              : 'Unlock insights & 5x locks',
+                      style: TextStyle(
+                        color: Colors.white60,
+                        fontSize: 12.sp,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isPremium || isTrial)
+                Icon(
+                  CupertinoIcons.chevron_right,
+                  color: Colors.white24,
+                  size: 16.sp,
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

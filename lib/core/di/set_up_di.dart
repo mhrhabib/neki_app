@@ -42,6 +42,7 @@ import '../services/iap_service.dart';
 import '../../features/leaderboard/domain/repositories/leaderboard_repository.dart';
 import '../../features/leaderboard/data/repositories/leaderboard_repository_impl.dart';
 import '../../features/leaderboard/presentation/cubit/leaderboard_cubit.dart';
+import '../../core/ux/cubit/user_experience_cubit.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -180,6 +181,9 @@ class SetUpDI {
         locationCubit: getIt<LocationCubit>(),
         premiumRepository: getIt<PremiumRepository>(),
       ),
+    );
+    getIt.registerLazySingleton<UserExperienceCubit>(
+      () => UserExperienceCubit(getIt<SharedPreferences>()),
     );
   }
 }

@@ -53,7 +53,7 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
           GestureDetector(
-            onTap: () {},
+            onTap: () => context.push(RouteNames.premium),
             child: Text(
               'See More',
               style: TextStyle(

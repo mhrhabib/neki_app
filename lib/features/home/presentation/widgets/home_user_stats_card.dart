@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+import 'package:neki_app/core/routes/route_names.dart';
+import 'package:neki_app/features/home/presentation/widgets/salah_heatmap_widget.dart';
+import 'package:neki_app/features/salah/presentation/cubit/salah_cubit.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../points/presentation/cubit/points_cubit.dart';
 
@@ -26,39 +30,72 @@ class HomeUserStatsCard extends StatelessWidget {
             );
           }
 
-          return Container(
-            padding: EdgeInsets.all(20.w),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(24.r),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
-            child: Row(
-              children: [
-                // --- Neki Points Section ---
-                _StatItem(
-                  label: 'TOTAL NEKI',
-                  value: totalPoints.toString(),
-                  icon: '🌟',
-                  accentColor: AppColors.goldAccent,
-                ),
-
-                // Vertical Divider
-                Container(
-                  height: 40.h,
-                  width: 1.w,
-                  color: Colors.white10,
-                  margin: EdgeInsets.symmetric(horizontal: 20.w),
-                ),
-
-                // --- Streak Section ---
-                _StatItem(
-                  label: 'CURR. STREAK',
-                  value: '$currentStreak Days',
-                  icon: '🔥',
-                  accentColor: Colors.orangeAccent,
-                ),
-              ],
+          return GestureDetector(
+            onTap: () => context.push(RouteNames.journey),
+            child: Container(
+              padding: EdgeInsets.all(20.w),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(24.r),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      // --- Neki Points Section ---
+                      _StatItem(
+                        label: 'TOTAL NEKI',
+                        value: totalPoints.toString(),
+                        icon: '🌟',
+                        accentColor: AppColors.goldAccent,
+                      ),
+          
+                      // Vertical Divider
+                      Container(
+                        height: 40.h,
+                        width: 1.w,
+                        color: Colors.white10,
+                        margin: EdgeInsets.symmetric(horizontal: 20.w),
+                      ),
+          
+                      // --- Streak Section ---
+                      _StatItem(
+                        label: 'CURR. STREAK',
+                        value: '$currentStreak Days',
+                        icon: '🔥',
+                        accentColor: Colors.orangeAccent,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16.h),
+                  const Divider(color: Colors.white10, height: 1),
+                  SizedBox(height: 16.h),
+                  BlocBuilder<SalahCubit, SalahState>(
+                    builder: (context, salahState) {
+                      if (salahState is SalahLoaded && salahState.history != null) {
+                        return SalahHeatmapWidget(
+                          history: salahState.history!,
+                          isCompact: true,
+                        );
+                      }
+                      return Container(
+                        height: 60.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.02),
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'Loading progress...',
+                            style: TextStyle(color: Colors.white24, fontSize: 10),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           );
         },

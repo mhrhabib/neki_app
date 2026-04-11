@@ -15,6 +15,8 @@ import 'features/challenge/presentation/cubit/challenge_cubit.dart';
 import 'core/location/cubit/location_cubit.dart';
 import 'features/salah_lock/presentation/cubit/salah_lock_cubit.dart';
 import 'features/salah_lock/presentation/widgets/salah_lock_overlay.dart';
+import 'core/ux/cubit/user_experience_cubit.dart';
+import 'features/dhikir/presentation/cubit/dhikir_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +50,8 @@ class _NekiAppState extends State<NekiApp> {
         BlocProvider.value(value: getIt<ChallengeCubit>()),
         BlocProvider.value(value: getIt<LocationCubit>()..fetchLocation()),
         BlocProvider.value(value: getIt<SalahLockCubit>()..init()),
+        BlocProvider.value(value: getIt<UserExperienceCubit>()),
+        BlocProvider.value(value: getIt<DhikirCubit>()),
       ],
       child: BlocBuilder<ThemeCubit, ThemeData>(
         builder: (context, themeData) {
@@ -66,12 +70,7 @@ class _NekiAppState extends State<NekiApp> {
                 routerConfig: AppRouter.router,
                 debugShowCheckedModeBanner: false,
                 builder: (context, child) {
-                  return Stack(
-                    children: [
-                      ?child,
-                      const SalahLockOverlay(),
-                    ],
-                  );
+                  return Stack(children: [?child, const SalahLockOverlay()]);
                 },
               );
             },

@@ -150,13 +150,21 @@ import DeviceActivity
   private func saveSelection() {
     let encoder = JSONEncoder()
     if let encoded = try? encoder.encode(selection) {
-        UserDefaults.standard.set(encoded, forKey: activityKey)
+        // Use App Group suite for sharing with extension
+        if let sharedDefaults = UserDefaults(suiteName: "group.com.clearwavesystems.nekiapp") {
+            sharedDefaults.set(encoded, forKey: activityKey)
+            print("✅ iOS: Saved selection to shared App Group")
+        } else {
+            UserDefaults.standard.set(encoded, forKey: activityKey)
+            print("⚠️ iOS: Saved selection to standard UserDefaults (App Group not found)")
+        }
     }
   }
 
   @available(iOS 15.0, *)
   private func loadSelection() {
-    if let data = UserDefaults.standard.data(forKey: activityKey) {
+    let sharedDefaults = UserDefaults(suiteName: "group.com.clearwavesystems.nekiapp") ?? UserDefaults.standard
+    if let data = sharedDefaults.data(forKey: activityKey) {
         let decoder = JSONDecoder()
         if let loaded = try? decoder.decode(FamilyActivitySelection.self, from: data) {
             self.selection = loaded

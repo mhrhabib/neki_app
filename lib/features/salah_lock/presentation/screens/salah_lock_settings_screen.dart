@@ -3,6 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+import 'package:neki_app/features/salah_lock/domain/entities/salah_lock_settings.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../components/app_background_widget.dart';
 import '../../../../core/widgets/custom_back_button.dart';
@@ -12,7 +15,8 @@ class SalahLockSettingsScreen extends StatefulWidget {
   const SalahLockSettingsScreen({super.key});
 
   @override
-  State<SalahLockSettingsScreen> createState() => _SalahLockSettingsScreenState();
+  State<SalahLockSettingsScreen> createState() =>
+      _SalahLockSettingsScreenState();
 }
 
 class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
@@ -34,7 +38,9 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
     setState(() => _testScheduled = true);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('✅ Immediate notification sent + scheduled one in 10s. Check logs for timezone info.'),
+        content: Text(
+          '✅ Immediate notification sent + scheduled one in 10s. Check logs for timezone info.',
+        ),
         backgroundColor: Color(0xFF1A6B3C),
         duration: Duration(seconds: 5),
       ),
@@ -112,20 +118,53 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                         if (Platform.isAndroid) ...[
-                          _buildSectionHeader('PERMISSIONS REQUIRED'),
+                          _buildSectionHeader('ANDROID PERMISSIONS'),
                           _buildPermissionTile(
                             icon: CupertinoIcons.alarm_fill,
                             title: 'Alarms & Reminders',
-                            subtitle: 'Allows notifications to fire at exact prayer times',
+                            subtitle: 'Allows exact prayer time alerts',
                             granted: _exactAlarmGranted,
                             onTap: _exactAlarmGranted ? null : _requestPermissions,
                           ),
                           _buildPermissionTile(
                             icon: CupertinoIcons.battery_100,
                             title: 'Battery Optimization',
-                            subtitle: 'Prevents system from killing background alarms',
+                            subtitle: 'Ensures background reliability',
                             granted: _batteryIgnored,
                             onTap: _batteryIgnored ? null : _requestPermissions,
+                          ),
+                          SizedBox(height: 24.h),
+                        ],
+                        if (Platform.isIOS) ...[
+                          _buildSectionHeader('IOS APP SHIELDING'),
+                          FutureBuilder<bool>(
+                            future: cubit.checkIOSAuthorization(),
+                            builder: (context, snapshot) {
+                              final granted = snapshot.data ?? false;
+                              return _buildPermissionTile(
+                                icon: CupertinoIcons.shield_fill,
+                                title: 'Screen Time Access',
+                                subtitle: 'Required to restrict other apps',
+                                granted: granted,
+                                onTap: granted ? null : () async {
+                                  final ok = await cubit.requestIOSAuthorization();
+                                  if (ok) setState(() {});
+                                },
+                              );
+                            },
+                          ),
+                          _buildActionTile(
+                            icon: CupertinoIcons.square_grid_2x2_fill,
+                            title: 'Select Apps to Block',
+                            subtitle: 'Choose which apps are paused',
+                            onTap: () async {
+                              final ok = await cubit.selectBlockedApps();
+                              if (ok) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('✅ App selection updated')),
+                                );
+                              }
+                            },
                           ),
                           SizedBox(height: 24.h),
                         ],
@@ -133,15 +172,21 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
                         _buildToggleTile(
                           icon: CupertinoIcons.lock_shield_fill,
                           title: 'Enable Salah Lock Mode',
-                          subtitle: 'Prayer notifications + in-app reminder at each Salah time',
+                          subtitle:
+                              'Prayer notifications + in-app reminder at each Salah time',
                           value: settings.isEnabled,
                           onChanged: (val) async {
                             if (val && Platform.isAndroid) {
                               await cubit.checkAndRequestBasicPermissions();
                             }
-                            cubit.updateSettings(settings.copyWith(isEnabled: val));
+                            cubit.updateSettings(
+                              settings.copyWith(isEnabled: val),
+                            );
                           },
                         ),
+                        SizedBox(height: 24.h),
+                        _buildSectionHeader('INDIVIDUAL PRAYERS'),
+                        _buildPrayerToggleList(context, cubit, settings),
                         SizedBox(height: 24.h),
                         _buildSectionHeader('ADVANCED FEATURES'),
                         _buildToggleTile(
@@ -149,12 +194,15 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
                           title: 'Streak Tracking',
                           subtitle: 'Monitor your prayer consistency over time',
                           value: settings.streakTracking,
-                          onChanged: (val) => cubit.updateSettings(settings.copyWith(streakTracking: val)),
+                          onChanged: (val) => cubit.updateSettings(
+                            settings.copyWith(streakTracking: val),
+                          ),
                         ),
                         _buildActionTile(
                           icon: CupertinoIcons.timer_fill,
                           title: 'Auto-Unlock Buffer',
-                          subtitle: 'Unlock after ${settings.autoUnlockMinutes} minutes',
+                          subtitle:
+                              'Unlock after ${settings.autoUnlockMinutes} minutes',
                           onTap: () {
                             // Picker logic
                           },
@@ -162,14 +210,18 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
                         SizedBox(height: 24.h),
                         _buildSectionHeader('TEST'),
                         GestureDetector(
-                          onTap: _testScheduled ? null : _scheduleTestNotification,
+                          onTap: _testScheduled
+                              ? null
+                              : _scheduleTestNotification,
                           child: Container(
                             margin: EdgeInsets.only(bottom: 12.h),
                             padding: EdgeInsets.all(18.w),
                             decoration: BoxDecoration(
                               color: Colors.blue.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(20.r),
-                              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                              border: Border.all(
+                                color: Colors.blue.withValues(alpha: 0.3),
+                              ),
                             ),
                             child: Row(
                               children: [
@@ -179,27 +231,49 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
                                     color: Colors.blue.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(12.r),
                                   ),
-                                  child: Icon(CupertinoIcons.bell_fill, color: Colors.blue, size: 20.sp),
+                                  child: Icon(
+                                    CupertinoIcons.bell_fill,
+                                    color: Colors.blue,
+                                    size: 20.sp,
+                                  ),
                                 ),
                                 SizedBox(width: 14.w),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        _testScheduled ? 'Notification scheduled!' : 'Fire Test Notification',
-                                        style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w700),
+                                        _testScheduled
+                                            ? 'Notification scheduled!'
+                                            : 'Fire Test Notification',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 15.sp,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
                                       Text(
                                         'Fires in 10 seconds — lock your screen now',
-                                        style: TextStyle(color: Colors.white54, fontSize: 12.sp),
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 12.sp,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
                                 _testScheduled
-                                    ? Icon(Icons.check_circle_rounded, color: AppColors.primaryGreen, size: 22.sp)
-                                    : Icon(CupertinoIcons.chevron_right, color: Colors.blue, size: 16.sp),
+                                    ? Icon(
+                                        Icons.check_circle_rounded,
+                                        color: AppColors.primaryGreen,
+                                        size: 22.sp,
+                                      )
+                                    : Icon(
+                                        CupertinoIcons.chevron_right,
+                                        color: Colors.blue,
+                                        size: 16.sp,
+                                      ),
                               ],
                             ),
                           ),
@@ -215,6 +289,70 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildPrayerToggleList(
+    BuildContext context,
+    SalahLockCubit cubit,
+    SalahLockSettings settings,
+  ) {
+    final prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    final premiumRepo = cubit.premiumRepository;
+    final isPremium = premiumRepo.isPremiumSync();
+
+    return Column(
+      children: prayers.map((name) {
+        final isEnabled = settings.enabledPrayers.contains(name);
+        return _buildToggleTile(
+          icon: _getPrayerIcon(name),
+          title: name,
+          subtitle: 'Enable lock for $name',
+          value: isEnabled,
+          onChanged: (val) {
+            if (val) {
+              // Check limit for free users
+              if (!isPremium && settings.enabledPrayers.length >= 2) {
+                // Show paywall
+                context.push(RouteNames.premium);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Free version is limited to 2 prayers. Go Pro to unlock all 5! 🔓',
+                    ),
+                    backgroundColor: AppColors.goldAccent,
+                  ),
+                );
+                return;
+              }
+              final newList = List<String>.from(settings.enabledPrayers)
+                ..add(name);
+              cubit.updateSettings(settings.copyWith(enabledPrayers: newList));
+            } else {
+              final newList = List<String>.from(settings.enabledPrayers)
+                ..remove(name);
+              cubit.updateSettings(settings.copyWith(enabledPrayers: newList));
+            }
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  IconData _getPrayerIcon(String name) {
+    switch (name) {
+      case 'Fajr':
+        return Icons.wb_twilight;
+      case 'Dhuhr':
+        return Icons.wb_sunny;
+      case 'Asr':
+        return Icons.wb_cloudy;
+      case 'Maghrib':
+        return Icons.wb_twilight;
+      case 'Isha':
+        return Icons.nightlight_round;
+      default:
+        return Icons.access_time_filled;
+    }
   }
 
   Widget _buildPermissionTile({
@@ -247,31 +385,47 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
                 .withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12.r),
           ),
-          child: Icon(icon,
-              color: granted ? AppColors.primaryGreen : Colors.orange,
-              size: 20.sp),
+          child: Icon(
+            icon,
+            color: granted ? AppColors.primaryGreen : Colors.orange,
+            size: 20.sp,
+          ),
         ),
-        title: Text(title,
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w700)),
-        subtitle: Text(subtitle,
-            style: TextStyle(color: Colors.white60, fontSize: 12.sp)),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(color: Colors.white60, fontSize: 12.sp),
+        ),
         trailing: granted
-            ? Icon(Icons.check_circle_rounded,
-                color: AppColors.primaryGreen, size: 22.sp)
+            ? Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.primaryGreen,
+                size: 22.sp,
+              )
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Allow',
-                      style: TextStyle(
-                          color: Colors.orange,
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w700)),
+                  Text(
+                    'Allow',
+                    style: TextStyle(
+                      color: Colors.orange,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   SizedBox(width: 4.w),
-                  Icon(CupertinoIcons.chevron_right,
-                      color: Colors.orange, size: 14.sp),
+                  Icon(
+                    CupertinoIcons.chevron_right,
+                    color: Colors.orange,
+                    size: 14.sp,
+                  ),
                 ],
               ),
       ),
@@ -286,7 +440,10 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
           Container(
             width: 3.w,
             height: 14.h,
-            decoration: BoxDecoration(color: AppColors.goldAccent, borderRadius: BorderRadius.circular(2.r)),
+            decoration: BoxDecoration(
+              color: AppColors.goldAccent,
+              borderRadius: BorderRadius.circular(2.r),
+            ),
           ),
           SizedBox(width: 10.w),
           Text(
@@ -327,8 +484,18 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
           ),
           child: Icon(icon, color: AppColors.primaryGreen, size: 20.sp),
         ),
-        title: Text(title, style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w700)),
-        subtitle: Text(subtitle, style: TextStyle(color: Colors.white60, fontSize: 12.sp)),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(color: Colors.white60, fontSize: 12.sp),
+        ),
         trailing: CupertinoSwitch(
           activeTrackColor: AppColors.primaryGreen,
           inactiveTrackColor: Colors.white10,
@@ -363,9 +530,23 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
           ),
           child: Icon(icon, color: AppColors.goldAccent, size: 20.sp),
         ),
-        title: Text(title, style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w700)),
-        subtitle: Text(subtitle, style: TextStyle(color: Colors.white60, fontSize: 12.sp)),
-        trailing: Icon(CupertinoIcons.chevron_right, color: Colors.white24, size: 16.sp),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(color: Colors.white60, fontSize: 12.sp),
+        ),
+        trailing: Icon(
+          CupertinoIcons.chevron_right,
+          color: Colors.white24,
+          size: 16.sp,
+        ),
       ),
     );
   }

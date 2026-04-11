@@ -31,6 +31,8 @@ import '../di/set_up_di.dart';
 import 'route_names.dart';
 import 'go_router_refresh_stream.dart';
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
+import '../../features/auth/presentation/screens/paywall_screen.dart';
+import '../../features/home/presentation/screens/journey_screen.dart';
 import '../../features/beat_satan_chalange/presentation/cubit/onboarding_cubit.dart';
 
 class AppRouter {
@@ -131,6 +133,20 @@ class AppRouter {
             state: state,
           );
         },
+      ),
+      GoRoute(
+        path: RouteNames.premium,
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const PaywallScreen(),
+          state: state,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.journey,
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const JourneyScreen(),
+          state: state,
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) => MainScreen(child: child),

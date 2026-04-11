@@ -8,7 +8,8 @@ class SalahLoading extends SalahState {}
 
 class SalahLoaded extends SalahState {
   final List<SalahEntity> salahs;
-  SalahLoaded({required this.salahs});
+  final List<SalahEntity>? history;
+  SalahLoaded({required this.salahs, this.history});
 }
 
 class SalahError extends SalahState {

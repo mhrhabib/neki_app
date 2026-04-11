@@ -24,10 +24,7 @@ class QiblaCompassWidget extends StatelessWidget {
           children: [
             Text(
               "${qiblahDirection.direction.toInt()}°",
-              style: AppTypography.h1.copyWith(
-                color: AppColors.primaryGreen,
-                fontSize: 40.sp,
-              ),
+              style: AppTypography.h1.copyWith(color: AppColors.primaryGreen, fontSize: 40.sp),
             ),
             SizedBox(height: 10.h),
             Text(
@@ -40,17 +37,11 @@ class QiblaCompassWidget extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   // Compass Circle and Marks
-                  CustomPaint(
-                    size: Size(300.w, 300.w),
-                    painter: CompassPainter(),
-                  ),
+                  CustomPaint(size: Size(300.w, 300.w), painter: CompassPainter()),
                   // Compass Needle (Device Heading)
                   Transform.rotate(
                     angle: (qiblahDirection.direction * (math.pi / 180) * -1),
-                    child: CustomPaint(
-                      size: Size(300.w, 300.w),
-                      painter: QiblaNeedlePainter(),
-                    ),
+                    child: CustomPaint(size: Size(300.w, 300.w), painter: QiblaNeedlePainter()),
                   ),
                   // Qibla Indicator (Kaaba)
                   Transform.rotate(
@@ -61,11 +52,7 @@ class QiblaCompassWidget extends StatelessWidget {
                       width: 300.w,
                       child: Padding(
                         padding: EdgeInsets.only(top: 10.w),
-                        child: Icon(
-                          Icons.mosque,
-                          color: AppColors.goldAccent,
-                          size: 32.sp,
-                        ),
+                        child: Icon(Icons.mosque, color: AppColors.goldAccent, size: 32.sp),
                       ),
                     ),
                   ),
@@ -86,7 +73,7 @@ class CompassPainter extends CustomPainter {
     final radius = size.width / 2;
 
     final circlePaint = Paint()
-      ..color = AppColors.primaryGreen.withOpacity(0.1)
+      ..color = AppColors.primaryGreen.withValues(alpha: 0.1)
       ..style = PaintingStyle.fill;
 
     final borderPaint = Paint()
@@ -108,22 +95,15 @@ class CompassPainter extends CustomPainter {
 
       textPainter.text = TextSpan(
         text: directions[i],
-        style: TextStyle(
-          color: AppColors.primaryGreen,
-          fontSize: 16.sp,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(color: AppColors.primaryGreen, fontSize: 16.sp, fontWeight: FontWeight.bold),
       );
       textPainter.layout();
-      textPainter.paint(
-        canvas,
-        Offset(x - textPainter.width / 2, y - textPainter.height / 2),
-      );
+      textPainter.paint(canvas, Offset(x - textPainter.width / 2, y - textPainter.height / 2));
     }
 
     // Draw degree marks
     final markPaint = Paint()
-      ..color = AppColors.primaryGreen.withOpacity(0.5)
+      ..color = AppColors.primaryGreen.withValues(alpha: 0.5)
       ..strokeWidth = 1.w;
 
     for (var i = 0; i < 360; i += 5) {

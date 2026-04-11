@@ -6,6 +6,10 @@ class NekiPointsEntity {
   final int monthPoints;
   final int currentStreak;
   final int longestStreak;
+  final DateTime? lastActiveDate;
+  final String? name;
+  final String? photoUrl;
+  final bool showOnLeaderboard;
 
   NekiPointsEntity({
     required this.userId,
@@ -15,5 +19,9 @@ class NekiPointsEntity {
     required this.monthPoints,
     required this.currentStreak,
     required this.longestStreak,
+    this.lastActiveDate,
+    this.name,
+    this.photoUrl,
+    this.showOnLeaderboard = true,
   });
 }

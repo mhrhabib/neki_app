@@ -37,7 +37,7 @@ This guide walks you through setting up Firebase Authentication with Email/Passw
 1. In Firebase Console, click the **Android icon** (gear/settings icon in project overview)
 2. Enter Android package name: 
    - Open `/android/app/src/main/AndroidManifest.xml`
-   - Find `package="com.example.neki_app"` (or similar)
+   - Find `package="com.clearwavesystems.nekiapp"` (or similar)
    - Use this exact package name
 3. (Optional) Enter app nickname: "Neki App Android"
 4. (Optional) Debug signing certificate SHA-1:
@@ -98,7 +98,7 @@ plugins {
 2. Enter iOS bundle ID:
    - Open `/ios/Runner.xcworkspace` in Xcode
    - Select "Runner" project → "Runner" target
-   - Look for "Bundle Identifier" (e.g., `com.example.nekiApp`)
+   - Look for "Bundle Identifier" (e.g., `com.clearwavesystems.nekiapp`)
    - Use this exact bundle ID
 3. (Optional) Enter app nickname: "Neki App iOS"
 4. Click "Register app"

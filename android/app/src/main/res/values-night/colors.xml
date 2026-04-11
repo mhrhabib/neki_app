@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark mode splash / launcher icon background — matches app dark scaffoldBackgroundColor -->
+    <color name="splashBackground">#034210</color>
+    <color name="ic_launcher_background">#034210</color>
+</resources>

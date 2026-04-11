@@ -11,6 +11,7 @@ class RozaCubit extends Cubit<RozaState> {
   RozaCubit({required this.rozaRepository, required this.pointsRepository}) : super(RozaInitial());
 
   Future<void> loadMonthlyRozaData(String userId, int year, int month) async {
+    if (userId.isEmpty) return;
     try {
       emit(RozaLoading());
 
@@ -91,5 +92,9 @@ class RozaCubit extends Cubit<RozaState> {
     } catch (e) {
       emit(RozaError(message: e.toString()));
     }
+  }
+
+  void clear() {
+    emit(RozaInitial());
   }
 }

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_qiblah/flutter_qiblah.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../widgets/qibla_compass_widget.dart';
+import '../../../../components/app_background_widget.dart';
+import '../../../../core/widgets/custom_back_button.dart';
 
 class QiblaCompassScreen extends StatefulWidget {
   const QiblaCompassScreen({super.key});
@@ -74,65 +75,38 @@ class _QiblaCompassScreenState extends State<QiblaCompassScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.softCream,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(
-            Icons.chevron_left,
-            size: 24.sp,
-            color: AppColors.textDark,
-          ),
-          style: IconButton.styleFrom(
-            backgroundColor: AppColors.dividerGray,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-          ),
-        ),
+        leadingWidth: 70.w,
+        leading: const CustomBackButton(),
+        centerTitle: true,
         title: Text(
           "Qibla Compass",
-          style: AppTypography.h1.copyWith(color: AppColors.primaryGreen),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20.sp,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        centerTitle: true,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _hasPermission
-          ? FutureBuilder(
-              future: FlutterQiblah.androidDeviceSensorSupport(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text("Error: ${snapshot.error}"));
-                }
-                if (snapshot.data == false) {
-                  return const Center(
-                    child: Text("Your device does not support compass sensors"),
-                  );
-                }
-                return const QiblaCompassWidget();
-              },
-            )
-          : Center(
+      body: Stack(
+        children: [
+          appBackgroundWidget(),
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (!_hasPermission)
+            Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.location_off,
-                    size: 64.sp,
-                    color: AppColors.textGray,
-                  ),
+                  Icon(Icons.location_off, size: 64.sp, color: Colors.white54),
                   SizedBox(height: 16.h),
                   Text(
                     "Location permission required",
-                    style: AppTypography.body.copyWith(
-                      color: AppColors.textDark,
-                    ),
+                    style: AppTypography.body.copyWith(color: Colors.white70),
                   ),
                   SizedBox(height: 24.h),
                   ElevatedButton(
@@ -150,7 +124,27 @@ class _QiblaCompassScreenState extends State<QiblaCompassScreen> {
                   ),
                 ],
               ),
+            )
+          else
+            FutureBuilder(
+              future: FlutterQiblah.androidDeviceSensorSupport(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SizedBox.shrink(); // Avoid second spinner blink
+                }
+                if (snapshot.hasError || snapshot.data == false) {
+                  return const Center(
+                    child: Text(
+                      "Your device does not support compass sensors",
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  );
+                }
+                return const QiblaCompassWidget();
+              },
             ),
+        ],
+      ),
     );
   }
 }

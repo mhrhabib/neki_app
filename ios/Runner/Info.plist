@@ -45,9 +45,32 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs access to location to show the local prayer times and trigger the Salah Lock overlay accurately.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app needs access to location when open to show the Qibla direction.</string>
+	<string>This app needs access to location when open to show the local prayer times and trigger the Salah Lock overlay.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>This app needs access to location to show the Qibla direction.</string>
+	<string>This app needs access to location to show the local prayer times and trigger the Salah Lock overlay.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>prefs</string>
+		<string>app-prefs</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.327642350514-hdjck04tcgkq8e4aijrj8qvob9s23lj9</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

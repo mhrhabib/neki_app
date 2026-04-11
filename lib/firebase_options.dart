@@ -17,7 +17,10 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'you can reconfigure this by running the FlutterFire CLI again.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -25,9 +28,15 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
-        return windows;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -40,19 +49,9 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAJUy_UT4IPSugtsJz6_I73XvRRRcxFqoc',
-    appId: '1:327642350514:web:31165046211acf5cad5aab',
-    messagingSenderId: '327642350514',
-    projectId: 'nekiapp-52446',
-    authDomain: 'nekiapp-52446.firebaseapp.com',
-    storageBucket: 'nekiapp-52446.firebasestorage.app',
-    measurementId: 'G-QSLJXVVEKH',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAxVai6C944stx2xQeQsJ56Yd_RK6Cz1cc',
-    appId: '1:327642350514:android:c344e9d50c718a40ad5aab',
+    appId: '1:327642350514:android:52d30e36fa5b431bad5aab',
     messagingSenderId: '327642350514',
     projectId: 'nekiapp-52446',
     storageBucket: 'nekiapp-52446.firebasestorage.app',
@@ -60,34 +59,12 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyALbSJyHKBm_RG_SX8aL8yjRGnIoyvy3Iw',
-    appId: '1:327642350514:ios:88a40cc0bfa17f6ead5aab',
+    appId: '1:327642350514:ios:14cf37855b94e19dad5aab',
     messagingSenderId: '327642350514',
     projectId: 'nekiapp-52446',
     storageBucket: 'nekiapp-52446.firebasestorage.app',
     androidClientId: '327642350514-cm6v8dnv23lco9rksoonas7msq5nkd8u.apps.googleusercontent.com',
-    iosClientId: '327642350514-krd0s9jo4bp5ukjo2u6vv72db3knaqkk.apps.googleusercontent.com',
-    iosBundleId: 'com.example.nekiApp',
+    iosClientId: '327642350514-hdjck04tcgkq8e4aijrj8qvob9s23lj9.apps.googleusercontent.com',
+    iosBundleId: 'com.clearwavesystems.nekiapp',
   );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyALbSJyHKBm_RG_SX8aL8yjRGnIoyvy3Iw',
-    appId: '1:327642350514:ios:88a40cc0bfa17f6ead5aab',
-    messagingSenderId: '327642350514',
-    projectId: 'nekiapp-52446',
-    storageBucket: 'nekiapp-52446.firebasestorage.app',
-    androidClientId: '327642350514-cm6v8dnv23lco9rksoonas7msq5nkd8u.apps.googleusercontent.com',
-    iosClientId: '327642350514-krd0s9jo4bp5ukjo2u6vv72db3knaqkk.apps.googleusercontent.com',
-    iosBundleId: 'com.example.nekiApp',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAJUy_UT4IPSugtsJz6_I73XvRRRcxFqoc',
-    appId: '1:327642350514:web:9e50c057fddad930ad5aab',
-    messagingSenderId: '327642350514',
-    projectId: 'nekiapp-52446',
-    authDomain: 'nekiapp-52446.firebaseapp.com',
-    storageBucket: 'nekiapp-52446.firebasestorage.app',
-    measurementId: 'G-DETR0BPJE5',
-  );
-
 }

@@ -10,14 +10,25 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
 
   ChallengeRepositoryImpl(this._firestoreService);
 
+  /// Builds the Firestore document ID: `{userId}_{typeKey}`.
+  /// Legacy docs (no type) use just `{userId}` for backwards compat.
+  String _docId(String userId, String? typeKey) {
+    if (typeKey == null || typeKey == 'default') return userId;
+    return '${userId}_$typeKey';
+  }
+
   @override
-  Future<ChallengeEntity?> getActiveChallenge(String userId) async {
+  Future<ChallengeEntity?> getActiveChallenge(String userId, {String? typeKey}) async {
     try {
-      final doc = await _firestoreService.getDocument(collectionPath: _collectionPath, documentId: userId);
+      final docId = _docId(userId, typeKey);
+      final doc = await _firestoreService.getDocument(
+        collectionPath: _collectionPath,
+        documentId: docId,
+      );
 
       if (doc != null && doc.exists) {
         final challenge = ChallengeModel.fromJson(doc.data()!);
-        debugPrint('📊 [Challenge] Loaded from Firestore: ${challenge.toString()}');
+        debugPrint('📊 [Challenge] Loaded ($docId): $challenge');
         return challenge;
       }
       return null;
@@ -28,8 +39,43 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   }
 
   @override
+  Future<List<ChallengeEntity>> getAllActiveChallenges(String userId) async {
+    try {
+      // Check known type keys
+      final typeKeys = ['beat_satan', 'addiction'];
+      final challenges = <ChallengeEntity>[];
+
+      for (final key in typeKeys) {
+        final challenge = await getActiveChallenge(userId, typeKey: key);
+        if (challenge != null) {
+          challenges.add(challenge);
+        }
+      }
+
+      // Also check legacy doc (just userId, no suffix)
+      final legacy = await getActiveChallenge(userId);
+      if (legacy != null) {
+        // Only add if not a duplicate of a typed challenge
+        final legacyKey = ChallengeModel.typeKey(legacy.challengeType);
+        if (!challenges.any((c) => ChallengeModel.typeKey(c.challengeType) == legacyKey)) {
+          challenges.add(legacy);
+        }
+      }
+
+      debugPrint('📊 [Challenge] Loaded ${challenges.length} active challenges for $userId');
+      return challenges;
+    } catch (e) {
+      debugPrint('❌ [Challenge] Error loading all challenges: $e');
+      return [];
+    }
+  }
+
+  @override
   Future<void> saveChallenge(String userId, ChallengeEntity challenge) async {
     try {
+      final typeKey = ChallengeModel.typeKey(challenge.challengeType);
+      final docId = _docId(userId, typeKey);
+
       final model = challenge is ChallengeModel
           ? challenge
           : ChallengeModel(
@@ -39,11 +85,16 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
               completedDays: challenge.completedDays,
               status: challenge.status,
               challengeType: challenge.challengeType,
+              userId: userId,
             );
 
-      await _firestoreService.setDocument(collectionPath: _collectionPath, documentId: userId, data: model.toJson());
+      await _firestoreService.setDocument(
+        collectionPath: _collectionPath,
+        documentId: docId,
+        data: model.toJson(),
+      );
 
-      debugPrint('✅ [Challenge] Saved to Firestore: ${model.toString()}');
+      debugPrint('✅ [Challenge] Saved ($docId): $model');
     } catch (e) {
       debugPrint('❌ [Challenge] Error saving challenge: $e');
       rethrow;
@@ -51,10 +102,14 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   }
 
   @override
-  Future<void> clearChallenge(String userId) async {
+  Future<void> clearChallenge(String userId, {String? typeKey}) async {
     try {
-      await _firestoreService.deleteDocument(collectionPath: _collectionPath, documentId: userId);
-      debugPrint('🗑️ [Challenge] Cleared from Firestore');
+      final docId = _docId(userId, typeKey);
+      await _firestoreService.deleteDocument(
+        collectionPath: _collectionPath,
+        documentId: docId,
+      );
+      debugPrint('🗑️ [Challenge] Cleared ($docId)');
     } catch (e) {
       debugPrint('❌ [Challenge] Error clearing challenge: $e');
       rethrow;
@@ -62,9 +117,9 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   }
 
   @override
-  Future<void> completeTodayChallenge(String userId) async {
+  Future<void> completeTodayChallenge(String userId, {String? typeKey}) async {
     try {
-      final challenge = await getActiveChallenge(userId);
+      final challenge = await getActiveChallenge(userId, typeKey: typeKey);
       if (challenge == null) {
         throw Exception('No active challenge found');
       }
@@ -83,12 +138,18 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
               completedDays: challenge.completedDays,
               status: challenge.status,
               challengeType: challenge.challengeType,
+              userId: userId,
             );
 
       final newCompletedDays = model.completedDays + 1;
-      final newStatus = newCompletedDays >= model.durationDays ? ChallengeStatus.completed : ChallengeStatus.active;
+      final newStatus = newCompletedDays >= model.durationDays
+          ? ChallengeStatus.completed
+          : ChallengeStatus.active;
 
-      final updatedChallenge = model.copyWith(completedDays: newCompletedDays, status: newStatus);
+      final updatedChallenge = model.copyWith(
+        completedDays: newCompletedDays,
+        status: newStatus,
+      );
 
       await saveChallenge(userId, updatedChallenge);
       debugPrint('✅ [Challenge] Day $newCompletedDays completed!');
@@ -99,8 +160,8 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   }
 
   @override
-  Future<bool> hasActiveChallenge(String userId) async {
-    final challenge = await getActiveChallenge(userId);
+  Future<bool> hasActiveChallenge(String userId, {String? typeKey}) async {
+    final challenge = await getActiveChallenge(userId, typeKey: typeKey);
     return challenge != null && challenge.status == ChallengeStatus.active;
   }
 }

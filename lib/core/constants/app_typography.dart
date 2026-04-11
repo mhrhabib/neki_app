@@ -21,14 +21,38 @@ class AppTypography {
     color: AppColors.textDark,
   );
 
-  static TextStyle get body => TextStyle(
+  static TextStyle get bodyLarge => TextStyle(
+    fontSize: 16.sp,
+    fontWeight: FontWeight.normal,
+    color: AppColors.textDark,
+  );
+
+  static TextStyle get bodyMedium => TextStyle(
     fontSize: 14.sp,
     fontWeight: FontWeight.normal,
     color: AppColors.textDark,
   );
 
-  static TextStyle get caption => TextStyle(
+  static TextStyle get bodySmall => TextStyle(
     fontSize: 12.sp,
+    fontWeight: FontWeight.normal,
+    color: AppColors.textDark,
+  );
+
+  static TextStyle get labelLarge => TextStyle(
+    fontSize: 14.sp,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textDark,
+  );
+
+  static TextStyle get labelMedium => TextStyle(
+    fontSize: 12.sp,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textGray,
+  );
+
+  static TextStyle get caption => TextStyle(
+    fontSize: 11.sp,
     fontWeight: FontWeight.normal,
     color: AppColors.textGray,
   );
@@ -38,4 +62,7 @@ class AppTypography {
     fontWeight: FontWeight.w600,
     color: Colors.white,
   );
+
+  // Aliases for backward compatibility if needed, but we should migrate
+  static TextStyle get body => bodyMedium;
 }

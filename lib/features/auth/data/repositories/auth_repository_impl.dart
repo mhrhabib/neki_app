@@ -7,7 +7,7 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:io' show Platform;
-
+import '../../../../core/services/firestore_service.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../models/user_model.dart';
@@ -18,11 +18,18 @@ import '../models/user_model.dart';
 /// - Requires `Firebase.initializeApp()` to be called before using this class.
 class AuthRepositoryImpl implements AuthRepository {
   final fb_auth.FirebaseAuth _firebaseAuth = fb_auth.FirebaseAuth.instance;
+  final FirestoreService _firestoreService;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     serverClientId: '327642350514-4lcqmvbq71fa8ojuilcd8uklm2lua0q8.apps.googleusercontent.com',
     scopes: ['email', 'profile'],
   );
   final FacebookAuth _facebookAuth = FacebookAuth.instance;
+
+  AuthRepositoryImpl({required FirestoreService firestoreService})
+      : _firestoreService = firestoreService;
+
+  // Ensures profile sync runs at most once per app session.
+  bool _profileSynced = false;
 
   UserModel? _mapFirebaseUser(fb_auth.User? user) {
     if (user == null) return null;
@@ -40,6 +47,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<UserEntity> login({required String email, required String password}) async {
     final credential = await _firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
     final user = credential.user;
+    if (user != null) await _ensureFirestoreDocs(user);
     final mapped = _mapFirebaseUser(user);
     if (mapped == null) throw Exception('Failed to sign in');
     return mapped;
@@ -56,6 +64,7 @@ class AuthRepositoryImpl implements AuthRepository {
     await user.updateDisplayName(name);
     await user.reload();
     final refreshed = _firebaseAuth.currentUser;
+    if (refreshed != null) await _ensureFirestoreDocs(refreshed);
     final mapped = _mapFirebaseUser(refreshed);
     if (mapped == null) throw Exception('Failed to map created user');
     return mapped;
@@ -97,6 +106,7 @@ class AuthRepositoryImpl implements AuthRepository {
       debugPrint('✅ [GoogleSignIn] Firebase sign-in successful!');
 
       final user = userCredential.user;
+      if (user != null) await _ensureFirestoreDocs(user);
       final mapped = _mapFirebaseUser(user);
       if (mapped == null) throw Exception('Failed to sign in with Google');
 
@@ -140,6 +150,7 @@ class AuthRepositoryImpl implements AuthRepository {
       debugPrint('✅ [FacebookAuth] Firebase sign-in successful!');
 
       final user = userCredential.user;
+      if (user != null) await _ensureFirestoreDocs(user);
       final mapped = _mapFirebaseUser(user);
       if (mapped == null) throw Exception('Failed to sign in with Facebook');
 
@@ -172,11 +183,17 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       debugPrint('🔵 [AppleSignIn] Apple ID credential received');
 
+      if (appleCredential.identityToken == null) {
+        throw Exception('Apple Sign-In failed: No identity token received');
+      }
+
       // Create OAuth credential for Firebase
       final oauthCredential = fb_auth.OAuthProvider(
         'apple.com',
       ).credential(idToken: appleCredential.identityToken, rawNonce: rawNonce);
-      debugPrint('🔵 [AppleSignIn] Firebase OAuth credential created');
+      debugPrint(
+        '🔵 [AppleSignIn] Firebase OAuth credential created (ID Token length: ${appleCredential.identityToken?.length})',
+      );
 
       // Sign in to Firebase with Apple credential
       final userCredential = await _firebaseAuth.signInWithCredential(oauthCredential);
@@ -201,6 +218,84 @@ class AuthRepositoryImpl implements AuthRepository {
       debugPrint('❌ [AppleSignIn] ERROR: $e');
       debugPrint('❌ [AppleSignIn] Stack trace: $stackTrace');
       throw Exception('Apple sign-in failed: $e');
+    }
+  }
+
+  /// Returns the 2-letter ISO country code from the device locale.
+  /// Prefers PlatformDispatcher locale (more reliable), falls back to
+  /// Platform.localeName.
+  String _detectCountryCode() {
+    try {
+      // PlatformDispatcher gives the user's configured region reliably
+      final code = PlatformDispatcher.instance.locale.countryCode;
+      if (code != null && code.length == 2) return code.toUpperCase();
+    } catch (_) {}
+    try {
+      // Fallback: parse Platform.localeName (e.g. 'en_BD', 'bn_BD.UTF-8')
+      final locale = Platform.localeName.split('.').first; // strip .UTF-8
+      final parts = locale.split(RegExp(r'[_\-]'));
+      if (parts.length >= 2) {
+        final candidate = parts.last.toUpperCase();
+        if (candidate.length == 2) return candidate;
+      }
+    } catch (_) {}
+    return '';
+  }
+
+  Future<void> _ensureFirestoreDocs(fb_auth.User user) async {
+    final uid = user.uid;
+    final now = DateTime.now().toIso8601String();
+
+    final existingUser = await _firestoreService.getDocument(
+      collectionPath: 'users',
+      documentId: uid,
+    );
+    if (existingUser == null || !existingUser.exists) {
+      await _firestoreService.setDocument(
+        collectionPath: 'users',
+        documentId: uid,
+        data: {
+          'name': user.displayName ?? '',
+          'email': user.email ?? '',
+          'photoUrl': user.photoURL,
+          'country': _detectCountryCode(),
+          'createdAt': now,
+        },
+      );
+    }
+
+    final existingPoints = await _firestoreService.getDocument(
+      collectionPath: 'users_points',
+      documentId: uid,
+    );
+    final profileData = {
+      'name': user.displayName ?? '',
+      'photoUrl': user.photoURL,
+      'country': _detectCountryCode(),
+    };
+    if (existingPoints == null || !existingPoints.exists) {
+      await _firestoreService.setDocument(
+        collectionPath: 'users_points',
+        documentId: uid,
+        data: {
+          'userId': uid,
+          ...profileData,
+          'totalPoints': 0,
+          'todayPoints': 0,
+          'weekPoints': 0,
+          'monthPoints': 0,
+          'currentStreak': 0,
+          'longestStreak': 0,
+          'lastActiveDate': now,
+        },
+      );
+    } else {
+      // Always sync name/photo/country from Firebase Auth to keep leaderboard accurate
+      await _firestoreService.updateDocument(
+        collectionPath: 'users_points',
+        documentId: uid,
+        data: profileData,
+      );
     }
   }
 
@@ -251,8 +346,16 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Stream<UserEntity?> get authStateChanges =>
+      _firebaseAuth.authStateChanges().map(_mapFirebaseUser);
+
+  @override
   Future<UserEntity?> getCurrentUser() async {
     final user = _firebaseAuth.currentUser;
+    if (user != null && !_profileSynced) {
+      _profileSynced = true;
+      await _ensureFirestoreDocs(user);
+    }
     return _mapFirebaseUser(user);
   }
 

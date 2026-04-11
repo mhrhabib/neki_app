@@ -9,6 +9,10 @@ class NekiPointsModel extends NekiPointsEntity {
     required super.monthPoints,
     required super.currentStreak,
     required super.longestStreak,
+    super.lastActiveDate,
+    super.name,
+    super.photoUrl,
+    super.showOnLeaderboard = true,
   });
 
   factory NekiPointsModel.fromJson(Map<String, dynamic> json) {
@@ -20,6 +24,12 @@ class NekiPointsModel extends NekiPointsEntity {
       monthPoints: json['monthPoints'] ?? 0,
       currentStreak: json['currentStreak'] ?? 0,
       longestStreak: json['longestStreak'] ?? 0,
+      lastActiveDate: json['lastActiveDate'] != null
+          ? DateTime.parse(json['lastActiveDate'])
+          : null,
+      name: json['name'] as String?,
+      photoUrl: json['photoUrl'] as String?,
+      showOnLeaderboard: json['showOnLeaderboard'] ?? true,
     );
   }
 
@@ -32,6 +42,10 @@ class NekiPointsModel extends NekiPointsEntity {
       'monthPoints': monthPoints,
       'currentStreak': currentStreak,
       'longestStreak': longestStreak,
+      'lastActiveDate': lastActiveDate?.toIso8601String(),
+      'name': name,
+      'photoUrl': photoUrl,
+      'showOnLeaderboard': showOnLeaderboard,
     };
   }
 }

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_typography.dart';
+import '../../../../core/widgets/custom_back_button.dart';
 import '../cubit/zakat_cubit.dart';
 import '../cubit/zakat_state.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../widgets/zakat_breakdown_widget.dart';
+import '../../../../components/app_background_widget.dart';
 
 class ZakatScreen extends StatefulWidget {
   const ZakatScreen({super.key});
@@ -26,107 +26,127 @@ class _ZakatScreenState extends State<ZakatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.softCream,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(
-            Icons.chevron_left,
-            size: 24.sp,
-            color: AppColors.textDark,
-          ),
-          style: IconButton.styleFrom(
-            backgroundColor: AppColors.dividerGray,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-          ),
-        ),
+        leadingWidth: 70.w,
+        leading: const CustomBackButton(),
+        centerTitle: true,
         title: Text(
           "Zakat Calculator",
-          style: AppTypography.h1.copyWith(color: AppColors.primaryGreen),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20.sp,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        centerTitle: true,
       ),
-      body: BlocConsumer<ZakatCubit, ZakatState>(
-        listener: (context, state) {
-          if (state is ZakatSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.successGreen,
-              ),
-            );
-          } else if (state is ZakatError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is ZakatCalculating) {
-            return SingleChildScrollView(
-              padding: EdgeInsets.all(20.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildInfoCard(),
-                  SizedBox(height: 20.h),
-                  _buildEligibilityBanner(
-                    state.isEligible,
-                    state.nisabThreshold,
+      body: Stack(
+        children: [
+          appBackgroundWidget(),
+          BlocConsumer<ZakatCubit, ZakatState>(
+            listener: (context, state) {
+              if (state is ZakatSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: AppColors.successGreen,
                   ),
-                  SizedBox(height: 24.h),
-                  _buildInputSection(state),
-                  if (state.isEligible) ...[
-                    SizedBox(height: 24.h),
-                    ZakatBreakdownWidget(
-                      totalAssets: state.totalAssets,
-                      debts: state.debtsValue,
-                      netAssets: state.netAssets,
-                      zakatAmount: state.zakatAmount,
+                );
+              } else if (state is ZakatError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            builder: (context, state) {
+              if (state is ZakatCalculating) {
+                return SafeArea(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 20.w,
+                      vertical: 10.h,
                     ),
-                    SizedBox(height: 32.h),
-                    _buildSubmitButton(state.zakatAmount),
-                  ] else ...[
-                    SizedBox(height: 24.h),
-                    _buildNotEligibleSection(
-                      state.netAssets,
-                      state.nisabThreshold,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildInfoCard(),
+                        SizedBox(height: 24.h),
+                        _buildEligibilityBanner(
+                          state.isEligible,
+                          state.nisabThreshold,
+                        ),
+                        SizedBox(height: 32.h),
+                        _buildInputSection(state),
+                        if (state.isEligible) ...[
+                          SizedBox(height: 32.h),
+                          ZakatBreakdownWidget(
+                            totalAssets: state.totalAssets,
+                            debts: state.debtsValue,
+                            netAssets: state.netAssets,
+                            zakatAmount: state.zakatAmount,
+                          ),
+                          SizedBox(height: 32.h),
+                          _buildSubmitButton(state.zakatAmount),
+                        ] else ...[
+                          SizedBox(height: 32.h),
+                          _buildNotEligibleSection(
+                            state.netAssets,
+                            state.nisabThreshold,
+                          ),
+                        ],
+                        SizedBox(height: 60.h),
+                      ],
                     ),
-                  ],
-                  SizedBox(height: 40.h),
-                ],
-              ),
-            );
-          }
-          return const Center(child: CircularProgressIndicator());
-        },
+                  ),
+                );
+              }
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primaryGreen),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildInfoCard() {
     return Container(
-      padding: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: AppColors.goldAccent.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: AppColors.goldAccent.withOpacity(0.3)),
+        color: AppColors.goldAccent.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: AppColors.goldAccent.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, color: AppColors.goldAccent, size: 24.sp),
-          SizedBox(width: 12.w),
+          Container(
+            padding: EdgeInsets.all(10.w),
+            decoration: BoxDecoration(
+              color: AppColors.goldAccent.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.info_outline,
+              color: AppColors.goldAccent,
+              size: 22.sp,
+            ),
+          ),
+          SizedBox(width: 16.w),
           Expanded(
             child: Text(
               "Rate of Zakat is 2.5% of your total net assets when it exceeds the Nisab value.",
-              style: AppTypography.caption.copyWith(color: AppColors.textDark),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 13.sp,
+                height: 1.4,
+              ),
             ),
           ),
         ],
@@ -141,25 +161,48 @@ class _ZakatScreenState extends State<ZakatScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text("Your Assets", style: AppTypography.h2),
-            TextButton.icon(
-              onPressed: () => _showNisabSettings(state.nisabThreshold),
-              icon: Icon(
-                Icons.settings,
-                size: 16.sp,
-                color: AppColors.primaryGreen,
+            Text(
+              "Your Assets",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w800,
               ),
-              label: Text(
-                "Nisab Settings",
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  color: AppColors.primaryGreen,
+            ),
+            GestureDetector(
+              onTap: () => _showNisabSettings(state.nisabThreshold),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(20.r),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.settings,
+                      size: 14.sp,
+                      color: AppColors.goldAccent,
+                    ),
+                    SizedBox(width: 6.w),
+                    Text(
+                      "Nisab Settings",
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ],
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: 20.h),
         _buildTextField(
           label: "Gold & Silver Value",
           initialValue: state.goldValue,
@@ -184,9 +227,16 @@ class _ZakatScreenState extends State<ZakatScreen> {
           onChanged: (val) => context.read<ZakatCubit>().updateOtherAssets(val),
           icon: Icons.more_horiz,
         ),
+        SizedBox(height: 24.h),
+        Text(
+          "Deductions",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
         SizedBox(height: 16.h),
-        Text("Deductions", style: AppTypography.h2),
-        SizedBox(height: 12.h),
         _buildTextField(
           label: "Debts / Liabilities",
           initialValue: state.debtsValue,
@@ -206,19 +256,36 @@ class _ZakatScreenState extends State<ZakatScreen> {
     bool isDebt = false,
   }) {
     return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
+      margin: EdgeInsets.only(bottom: 16.h),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
       child: TextField(
         keyboardType: TextInputType.number,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
         decoration: InputDecoration(
           labelText: label,
+          labelStyle: TextStyle(color: Colors.white54, fontSize: 13.sp),
           prefixIcon: Icon(
             icon,
-            color: isDebt ? Colors.red : AppColors.primaryGreen,
+            color: isDebt ? Colors.redAccent : AppColors.primaryGreen,
+            size: 20.sp,
           ),
           prefixText: "\$ ",
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
-          filled: true,
-          fillColor: Colors.white,
+          prefixStyle: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 16.w,
+            vertical: 12.h,
+          ),
         ),
         onChanged: (value) {
           final doubleVal = double.tryParse(value) ?? 0.0;
@@ -229,63 +296,83 @@ class _ZakatScreenState extends State<ZakatScreen> {
   }
 
   Widget _buildSubmitButton(double zakatAmount) {
-    return ElevatedButton(
-      onPressed: zakatAmount > 0
-          ? () {
-              final authState = context.read<AuthCubit>().state;
-              if (authState is Authenticated) {
-                context.read<ZakatCubit>().submitZakat(
-                  authState.user.id,
-                  zakatAmount,
-                );
-              }
-            }
-          : null,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primaryGreen,
-        padding: EdgeInsets.symmetric(vertical: 16.h),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        disabledBackgroundColor: AppColors.dividerGray,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: zakatAmount > 0
+            ? [
+                BoxShadow(
+                  color: AppColors.primaryGreen.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ]
+            : [],
       ),
-      child: Text(
-        "I have paid my Zakat",
-        style: AppTypography.button.copyWith(color: Colors.white),
+      child: ElevatedButton(
+        onPressed: zakatAmount > 0
+            ? () {
+                final authState = context.read<AuthCubit>().state;
+                if (authState is Authenticated) {
+                  context.read<ZakatCubit>().submitZakat(
+                    authState.user.id,
+                    zakatAmount,
+                  );
+                }
+              }
+            : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryGreen,
+          foregroundColor: Colors.white,
+          padding: EdgeInsets.symmetric(vertical: 20.h),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          elevation: 0,
+          disabledBackgroundColor: Colors.white.withValues(alpha: 0.1),
+        ),
+        child: Text(
+          "I have paid my Zakat",
+          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
 
   Widget _buildEligibilityBanner(bool isEligible, double threshold) {
+    final statusColor = isEligible ? AppColors.successGreen : Colors.white60;
+
     return Container(
-      padding: EdgeInsets.all(12.w),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: isEligible
-            ? AppColors.successGreen.withOpacity(0.1)
-            : AppColors.textGray.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12.r),
+            ? AppColors.successGreen.withValues(alpha: 0.05)
+            : Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
           color: isEligible
-              ? AppColors.successGreen
-              : AppColors.textGray.withOpacity(0.3),
+              ? AppColors.successGreen.withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: Row(
         children: [
           Icon(
-            isEligible ? Icons.check_circle : Icons.info_outline,
-            color: isEligible ? AppColors.successGreen : AppColors.textGray,
-            size: 20.sp,
+            isEligible ? Icons.check_circle : Icons.error_outline,
+            color: statusColor,
+            size: 22.sp,
           ),
-          SizedBox(width: 8.w),
+          SizedBox(width: 12.w),
           Expanded(
             child: Text(
               isEligible
                   ? "You are eligible for Zakat this year! (Net Assets > \$${threshold.toStringAsFixed(0)})"
-                  : "You are not eligible for Zakat yet. (Threshold: \$${threshold.toStringAsFixed(0)})",
-              style: AppTypography.caption.copyWith(
-                color: isEligible ? AppColors.successGreen : AppColors.textGray,
+                  : "Net assets are currently below the Nisab mandatory threshold of \$${threshold.toStringAsFixed(0)}",
+              style: TextStyle(
+                color: statusColor,
+                fontSize: 13.sp,
                 fontWeight: FontWeight.bold,
+                height: 1.4,
               ),
             ),
           ),
@@ -296,29 +383,54 @@ class _ZakatScreenState extends State<ZakatScreen> {
 
   Widget _buildNotEligibleSection(double netAssets, double threshold) {
     return Container(
-      padding: EdgeInsets.all(20.w),
+      padding: EdgeInsets.all(32.w),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: AppColors.dividerGray),
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(28.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.volunteer_activism_outlined,
-            color: AppColors.goldAccent,
-            size: 48.sp,
+          Container(
+            padding: EdgeInsets.all(20.w),
+            decoration: BoxDecoration(
+              color: AppColors.goldAccent.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.volunteer_activism_outlined,
+              color: AppColors.goldAccent,
+              size: 40.sp,
+            ),
           ),
-          SizedBox(height: 16.h),
+          SizedBox(height: 24.h),
           Text(
             "Below Nisab Threshold",
-            style: AppTypography.h2.copyWith(color: AppColors.textDark),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w800,
+            ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 12.h),
           Text(
-            "Since your net assets (\$${netAssets.toStringAsFixed(2)}) are below the Nisab threshold (\$${threshold.toStringAsFixed(2)}), Zakat is not mandatory for you. However, you can still give Sadaqah to earn Neki!",
-            style: AppTypography.body.copyWith(color: AppColors.textGray),
+            "Since your net assets (\$${netAssets.toStringAsFixed(2)}) are below the Nisab threshold (\$${threshold.toStringAsFixed(2)}), Zakat is not mandatory for you.",
+            style: TextStyle(
+              color: Colors.white60,
+              fontSize: 14.sp,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 24.h),
+          Text(
+            "However, you can still give Sadaqah to earn Neki!",
+            style: TextStyle(
+              color: AppColors.goldAccent,
+              fontSize: 14.sp,
+              fontWeight: FontWeight.bold,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -330,40 +442,82 @@ class _ZakatScreenState extends State<ZakatScreen> {
     final controller = TextEditingController(text: currentThreshold.toString());
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-      ),
-      builder: (context) => Padding(
+      builder: (context) => Container(
         padding: EdgeInsets.fromLTRB(
-          20.w,
+          24.w,
           20.h,
-          20.w,
+          24.w,
           MediaQuery.of(context).viewInsets.bottom + 40.h,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A0E21).withValues(alpha: 0.98),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Nisab Threshold Setting", style: AppTypography.h2),
-            SizedBox(height: 8.h),
-            Text(
-              "The default is \$1,500 (Silver Nisab). You can update this based on the current market price of 87.48g gold or 612.36g silver.",
-              style: AppTypography.caption.copyWith(color: AppColors.textGray),
-            ),
-            SizedBox(height: 20.h),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: "Nisab Threshold (USD)",
-                prefixIcon: const Icon(Icons.money),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.r),
+            Center(
+              child: Container(
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2.r),
                 ),
               ),
             ),
-            SizedBox(height: 20.h),
+            SizedBox(height: 24.h),
+            Text(
+              "Nisab Threshold Setting",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              "The default is \$1,500 (Silver Nisab). You can update this based on current market rates.",
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 13.sp,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 24.h),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+                decoration: InputDecoration(
+                  labelText: "Nisab Threshold (USD)",
+                  labelStyle: const TextStyle(color: Colors.white54),
+                  prefixIcon: const Icon(
+                    Icons.attach_money,
+                    color: AppColors.goldAccent,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 12.h,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 32.h),
             ElevatedButton(
               onPressed: () {
                 final newValue = double.tryParse(controller.text) ?? 1500.0;
@@ -372,14 +526,16 @@ class _ZakatScreenState extends State<ZakatScreen> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
-                minimumSize: Size(double.infinity, 50.h),
+                foregroundColor: Colors.white,
+                minimumSize: Size(double.infinity, 56.h),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
+                  borderRadius: BorderRadius.circular(16.r),
                 ),
+                elevation: 0,
               ),
               child: const Text(
                 "Update Threshold",
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],

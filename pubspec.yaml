@@ -34,6 +34,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  in_app_purchase: ^3.2.0
 
   # BLoC for state management
   flutter_bloc: ^8.1.3
@@ -60,6 +61,20 @@ dependencies:
   geolocator: ^13.0.0
   flutter_svg: ^2.0.10+1
   hijri: ^3.0.0
+  google_fonts: ^8.0.2
+  quran: ^1.4.1
+  audioplayers: ^6.5.1
+  al_quran: ^0.2.0
+  geocoding: ^4.0.0
+  adhan: ^2.0.0+1
+  url_launcher: ^6.3.1
+  timezone: ^0.10.1
+  rxdart: ^0.28.0
+
+  # Local notifications
+  flutter_local_notifications: ^18.0.0
+  flutter_timezone: ^5.0.2
+  permission_handler: ^12.0.1
 
 dev_dependencies:
   flutter_test:
@@ -71,6 +86,16 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
+  # adaptive_icon_background: "#034210"
+  
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -84,9 +109,10 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/
+    - assets/salah_ayahs.json
+    - assets/images/features/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

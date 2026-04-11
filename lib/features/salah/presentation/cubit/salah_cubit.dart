@@ -16,6 +16,7 @@ class SalahCubit extends Cubit<SalahState> {
     : super(SalahInitial());
 
   Future<void> loadTodaysSalahs(String userId) async {
+    if (userId.isEmpty) return;
     try {
       emit(SalahLoading());
       final salahs = await salahRepository.getTodaysSalahs(userId);
@@ -27,6 +28,37 @@ class SalahCubit extends Cubit<SalahState> {
 
   Future<void> markSalahComplete({required String userId, required String salahName}) async {
     try {
+      // ── Idempotency guard ──
+      // Multiple code paths can call this: the overlay, the Salah screen, a
+      // notification action, and the reconciliation loop in SalahLockCubit.
+      // If the current loaded state already shows this prayer as completed,
+      // skip the write + points so we don't double-credit the user.
+      final currentState = state;
+      if (currentState is SalahLoaded) {
+        final already = currentState.salahs.any(
+          (s) => s.salahName == salahName && s.isCompleted,
+        );
+        if (already) {
+          debugPrint('ℹ️ [Salah] $salahName already complete — skipping duplicate write');
+          return;
+        }
+      } else {
+        // If state isn't loaded yet, fetch to be sure before writing.
+        try {
+          final existing = await salahRepository.getTodaysSalahs(userId);
+          final already = existing.any(
+            (s) => s.salahName == salahName && s.isCompleted,
+          );
+          if (already) {
+            debugPrint('ℹ️ [Salah] $salahName already complete in Firestore — skipping');
+            emit(SalahLoaded(salahs: existing));
+            return;
+          }
+        } catch (_) {
+          // If the pre-check fails, fall through and let the write attempt run.
+        }
+      }
+
       final salah = await salahRepository.markSalahComplete(userId: userId, salahName: salahName);
 
       // Add points for salah
@@ -48,5 +80,9 @@ class SalahCubit extends Cubit<SalahState> {
     } catch (e) {
       emit(SalahError(message: e.toString()));
     }
+  }
+
+  void clear() {
+    emit(SalahInitial());
   }
 }

@@ -7,98 +7,115 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/widgets/custom_icon_button.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/domain/entities/user_entity.dart';
+import '../../../points/domain/entities/neki_points_entity.dart';
+import '../../domain/entities/badge_entity.dart';
 import '../cubit/profile_cubit.dart';
+import '../../../../components/app_background_widget.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
-  final List<Badge> _badges = const [
-    Badge(id: 1, icon: '🌟', title: 'First Prayer', unlocked: true),
-    Badge(id: 2, icon: '🔥', title: '7 Day Streak', unlocked: true),
-    Badge(id: 3, icon: '💯', title: '100 Neki', unlocked: true),
-    Badge(id: 4, icon: '📿', title: 'Dhikr Master', unlocked: false),
-    Badge(id: 5, icon: '🏆', title: 'Top 10', unlocked: false),
-    Badge(id: 6, icon: '⭐', title: '30 Day Streak', unlocked: false),
-  ];
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
 
-  final List<Stat> _stats = const [
-    Stat(label: 'Total Neki', value: '4,582', icon: Icons.emoji_events, color: Color(0xFFD4AF37)),
-    Stat(label: 'Current Streak', value: '7 days', icon: Icons.local_fire_department, color: Color(0xFFEF4444)),
-    Stat(label: 'Days Active', value: '42', icon: Icons.calendar_today, color: Color(0xFF0F5132)),
-  ];
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _loaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loaded) {
+      _loaded = true;
+      final authState = context.read<AuthCubit>().state;
+      if (authState is Authenticated) {
+        context.read<ProfileCubit>().loadProfile(authState.user.id, createdAt: authState.user.createdAt);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.black : AppColors.iosBackground,
-      body: BlocBuilder<AuthCubit, AuthState>(
-        builder: (context, state) {
-          if (state is Authenticated) {
-            return SafeArea(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(bottom: 20.h),
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          appBackgroundWidget(),
+          BlocBuilder<AuthCubit, AuthState>(
+            builder: (context, state) {
+              if (state is Authenticated) {
+                return CustomScrollView(
+                  slivers: [
+                    SliverAppBar(
+                      expandedHeight: 120.h,
+                      pinned: true,
+                      stretch: true,
+                      backgroundColor: Colors.transparent,
+                      surfaceTintColor: Colors.transparent,
+                      elevation: 0,
+                      flexibleSpace: FlexibleSpaceBar(
+                        centerTitle: true,
+                        title: Text(
+                          'My Profile',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                      actions: [
+                        CustomIconButton(
+                          icon: CupertinoIcons.settings,
+                          onPressed: () {},
+                          baseColor: AppColors.primaryGreen,
+                          size: 44,
+                          padding: EdgeInsets.only(right: 16.w),
+                        ),
+                      ],
+                    ),
+                    SliverToBoxAdapter(
+                      child: Column(
+                        children: [
+                          SizedBox(height: 10.h),
+                          _buildProfileSection(context, state.user),
+                          SizedBox(height: 30.h),
+                          _buildStatsSection(context),
+                          SizedBox(height: 40.h),
+                          _buildSectionLabel(context, 'ACHIEVEMENTS'),
+                          _buildBadgesSection(context),
+                          SizedBox(height: 40.h),
+                          _buildSectionLabel(context, 'ACCOUNT SETTINGS'),
+                          _buildPrivacySection(context, state.user.id),
+                          SizedBox(height: 16.h),
+                          _buildLogoutButton(context),
+                          SizedBox(height: 100.h),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return Center(
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildHeader(context),
-                    SizedBox(height: 20.h),
-                    _buildProfileSection(context, state.user),
-                    SizedBox(height: 32.h),
-                    _buildSectionLabel(context, 'ACHIEVEMENTS'),
-                    _buildBadgesSection(context),
-                    SizedBox(height: 32.h),
-                    _buildSectionLabel(context, 'STATISTICS'),
-                    _buildStatsSection(context),
-                    SizedBox(height: 32.h),
-                    _buildSectionLabel(context, 'SETTINGS'),
-                    _buildPrivacySection(context),
-                    SizedBox(height: 32.h),
-                    _buildLogoutButton(context),
+                    Icon(Icons.person_off, size: 64.sp, color: Colors.white24),
+                    SizedBox(height: 16.h),
+                    Text(
+                      'Not logged in',
+                      style: TextStyle(fontSize: 18.sp, color: Colors.white54),
+                    ),
                   ],
                 ),
-              ),
-            );
-          }
-
-          return SafeArea(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.person_off, size: 64.sp, color: Colors.grey),
-                  SizedBox(height: 16.h),
-                  Text(
-                    'Not logged in',
-                    style: TextStyle(fontSize: 18.sp, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          SizedBox(width: 40.w), // Balance
-          Text(
-            'Profile',
-            style: TextStyle(
-              fontSize: 17.sp,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white : AppColors.textDark,
-              letterSpacing: -0.4,
-            ),
+              );
+            },
           ),
-          Icon(CupertinoIcons.settings, color: AppColors.primaryGreen, size: 22.sp),
         ],
       ),
     );
@@ -106,18 +123,25 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _buildSectionLabel(BuildContext context, String label) {
     return Padding(
-      padding: EdgeInsets.only(left: 20.w, bottom: 8.h),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13.sp,
-            fontWeight: FontWeight.w400,
-            color: const Color(0xFF8E8E93),
-            letterSpacing: -0.07,
+      padding: EdgeInsets.fromLTRB(25.w, 0, 0, 15.h),
+      child: Row(
+        children: [
+          Container(
+            width: 3.w,
+            height: 14.h,
+            decoration: BoxDecoration(color: AppColors.goldAccent, borderRadius: BorderRadius.circular(2.r)),
           ),
-        ),
+          SizedBox(width: 10.w),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w900,
+              color: AppColors.goldAccent,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -125,28 +149,39 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildProfileSection(BuildContext context, UserEntity user) {
     return Column(
       children: [
-        // Profile Image
         GestureDetector(
           onTap: () => _showImageSourcePicker(context, user.id),
           child: Stack(
+            alignment: Alignment.center,
             children: [
+              Container(
+                width: 110.w,
+                height: 110.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.goldAccent.withValues(alpha: 0.3), width: 2.w),
+                ),
+              ),
               BlocBuilder<ProfileCubit, ProfileState>(
+                buildWhen: (prev, curr) =>
+                    curr is ProfileLoading || curr is ProfilePhotoUpdated || curr is ProfileLoaded,
                 builder: (context, state) {
                   final isLoading = state is ProfileLoading;
                   String? updatedPhotoUrl;
-                  if (state is ProfileUpdated) {
+                  if (state is ProfilePhotoUpdated) {
                     updatedPhotoUrl = state.photoUrl;
                   }
 
                   return Container(
-                    width: 90.w,
-                    height: 90.w,
+                    width: 95.w,
+                    height: 95.w,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFD4AF37),
+                      color: Colors.white.withValues(alpha: 0.05),
                       shape: BoxShape.circle,
                       image: (updatedPhotoUrl ?? user.photoUrl) != null
                           ? DecorationImage(image: NetworkImage(updatedPhotoUrl ?? user.photoUrl!), fit: BoxFit.cover)
                           : null,
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 2.w),
                     ),
                     child: (updatedPhotoUrl ?? user.photoUrl) == null
                         ? Center(
@@ -154,7 +189,11 @@ class ProfileScreen extends StatelessWidget {
                                 ? const CupertinoActivityIndicator(color: Colors.white)
                                 : Text(
                                     user.name.isNotEmpty ? user.name[0].toUpperCase() : '👤',
-                                    style: TextStyle(fontSize: 40.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                                    style: TextStyle(
+                                      fontSize: 35.sp,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white24,
+                                    ),
                                   ),
                           )
                         : (isLoading
@@ -163,37 +202,249 @@ class ProfileScreen extends StatelessWidget {
                                     color: Colors.black.withValues(alpha: 0.3),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Center(child: CupertinoActivityIndicator(color: Colors.white)),
+                                  child: const Center(child: CupertinoActivityIndicator(color: Colors.grey)),
                                 )
                               : null),
                   );
                 },
               ),
               Positioned(
-                bottom: 0,
-                right: 0,
+                bottom: 5.h,
+                right: 5.w,
                 child: Container(
-                  padding: EdgeInsets.all(4.w),
-                  decoration: const BoxDecoration(color: AppColors.primaryGreen, shape: BoxShape.circle),
-                  child: Icon(CupertinoIcons.camera_fill, color: Colors.white, size: 16.sp),
+                  padding: EdgeInsets.all(6.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryGreen,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.black, width: 2.w),
+                  ),
+                  child: Icon(CupertinoIcons.camera_fill, color: Colors.white, size: 14.sp),
                 ),
               ),
             ],
           ),
         ),
-        SizedBox(height: 12.h),
-        // User Name
+        SizedBox(height: 16.h),
         Text(
-          user.name.isNotEmpty ? user.name : 'User',
-          style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w600, color: AppColors.textDark),
+          user.name.isNotEmpty ? user.name : 'Seeker of Neki',
+          style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5),
         ),
         SizedBox(height: 4.h),
-        // User Email
         Text(
           user.email,
-          style: TextStyle(fontSize: 15.sp, color: const Color(0xFF8E8E93)),
+          style: TextStyle(fontSize: 14.sp, color: Colors.white38, fontWeight: FontWeight.w500),
         ),
       ],
+    );
+  }
+
+  Widget _buildStatsSection(BuildContext context) {
+    return BlocBuilder<ProfileCubit, ProfileState>(
+      buildWhen: (prev, curr) => curr is ProfileLoaded || curr is ProfileLoading || curr is ProfileError,
+      builder: (context, state) {
+        if (state is ProfileLoaded) {
+          return _buildStatsHorizontal(context, state.stats, state.daysActive);
+        }
+        if (state is ProfileError) {
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.w),
+            child: Text(
+              'Could not load stats',
+              style: TextStyle(color: Colors.white38, fontSize: 14.sp),
+            ),
+          );
+        }
+        // Loading or initial
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: 20.h),
+          child: const CupertinoActivityIndicator(color: Colors.white24),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatsHorizontal(BuildContext context, NekiPointsEntity stats, int daysActive) {
+    final statItems = [
+      _StatItem(
+        label: 'Total Neki',
+        value: _formatNumber(stats.totalPoints),
+        icon: Icons.emoji_events,
+        color: const Color(0xFFD4AF37),
+      ),
+      _StatItem(
+        label: 'Current Streak',
+        value: '${stats.currentStreak} days',
+        icon: Icons.local_fire_department,
+        color: const Color(0xFFEF4444),
+      ),
+      _StatItem(label: 'Days Active', value: '$daysActive', icon: Icons.calendar_today, color: const Color(0xFF0F5132)),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: Row(children: statItems.map((stat) => _buildStatCard(context, stat)).toList()),
+    );
+  }
+
+  String _formatNumber(int n) {
+    if (n >= 1000) {
+      return '${(n / 1000).toStringAsFixed(n % 1000 == 0 ? 0 : 1)}k';
+    }
+    return n.toString();
+  }
+
+  Widget _buildStatCard(BuildContext context, _StatItem stat) {
+    return Container(
+      width: 140.w,
+      margin: EdgeInsets.only(right: 12.w),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.all(8.w),
+            decoration: BoxDecoration(
+              color: stat.color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Icon(stat.icon, color: stat.color, size: 20.sp),
+          ),
+          SizedBox(height: 16.h),
+          Text(
+            stat.value,
+            style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900, color: Colors.white),
+          ),
+          Text(
+            stat.label.toUpperCase(),
+            style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w800, color: Colors.white38, letterSpacing: 0.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadgesSection(BuildContext context) {
+    return BlocBuilder<ProfileCubit, ProfileState>(
+      buildWhen: (prev, curr) => curr is ProfileLoaded || curr is ProfileLoading || curr is ProfileError,
+      builder: (context, state) {
+        if (state is ProfileLoaded) {
+          return _buildBadgesGrid(context, state.badges);
+        }
+        if (state is ProfileError) {
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.w),
+            child: Text(
+              'Could not load badges',
+              style: TextStyle(color: Colors.white38, fontSize: 14.sp),
+            ),
+          );
+        }
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: 20.h),
+          child: const CupertinoActivityIndicator(color: Colors.white24),
+        );
+      },
+    );
+  }
+
+  Widget _buildBadgesGrid(BuildContext context, List<BadgeEntity> badges) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 20.w),
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: GridView.builder(
+        shrinkWrap: true,
+        padding: EdgeInsets.zero,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 15.w,
+          mainAxisSpacing: 15.h,
+          childAspectRatio: 0.85,
+        ),
+        itemCount: badges.length,
+        itemBuilder: (ctx, index) => _buildBadgeItem(context, badges[index]),
+      ),
+    );
+  }
+
+  Widget _buildBadgeItem(BuildContext context, BadgeEntity badge) {
+    return Container(
+      decoration: BoxDecoration(
+        color: badge.isEarned ? Colors.white.withValues(alpha: 0.05) : Colors.transparent,
+        borderRadius: BorderRadius.circular(20.r),
+        border: badge.isEarned ? Border.all(color: AppColors.goldAccent.withValues(alpha: 0.1)) : null,
+      ),
+      child: Opacity(
+        opacity: badge.isEarned ? 1.0 : 0.2,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(badge.iconUrl, style: TextStyle(fontSize: 30.sp)),
+            SizedBox(height: 8.h),
+            Text(
+              badge.name,
+              style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700, color: Colors.white),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrivacySection(BuildContext context, String userId) {
+    return BlocBuilder<ProfileCubit, ProfileState>(
+      buildWhen: (prev, curr) => curr is ProfileLoaded,
+      builder: (context, state) {
+        final showOnLeaderboard = state is ProfileLoaded ? state.showOnLeaderboard : true;
+
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: 20.w),
+          padding: EdgeInsets.all(8.w),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: ListTile(
+            leading: Container(
+              padding: EdgeInsets.all(8.w),
+              decoration: BoxDecoration(
+                color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: Icon(CupertinoIcons.eye_fill, color: AppColors.primaryGreen, size: 18.sp),
+            ),
+            title: Text(
+              'Show on Leaderboard',
+              style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700, color: Colors.white),
+            ),
+            subtitle: Text(
+              'Allow others to see your progress',
+              style: TextStyle(fontSize: 12.sp, color: Colors.white38),
+            ),
+            trailing: CupertinoSwitch(
+              value: showOnLeaderboard,
+              activeTrackColor: AppColors.primaryGreen,
+              onChanged: (val) {
+                context.read<ProfileCubit>().updateLeaderboardVisibility(userId, val);
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -204,13 +455,18 @@ class ProfileScreen extends StatelessWidget {
       child: CupertinoButton(
         padding: EdgeInsets.symmetric(vertical: 14.h),
         color: const Color(0xFFFF3B30).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10.r),
-        onPressed: () {
-          _showLogoutDialog(context);
-        },
-        child: Text(
-          'Logout',
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: const Color(0xFFFF3B30)),
+        borderRadius: BorderRadius.circular(20.r),
+        onPressed: () => _showLogoutDialog(context),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(CupertinoIcons.power, color: const Color(0xFFFF3B30), size: 18.sp),
+            SizedBox(width: 10.w),
+            Text(
+              'Logout Account',
+              style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w800, color: const Color(0xFFFF3B30)),
+            ),
+          ],
         ),
       ),
     );
@@ -234,154 +490,6 @@ class ProfileScreen extends StatelessWidget {
             child: const Text('Logout'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStatsSection(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20.w),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-        borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8), width: 0.5),
-      ),
-      child: Column(
-        children: List.generate(_stats.length, (index) {
-          final showDivider = index < _stats.length - 1;
-          return Column(
-            children: [
-              _buildStatItem(context, _stats[index]),
-              if (showDivider)
-                Padding(
-                  padding: EdgeInsets.only(left: 64.w),
-                  child: Divider(
-                    height: 1,
-                    thickness: 0.5,
-                    color: isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8),
-                  ),
-                ),
-            ],
-          );
-        }),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(BuildContext context, Stat stat) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      child: Row(
-        children: [
-          Container(
-            width: 32.w,
-            height: 32.w,
-            decoration: BoxDecoration(
-              color: stat.color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Icon(stat.icon, color: stat.color, size: 18.sp),
-          ),
-          SizedBox(width: 14.w),
-          Expanded(
-            child: Text(
-              stat.label,
-              style: TextStyle(fontSize: 16.sp, color: isDark ? Colors.white : AppColors.textDark),
-            ),
-          ),
-          Text(
-            stat.value,
-            style: TextStyle(fontSize: 16.sp, color: const Color(0xFF8E8E93)),
-          ),
-          SizedBox(width: 4.w),
-          Icon(CupertinoIcons.chevron_right, color: const Color(0xFFC7C7CC), size: 14.sp),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBadgesSection(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20.w),
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-        borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8), width: 0.5),
-      ),
-      child: GridView.builder(
-        shrinkWrap: true,
-        padding: EdgeInsets.zero,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 12.w,
-          mainAxisSpacing: 12.h,
-          childAspectRatio: 1,
-        ),
-        itemCount: _badges.length,
-        itemBuilder: (ctx, index) => _buildBadgeItem(context, _badges[index]),
-      ),
-    );
-  }
-
-  Widget _buildBadgeItem(BuildContext context, Badge badge) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Opacity(
-      opacity: badge.unlocked ? 1.0 : 0.4,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(badge.icon, style: TextStyle(fontSize: 24.sp)),
-          SizedBox(height: 4.h),
-          Text(
-            badge.title,
-            style: TextStyle(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w400,
-              color: isDark ? Colors.white : AppColors.textDark,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPrivacySection(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20.w),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-        borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8), width: 0.5),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(12.w),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Show on Leaderboard',
-              style: TextStyle(fontSize: 16.sp, color: isDark ? Colors.white : AppColors.textDark),
-            ),
-            Transform.scale(
-              scale: 0.8,
-              child: CupertinoSwitch(value: true, activeColor: AppColors.primaryGreen, onChanged: (val) {}),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -427,20 +535,11 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-class Badge {
-  const Badge({required this.id, required this.icon, required this.title, required this.unlocked});
-
-  final int id;
-  final String icon;
-  final String title;
-  final bool unlocked;
-}
-
-class Stat {
-  const Stat({required this.label, required this.value, required this.icon, required this.color});
-
+class _StatItem {
   final String label;
   final String value;
   final IconData icon;
   final Color color;
+
+  const _StatItem({required this.label, required this.value, required this.icon, required this.color});
 }

@@ -13,12 +13,22 @@ class ChallengeLoading extends ChallengeState {
 }
 
 class ChallengeLoaded extends ChallengeState {
-  final ChallengeEntity? challenge;
+  /// All active challenges keyed by their type key ('beat_satan', 'addiction').
+  final Map<String, ChallengeEntity> challenges;
 
-  const ChallengeLoaded(this.challenge);
+  const ChallengeLoaded(this.challenges);
 
-  bool get hasActiveChallenge => challenge != null && challenge!.isActive;
-  bool get isChallengeCompleted => challenge != null && challenge!.isCompleted;
+  /// Backwards-compat: check if any challenge is active.
+  bool get hasActiveChallenge => challenges.values.any((c) => c.isActive);
+
+  /// Check if there are any challenges at all (active or expired/completed/etc).
+  bool get hasAnyChallenge => challenges.isNotEmpty;
+
+  /// Get a specific challenge by type key.
+  ChallengeEntity? operator [](String typeKey) => challenges[typeKey];
+
+  bool hasType(String typeKey) =>
+      challenges[typeKey] != null && challenges[typeKey]!.isActive;
 }
 
 class ChallengeError extends ChallengeState {
@@ -30,13 +40,16 @@ class ChallengeError extends ChallengeState {
 class ChallengeDayCompleted extends ChallengeState {
   final ChallengeEntity challenge;
   final int pointsEarned;
+  /// Keep the full map so we can restore it.
+  final Map<String, ChallengeEntity> allChallenges;
 
-  const ChallengeDayCompleted(this.challenge, this.pointsEarned);
+  const ChallengeDayCompleted(this.challenge, this.pointsEarned, this.allChallenges);
 }
 
 class ChallengeFullyCompleted extends ChallengeState {
   final ChallengeEntity challenge;
   final int totalPointsEarned;
+  final Map<String, ChallengeEntity> allChallenges;
 
-  const ChallengeFullyCompleted(this.challenge, this.totalPointsEarned);
+  const ChallengeFullyCompleted(this.challenge, this.totalPointsEarned, this.allChallenges);
 }

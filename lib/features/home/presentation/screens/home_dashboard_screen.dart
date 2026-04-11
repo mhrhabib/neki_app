@@ -1,694 +1,460 @@
+import 'dart:io';
+
+import 'package:adhan/adhan.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../components/app_background_widget.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/location/cubit/location_cubit.dart';
+import '../../../../core/location/cubit/location_state.dart';
+import '../../../beat_satan_chalange/presentation/cubit/onboarding_cubit.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../points/presentation/cubit/points_cubit.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
-import '../../../theme/theme_cubit.dart';
 import '../../../challenge/presentation/cubit/challenge_cubit.dart';
+import '../../../challenge/presentation/widgets/challenge_progress_widget.dart';
+import '../../../points/presentation/cubit/points_cubit.dart';
+import '../widgets/home_all_menu_section.dart';
+import '../widgets/home_current_prayer_section.dart';
+import '../widgets/home_feature_cards.dart';
+import '../widgets/home_user_stats_card.dart';
+import '../widgets/home_prayer_times_row.dart';
+import '../widgets/home_top_bar.dart';
+import '../widgets/home_setup_guide_card.dart';
+import '../../../salah/presentation/cubit/salah_cubit.dart';
+import '../../../salah_lock/presentation/cubit/salah_lock_cubit.dart';
 
-class HomeDashboardScreen extends StatelessWidget {
+class HomeDashboardScreen extends StatefulWidget {
   const HomeDashboardScreen({super.key});
 
-  final List<PillarItem> _pillars = const [
-    PillarItem(
-      id: 'salah',
-      title: 'Salah',
-      icon: '🕌',
-      route: RouteNames.salah,
-      color: Color(0xFF0F5132),
-      description: 'Track your daily prayers',
-    ),
-    PillarItem(
-      id: 'roza',
-      title: 'Roza',
-      icon: '🌙',
-      color: Color(0xFF6366F1),
-      description: 'Track your fasting days',
-      route: RouteNames.roza,
-    ),
-    PillarItem(
-      id: 'names',
-      title: '99 Names',
-      icon: '✨',
-      color: Color(0xFF10B981),
-      description: 'Learn the Names of Allah',
-      route: RouteNames.namesOfAllah,
-    ),
-    PillarItem(
-      id: 'calendar',
-      title: 'Calendar',
-      icon: '📅',
-      color: Color(0xFF3B82F6),
-      description: 'Hijri dates & Sunnah Fasts',
-      route: RouteNames.calendar,
-    ),
-    PillarItem(
-      id: 'zakat',
-      title: 'Zakat',
-      icon: '💰',
-      color: Color(0xFFD4AF37),
-      description: 'Calculate and log your Zakat',
-      route: RouteNames.zakat,
-    ),
-    PillarItem(
-      id: 'Dhikir',
-      title: 'Dhikir',
-      icon: '🕋',
-      route: RouteNames.dhikir,
-      color: Color(0xFF8B5CF6),
-      description: 'Dhikir counter for Hajj',
-    ),
-    PillarItem(
-      id: 'deeds',
-      title: 'Good Deeds',
-      icon: '❤️',
-      route: RouteNames.goodDeeds,
-      color: Color(0xFFEF4444),
-      description: 'Log your good actions',
-    ),
-    PillarItem(
-      id: 'addiction',
-      title: 'Addiction',
-      icon: '🚫',
-      route: RouteNames.addiction,
-      color: Color(0xFFEF4444),
-      description: 'Recovery plans & support',
-    ),
-  ];
+  @override
+  State<HomeDashboardScreen> createState() => _HomeDashboardScreenState();
+}
+
+class _HomeDashboardScreenState extends State<HomeDashboardScreen>
+    with WidgetsBindingObserver {
+  bool _initialLoadDone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    final authState = context.read<AuthCubit>().state;
+    if (authState is Authenticated) {
+      _triggerDataLoads(authState.user.id);
+    }
+
+    if (Platform.isAndroid) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<SalahLockCubit>().checkAndRequestBasicPermissions();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshAllData();
+    }
+  }
+
+  void _triggerDataLoads(String userId) {
+    if (_initialLoadDone) return;
+    _initialLoadDone = true;
+    context.read<PointsCubit>().loadUserPoints(userId);
+    context.read<SalahCubit>().loadTodaysSalahs(userId);
+    
+    // Load challenge and auto-start if needed
+    final challengeCubit = context.read<ChallengeCubit>();
+    challengeCubit.loadChallenge(userId).then((_) async {
+      final state = challengeCubit.state;
+      if (state is ChallengeLoaded && !state.hasAnyChallenge) {
+        // No active challenge, check if there's an onboarding goal to start
+        final onboardingCubit = context.read<OnboardingCubit>();
+        final goal = await onboardingCubit.onboardingRepository.getChallengeGoal();
+        
+        if (goal != null && mounted) {
+          debugPrint('🚀 [Home] Auto-starting boarding goal challenge: $goal');
+          await challengeCubit.startChallenge(
+            userId: userId,
+            durationDays: goal['days'] as int,
+            rewardPoints: goal['points'] as int,
+            challengeType: 'beat_satan',
+          );
+        }
+      }
+    });
+  }
+
+  /// Reload all data — called on app resume and pull-to-refresh.
+  Future<void> _refreshAllData() async {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! Authenticated) return;
+    final userId = authState.user.id;
+
+    // Reload location if it errored or is stale — but NOT if permission was denied
+    final locState = context.read<LocationCubit>().state;
+    if (locState is LocationError || locState is LocationInitial) {
+      context.read<LocationCubit>().fetchLocation();
+    }
+    // Re-check after returning from settings (user may have granted permission)
+    if (locState is LocationPermissionDenied ||
+        locState is LocationServiceDisabled) {
+      context.read<LocationCubit>().fetchLocation();
+    }
+
+    // Reload Firestore-backed data in parallel
+    await Future.wait([
+      context.read<PointsCubit>().loadUserPoints(userId),
+      context.read<SalahCubit>().loadTodaysSalahs(userId),
+      context.read<ChallengeCubit>().loadChallenge(userId),
+    ]);
+  }
+
+  PrayerTimes? _calculatePrayerTimes(LocationLoaded state) {
+    final coordinates = Coordinates(state.latitude, state.longitude);
+    final params = CalculationMethod.karachi.getParameters()
+      ..madhab = Madhab.hanafi;
+    final date = DateComponents.from(DateTime.now());
+    return PrayerTimes(coordinates, date, params);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0A0E27)
-          : const Color(0xFFF9FAFB),
-      body: BlocBuilder<AuthCubit, AuthState>(
+      backgroundColor: const Color(0xFF0D2818),
+      body: BlocConsumer<AuthCubit, AuthState>(
+        listener: (context, authState) {
+          if (authState is Authenticated) {
+            _initialLoadDone = false;
+            _triggerDataLoads(authState.user.id);
+          }
+        },
         builder: (context, authState) {
           if (authState is Authenticated) {
-            context.read<PointsCubit>().loadUserPoints(authState.user.id);
-            context.read<ChallengeCubit>().loadChallenge(authState.user.id);
+            return BlocBuilder<LocationCubit, LocationState>(
+              builder: (context, locationState) {
+                final prayerTimes = locationState is LocationLoaded
+                    ? _calculatePrayerTimes(locationState)
+                    : null;
 
-            return SafeArea(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(bottom: 20.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                return Stack(
                   children: [
-                    _buildHeader(),
-                    SizedBox(height: 24.h),
-                    _buildStreakCard(context, authState.user.id),
-                    SizedBox(height: 20.h),
-                    _buildChallengeSections(context, isDark),
-                    SizedBox(height: 32.h),
-                    _buildPillarsSection(context),
-                  ],
-                ),
-              ),
-            );
-          }
-          return const Center(child: CircularProgressIndicator());
-        },
-      ),
-    );
-  }
-
-  Widget _buildChallengeSections(BuildContext context, bool isDark) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: Column(
-        children: [
-          _buildAddictionChallengeCard(context, isDark),
-          SizedBox(height: 12.h),
-          _buildGeneralChallengeCard(context, isDark),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAddictionChallengeCard(BuildContext context, bool isDark) {
-    return BlocBuilder<ChallengeCubit, ChallengeState>(
-      builder: (context, state) {
-        final hasActive =
-            state is ChallengeLoaded &&
-            state.hasActiveChallenge &&
-            state.challenge != null &&
-            state.challenge!.challengeType != null &&
-            state.challenge!.challengeType!.startsWith('addiction_');
-
-        if (hasActive) {
-          final challenge = state.challenge!;
-          final canCompleteToday = challenge.canCompleteToday();
-
-          return Padding(
-            padding: EdgeInsets.only(bottom: 12.h),
-            child: InkWell(
-              onTap: () => context.push(RouteNames.habitBuilding),
-              borderRadius: BorderRadius.circular(12.r),
-              child: Container(
-                padding: EdgeInsets.all(16.w),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF8E24AA), Color(0xFF6A1B9A)],
-                  ),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(10.w),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10.r),
-                      ),
-                      child: Text('🚫', style: TextStyle(fontSize: 22.sp)),
-                    ),
-                    SizedBox(width: 14.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${challenge.durationDays}-Day Plan',
-                            style: TextStyle(
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
+                    appBackgroundWidget(),
+                    SafeArea(
+                      child: RefreshIndicator(
+                        onRefresh: _refreshAllData,
+                        color: const Color(0xFF4ADE80),
+                        backgroundColor: const Color(0xFF1A3D26),
+                        child: CustomScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics(),
                           ),
-                          SizedBox(height: 2.h),
-                          Text(
-                            'Day ${challenge.completedDays} of ${challenge.durationDays}',
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              color: Colors.white.withValues(alpha: 0.8),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!canCompleteToday)
-                      Icon(
-                        CupertinoIcons.checkmark_circle_fill,
-                        color: Colors.white,
-                        size: 24.sp,
-                      )
-                    else
-                      Icon(
-                        CupertinoIcons.chevron_right,
-                        color: Colors.white.withValues(alpha: 0.5),
-                        size: 16.sp,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-
-        return Padding(
-          padding: EdgeInsets.only(bottom: 12.h),
-          child: InkWell(
-            onTap: () => context.push(RouteNames.addiction),
-            borderRadius: BorderRadius.circular(12.r),
-            child: Container(
-              padding: EdgeInsets.all(16.w),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF9C27B0).withValues(alpha: 0.9),
-                    const Color(0xFF9C27B0).withValues(alpha: 0.7),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(10.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                    child: Text('🚫', style: TextStyle(fontSize: 22.sp)),
-                  ),
-                  SizedBox(width: 14.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Addiction Recovery',
-                          style: TextStyle(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          'Start a recovery plan',
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            color: Colors.white.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    CupertinoIcons.chevron_right,
-                    color: Colors.white.withValues(alpha: 0.5),
-                    size: 16.sp,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildGeneralChallengeCard(BuildContext context, bool isDark) {
-    return BlocBuilder<ChallengeCubit, ChallengeState>(
-      builder: (context, state) {
-        final hasActive =
-            state is ChallengeLoaded &&
-            state.hasActiveChallenge &&
-            (state.challenge?.challengeType == null ||
-                !state.challenge!.challengeType!.startsWith('addiction_'));
-
-        if (hasActive) {
-          final challenge = state.challenge!;
-          final canCompleteToday = challenge.canCompleteToday();
-
-          return InkWell(
-            onTap: () => context.push(RouteNames.habitBuilding),
-            borderRadius: BorderRadius.circular(16.r),
-            child: Container(
-              padding: EdgeInsets.all(20.w),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primaryGreen,
-                    AppColors.primaryGreen.withValues(alpha: 0.8),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(12.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    child: Text('🎯', style: TextStyle(fontSize: 28.sp)),
-                  ),
-                  SizedBox(width: 16.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${challenge.durationDays}-Day Challenge',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 4.h),
-                        Row(
-                          children: [
-                            Text(
-                              'Day ${challenge.completedDays} of ${challenge.durationDays}',
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                color: Colors.white.withValues(alpha: 0.9),
-                              ),
-                            ),
-                            if (!canCompleteToday) ...[
-                              SizedBox(width: 8.w),
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 8.w,
-                                  vertical: 2.h,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(10.r),
-                                ),
-                                child: Text(
-                                  '✓ Done',
-                                  style: TextStyle(
-                                    fontSize: 10.sp,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                          slivers: [
+                            SliverToBoxAdapter(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const HomeTopBar(),
+                                  SizedBox(height: 8.h),
+                                  HomeCurrentPrayerSection(
+                                    prayerTimes: prayerTimes,
                                   ),
-                                ),
+                                  SizedBox(height: 16.h),
+                                  HomePrayerTimesRow(prayerTimes: prayerTimes),
+                                  SizedBox(height: 16.h),
+
+                                  // Location permission / error prompt
+                                  if (locationState is LocationPermissionDenied)
+                                    _buildLocationPermissionCard(
+                                      context,
+                                      locationState,
+                                    )
+                                  else if (locationState
+                                      is LocationServiceDisabled)
+                                    _buildLocationServiceCard(context)
+                                  else if (locationState is LocationError ||
+                                      locationState is LocationInitial)
+                                    _buildFriendlyLocationPrompt(context),
+
+                                  const HomeUserStatsCard(),
+                                  const HomeSetupGuideCard(),
+                                  SizedBox(height: 20.h),
+                                  BlocBuilder<ChallengeCubit, ChallengeState>(
+                                    builder: (context, challengeState) {
+                                      if (challengeState is ChallengeLoaded &&
+                                          challengeState.hasAnyChallenge) {
+                                        return Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 20.w,
+                                          ),
+                                          child: Column(
+                                            children: challengeState
+                                                .challenges
+                                                .entries
+                                                .map(
+                                                  (e) => Padding(
+                                                    padding: EdgeInsets.only(
+                                                      bottom: 12.h,
+                                                    ),
+                                                    child: GestureDetector(
+                                                      onTap: () => context.push(
+                                                        '${RouteNames.habitBuilding}?type=${e.key}',
+                                                      ),
+                                                      child:
+                                                          ChallengeProgressWidget(
+                                                            challenge: e.value,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                )
+                                                .toList(),
+                                          ),
+                                        );
+                                      }
+                                      return const SizedBox.shrink();
+                                    },
+                                  ),
+                                  SizedBox(height: 20.h),
+                                  const HomeAllMenuSection(),
+                                  SizedBox(height: 20.h),
+                                  const HomeFeatureCards(),
+                                  SizedBox(height: 100.h),
+                                ],
                               ),
-                            ],
+                            ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.white,
-                    size: 20.sp,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        return InkWell(
-          onTap: () => context.push(RouteNames.goalSelection),
-          borderRadius: BorderRadius.circular(16.r),
-          child: Container(
-            padding: EdgeInsets.all(20.w),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primaryGreen,
-                  AppColors.primaryGreen.withValues(alpha: 0.8),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(12.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Text('🎯', style: TextStyle(fontSize: 28.sp)),
-                ),
-                SizedBox(width: 16.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Beat Satan Challenge',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
                       ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        'Start building your daily neki habit',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20.sp),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildHeader() {
-    return BlocBuilder<ThemeCubit, ThemeData>(
-      builder: (context, themeData) {
-        final isDark = themeData.brightness == Brightness.dark;
-
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  SizedBox(width: 48.w), // Placeholder for balance
-                  Text(
-                    'Salam, Habib',
-                    style: TextStyle(
-                      fontSize: 17.sp,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : AppColors.textDark,
-                      letterSpacing: -0.4,
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () => context.read<ThemeCubit>().toggleTheme(),
-                    icon: Icon(
-                      isDark
-                          ? CupertinoIcons.sun_max_fill
-                          : CupertinoIcons.moon_fill,
-                      color: isDark
-                          ? AppColors.goldAccent
-                          : AppColors.primaryGreen,
-                      size: 20.sp,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              SizedBox(height: 2.h),
-              Text(
-                'May your day be blessed',
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  color: isDark
-                      ? const Color(0xFF8E8E93)
-                      : const Color(0xFF8E8E93),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStreakCard(BuildContext context, String userId) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: BlocBuilder<PointsCubit, PointsState>(
-        builder: (context, state) {
-          if (state is PointsLoaded) {
-            return Container(
-              padding: EdgeInsets.all(24.w),
-              decoration: BoxDecoration(
-                color: AppColors.primaryGreen,
-                borderRadius: BorderRadius.circular(20.r),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.local_fire_department,
-                        color: AppColors.goldAccent,
-                        size: 24.sp,
-                      ),
-                      SizedBox(width: 8.w),
-                      Text(
-                        'Current Streak',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          color: AppColors.goldAccent,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    '${state.points.todayPoints}',
-                    style: TextStyle(
-                      fontSize: 48.sp,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    'Neki Points Today',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      color: AppColors.goldAccent,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 12.w,
-                      vertical: 8.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.goldAccent.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('🔥', style: TextStyle(fontSize: 20.sp)),
-                        SizedBox(width: 8.w),
-                        Text(
-                          '${state.points.currentStreak} Day Streak',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                  ],
+                );
+              },
             );
           }
-          return const SizedBox();
+
+          return const Center(
+            child: CupertinoActivityIndicator(color: Colors.white),
+          );
         },
       ),
     );
   }
 
-  Widget _buildPillarsSection(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+  Widget _buildLocationPermissionCard(
+    BuildContext context,
+    LocationPermissionDenied state,
+  ) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Five Pillars',
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : const Color(0xFF1F2937),
-            ),
-          ),
-          SizedBox(height: 16.h),
-          ..._pillars.map((pillar) => _buildPillarCard(context, pillar)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPillarCard(BuildContext context, PillarItem pillar) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return GestureDetector(
-      onTap: pillar.route != null ? () => context.push(pillar.route!) : null,
+      padding: EdgeInsets.symmetric(horizontal: 20.w).copyWith(bottom: 12.h),
       child: Container(
-        margin: EdgeInsets.only(bottom: 12.h),
-        padding: EdgeInsets.all(20.w),
+        padding: EdgeInsets.all(16.w),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1F2937) : Colors.white,
+          color: const Color(0xFF4ADE80).withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(16.r),
           border: Border.all(
-            color: isDark ? const Color(0xFF38383A) : const Color(0xFFE5E5EA),
-            width: 0.5,
+            color: const Color(0xFF4ADE80).withValues(alpha: 0.2),
           ),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 56.w,
-              height: 56.w,
-              decoration: BoxDecoration(
-                color: pillar.color.withValues(alpha: isDark ? 0.2 : 0.15),
-                borderRadius: BorderRadius.circular(14.r),
-              ),
-              child: Center(
-                child: Text(pillar.icon, style: TextStyle(fontSize: 28.sp)),
-              ),
-            ),
-            SizedBox(width: 16.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    pillar.title,
-                    style: TextStyle(
-                      fontSize: 17.sp,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : const Color(0xFF1F2937),
-                    ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    pillar.description,
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      color: isDark
-                          ? const Color(0xFF9CA3AF)
-                          : const Color(0xFF6B7280),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (pillar.route != null)
-              Container(
-                width: 32.w,
-                height: 32.w,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF374151)
-                      : const Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(8.r),
+            Row(
+              children: [
+                Icon(
+                  CupertinoIcons.location_fill,
+                  color: const Color(0xFF4ADE80),
+                  size: 20.sp,
                 ),
-                child: Center(
+                SizedBox(width: 10.w),
+                Expanded(
                   child: Text(
-                    '→',
+                    'Location Permission Needed',
                     style: TextStyle(
-                      fontSize: 16.sp,
-                      color: isDark ? Colors.white : Colors.black,
+                      color: Colors.white,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'We need your location to show accurate adhan times and send prayer notifications for your area.',
+              style: TextStyle(
+                color: Colors.white60,
+                fontSize: 13.sp,
+                height: 1.4,
               ),
+            ),
+            SizedBox(height: 12.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  if (state.permanent) {
+                    context.read<LocationCubit>().openSettings();
+                  } else {
+                    context.read<LocationCubit>().requestAndFetch();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4ADE80),
+                  foregroundColor: Colors.black,
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  state.permanent ? 'Open Settings' : 'Allow Location',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
-}
 
-class PillarItem {
-  const PillarItem({
-    required this.id,
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.description,
-    this.route,
-  });
+  Widget _buildLocationServiceCard(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w).copyWith(bottom: 12.h),
+      child: Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: Colors.orangeAccent.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  CupertinoIcons.location_slash_fill,
+                  color: Colors.orangeAccent,
+                  size: 20.sp,
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Text(
+                    'Location Service Off',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'Turn on location services to get accurate prayer times for your area.',
+              style: TextStyle(
+                color: Colors.white60,
+                fontSize: 13.sp,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 12.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () =>
+                    context.read<LocationCubit>().openLocationSettings(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                  foregroundColor: Colors.black,
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  'Turn On Location',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-  final String id;
-  final String title;
-  final String icon;
-  final Color color;
-  final String description;
-  final String? route;
+  Widget _buildFriendlyLocationPrompt(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w).copyWith(bottom: 12.h),
+      child: Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: AppColors.goldAccent.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(
+            color: AppColors.goldAccent.withValues(alpha: 0.15),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              CupertinoIcons.location_circle_fill,
+              color: AppColors.goldAccent,
+              size: 24.sp,
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Update Location',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    'Find accurate Salah times for your area',
+                    style: TextStyle(color: Colors.white60, fontSize: 12.sp),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () => context.read<LocationCubit>().fetchLocation(),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.goldAccent,
+                padding: EdgeInsets.symmetric(horizontal: 12.w),
+              ),
+              child: const Text('Refresh'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

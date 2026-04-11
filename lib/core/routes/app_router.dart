@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/challenge/presentation/screens/habit_building_screen_for_addiction.dart';
-import '../../features/beat_satan_chalange/presentation/screens/goal_selection_screen.dart'
-    as onboarding;
-import '../../features/beat_satan_chalange/presentation/screens/habit_building_screen_beat_satan.dart'
-    as onboarding;
 import '../../features/onboarding/presentation/screens/premium_onboarding_screen.dart'
     as onboarding;
 import '../../features/good_deeds/presentation/screens/good_deeds_screen.dart';
@@ -58,13 +54,15 @@ class AppRouter {
       final isSplash = state.matchedLocation == RouteNames.splash;
       final isLogin = state.matchedLocation == RouteNames.login;
       final isOnboarding =
-          state.matchedLocation == RouteNames.premiumOnboarding ||
-          state.matchedLocation == RouteNames.goalSelection;
+          state.matchedLocation == RouteNames.premiumOnboarding;
 
       // 1. SPLASH GATE: Only block on Splash if we are still initializing
+      // We wait for BOTH Auth and Onboarding to be beyond Initial/Loading.
       if (isSplash) {
-        if (authState is AuthInitial || onboardingState is OnboardingInitial) {
-          debugPrint('🚀 [Router] Still in Initial states, staying on Splash');
+        if (authState is AuthInitial ||
+            authState is AuthLoading ||
+            onboardingState is OnboardingInitial) {
+          debugPrint('🚀 [Router] Still initializing, staying on Splash');
           return null;
         }
       }
@@ -77,21 +75,30 @@ class AppRouter {
         );
       }
 
-      // 2. Check Onboarding Status
+      // 2. FORCE ONBOARDING: If not completed, we MUST go there (even if we are Unauthenticated)
       if (onboardingState is OnboardingNotCompleted) {
-        if (!isOnboarding) return RouteNames.premiumOnboarding;
-        return null;
+        if (!isOnboarding) {
+          debugPrint('🚀 [Router] Redirecting to Onboarding (Premium)');
+          return RouteNames.premiumOnboarding;
+        }
+        return null; // Stay in onboarding flow
       }
 
-      // 3. Check Auth Status
+      // 3. AUTH CHECK: If onboarding is done, check if we need to login
       if (authState is Unauthenticated) {
-        if (!isLogin) return RouteNames.login;
-        return null;
+        if (!isLogin) {
+          debugPrint('🚀 [Router] Redirecting to Login');
+          return RouteNames.login;
+        }
+        return null; // Stay on login
       }
 
-      if (authState is Authenticated &&
-          onboardingState is OnboardingCompleted) {
-        if (isLogin || isSplash || isOnboarding) return RouteNames.home;
+      // 4. HOME REDIRECT: If both completed, go home if user is trying to reach splash/login/onboarding
+      if (authState is Authenticated && onboardingState is OnboardingCompleted) {
+        if (isLogin || isSplash || isOnboarding) {
+          debugPrint('🚀 [Router] All clear, redirecting to Home');
+          return RouteNames.home;
+        }
         return null;
       }
 
@@ -107,20 +114,6 @@ class AppRouter {
         path: RouteNames.login,
         pageBuilder: (context, state) =>
             _buildPageWithTransition(child: const LoginScreen(), state: state),
-      ),
-      GoRoute(
-        path: RouteNames.goalSelection,
-        pageBuilder: (context, state) => _buildPageWithTransition(
-          child: const onboarding.GoalSelectionScreen(),
-          state: state,
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.habitBuildingOnboarding,
-        pageBuilder: (context, state) => _buildPageWithTransition(
-          child: const onboarding.HabitBuildingScreenBeatSatan(),
-          state: state,
-        ),
       ),
       GoRoute(
         path: RouteNames.premiumOnboarding,

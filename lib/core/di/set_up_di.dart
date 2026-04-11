@@ -171,7 +171,7 @@ class SetUpDI {
         authRepository: getIt<AuthRepository>(),
       ),
     );
-    getIt.registerFactory<SalahLockCubit>(
+    getIt.registerLazySingleton<SalahLockCubit>(
       () => SalahLockCubit(
         repository: getIt<SalahLockRepository>(),
         notificationService: getIt<SalahNotificationService>(),

@@ -21,6 +21,11 @@ class _SalahLockOverlayState extends State<SalahLockOverlay>
   int _alhamdulillahCount = 0;
   final int _targetCount = 10;
   bool _isConfirming = false;
+  // Tracks which prayer the overlay is currently displaying. Used to avoid
+  // resetting the Alhamdulillah counter when the cubit re-emits
+  // SalahLockActive for the same prayer (e.g. when settings change or the
+  // salah-state stream fires after a repository reload).
+  String? _displayedSalahName;
 
   @override
   void initState() {
@@ -63,11 +68,20 @@ class _SalahLockOverlayState extends State<SalahLockOverlay>
     return BlocConsumer<SalahLockCubit, SalahLockState>(
       listener: (context, state) {
         if (state is SalahLockActive) {
+          // Only reset the Alhamdulillah counter if the overlay is now
+          // displaying a DIFFERENT prayer than it was before. Re-emits for
+          // the same prayer (e.g. settings change, salah-state reload) must
+          // not wipe out the user's in-progress taps.
+          final bool isNewPrayer = _displayedSalahName != state.salahName;
+          _displayedSalahName = state.salahName;
           _controller.forward();
-          setState(() {
-            _alhamdulillahCount = 0;
-          });
+          if (isNewPrayer) {
+            setState(() {
+              _alhamdulillahCount = 0;
+            });
+          }
         } else {
+          _displayedSalahName = null;
           _controller.reverse();
         }
       },

@@ -7,8 +7,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../components/app_background_widget.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/location/cubit/location_cubit.dart';
 import '../../../../core/location/cubit/location_state.dart';
+import '../../../beat_satan_chalange/presentation/cubit/onboarding_cubit.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../challenge/presentation/cubit/challenge_cubit.dart';
@@ -69,8 +71,28 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
     if (_initialLoadDone) return;
     _initialLoadDone = true;
     context.read<PointsCubit>().loadUserPoints(userId);
-    context.read<ChallengeCubit>().loadChallenge(userId);
     context.read<SalahCubit>().loadTodaysSalahs(userId);
+    
+    // Load challenge and auto-start if needed
+    final challengeCubit = context.read<ChallengeCubit>();
+    challengeCubit.loadChallenge(userId).then((_) async {
+      final state = challengeCubit.state;
+      if (state is ChallengeLoaded && !state.hasAnyChallenge) {
+        // No active challenge, check if there's an onboarding goal to start
+        final onboardingCubit = context.read<OnboardingCubit>();
+        final goal = await onboardingCubit.onboardingRepository.getChallengeGoal();
+        
+        if (goal != null && mounted) {
+          debugPrint('🚀 [Home] Auto-starting boarding goal challenge: $goal');
+          await challengeCubit.startChallenge(
+            userId: userId,
+            durationDays: goal['days'] as int,
+            rewardPoints: goal['points'] as int,
+            challengeType: 'beat_satan',
+          );
+        }
+      }
+    });
   }
 
   /// Reload all data — called on app resume and pull-to-refresh.
@@ -85,7 +107,8 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
       context.read<LocationCubit>().fetchLocation();
     }
     // Re-check after returning from settings (user may have granted permission)
-    if (locState is LocationPermissionDenied || locState is LocationServiceDisabled) {
+    if (locState is LocationPermissionDenied ||
+        locState is LocationServiceDisabled) {
       context.read<LocationCubit>().fetchLocation();
     }
 
@@ -147,18 +170,21 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                                     prayerTimes: prayerTimes,
                                   ),
                                   SizedBox(height: 16.h),
-                                  HomePrayerTimesRow(
-                                    prayerTimes: prayerTimes,
-                                  ),
+                                  HomePrayerTimesRow(prayerTimes: prayerTimes),
                                   SizedBox(height: 16.h),
 
                                   // Location permission / error prompt
                                   if (locationState is LocationPermissionDenied)
-                                    _buildLocationPermissionCard(context, locationState)
-                                  else if (locationState is LocationServiceDisabled)
+                                    _buildLocationPermissionCard(
+                                      context,
+                                      locationState,
+                                    )
+                                  else if (locationState
+                                      is LocationServiceDisabled)
                                     _buildLocationServiceCard(context)
-                                  else if (locationState is LocationError)
-                                    _buildLocationErrorBanner(context),
+                                  else if (locationState is LocationError ||
+                                      locationState is LocationInitial)
+                                    _buildFriendlyLocationPrompt(context),
 
                                   const HomeUserStatsCard(),
                                   const HomeSetupGuideCard(),
@@ -172,17 +198,22 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                                             horizontal: 20.w,
                                           ),
                                           child: Column(
-                                            children: challengeState.challenges.entries
+                                            children: challengeState
+                                                .challenges
+                                                .entries
                                                 .map(
                                                   (e) => Padding(
-                                                    padding: EdgeInsets.only(bottom: 12.h),
+                                                    padding: EdgeInsets.only(
+                                                      bottom: 12.h,
+                                                    ),
                                                     child: GestureDetector(
                                                       onTap: () => context.push(
                                                         '${RouteNames.habitBuilding}?type=${e.key}',
                                                       ),
-                                                      child: ChallengeProgressWidget(
-                                                        challenge: e.value,
-                                                      ),
+                                                      child:
+                                                          ChallengeProgressWidget(
+                                                            challenge: e.value,
+                                                          ),
                                                     ),
                                                   ),
                                                 )
@@ -309,9 +340,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
         decoration: BoxDecoration(
           color: Colors.orangeAccent.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(
-            color: Colors.orangeAccent.withValues(alpha: 0.2),
-          ),
+          border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,49 +404,55 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
     );
   }
 
-  Widget _buildLocationErrorBanner(BuildContext context) {
+  Widget _buildFriendlyLocationPrompt(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w).copyWith(bottom: 12.h),
-      child: GestureDetector(
-        onTap: () => context.read<LocationCubit>().fetchLocation(),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-          decoration: BoxDecoration(
-            color: Colors.redAccent.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(14.r),
-            border: Border.all(
-              color: Colors.redAccent.withValues(alpha: 0.2),
+      child: Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: AppColors.goldAccent.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(
+            color: AppColors.goldAccent.withValues(alpha: 0.15),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              CupertinoIcons.location_circle_fill,
+              color: AppColors.goldAccent,
+              size: 24.sp,
             ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                CupertinoIcons.location_slash_fill,
-                color: Colors.redAccent,
-                size: 18.sp,
-              ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: Text(
-                  'Location unavailable — prayer times may be inaccurate',
-                  style: TextStyle(
-                    color: Colors.white60,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w500,
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Update Location',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    'Find accurate Salah times for your area',
+                    style: TextStyle(color: Colors.white60, fontSize: 12.sp),
+                  ),
+                ],
               ),
-              SizedBox(width: 8.w),
-              Text(
-                'Retry',
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w700,
-                ),
+            ),
+            TextButton(
+              onPressed: () => context.read<LocationCubit>().fetchLocation(),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.goldAccent,
+                padding: EdgeInsets.symmetric(horizontal: 12.w),
               ),
-            ],
-          ),
+              child: const Text('Refresh'),
+            ),
+          ],
         ),
       ),
     );

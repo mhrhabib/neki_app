@@ -28,9 +28,11 @@ class AuthCubit extends Cubit<AuthState> {
         // Trigger onboarding check for the new user
         getIt<OnboardingCubit>().checkOnboarding();
       } else {
-        // Only emit Unauthenticated if we're not in a loading state
-        // to avoid flickering during social login
-        if (state is! AuthLoading) {
+        // ─── CRITICAL FIX FOR SESSION PERSISTENCE ───
+        // Only emit Unauthenticated if we are NOT in the initial setup phase.
+        // At startup (AuthInitial), Firebase stream often emits null briefly.
+        // We let checkAuthStatus() handle the definitive initial check.
+        if (state is! AuthInitial && state is! AuthLoading) {
           emit(Unauthenticated());
         }
       }
@@ -42,12 +44,33 @@ class AuthCubit extends Cubit<AuthState> {
       if (state is Authenticated) return;
       emit(AuthLoading());
 
-      // Try to get user immediately
+      // ─── Session restoration, in order of cheapest → most patient ───
+      // Firebase Auth persists the last signed-in user on disk and restores
+      // it synchronously on SDK init, so in most cases getCurrentUser()
+      // returns immediately. Only when the SDK is still restoring (first
+      // frame after a cold start / process death) do we need to wait.
       UserEntity? user = await authRepository.getCurrentUser();
 
-      // If null, wait a bit for Firebase Auth to initialize (it can be slow on cold start)
+      // If the direct check came back empty, wait on the auth stream. We
+      // use generous timeouts because on slower devices (especially after
+      // a reinstall or OS kill) Firebase's token refresh can take 2-4s.
       if (user == null) {
-        await Future.delayed(const Duration(milliseconds: 500));
+        try {
+          user = await authRepository.authStateChanges
+              .where((u) => u != null)
+              .first
+              .timeout(const Duration(seconds: 4));
+        } catch (_) {
+          // Stream never emitted a non-null — try one more direct read in
+          // case the SDK finished restoring between our first check and now.
+          user = await authRepository.getCurrentUser();
+        }
+      }
+
+      // Final grace period: give Firebase one more beat to finish disk I/O
+      // before we give up and kick the user back to the login screen.
+      if (user == null) {
+        await Future.delayed(const Duration(seconds: 1));
         user = await authRepository.getCurrentUser();
       }
 

@@ -20,4 +20,5 @@ class RouteNames {
   static const String quran = '/quran';
   static const String salahLockSettings = '/salah-lock-settings';
   static const String premiumOnboarding = '/premium-onboarding';
+  static const String locationPermission = '/location-permission';
 }

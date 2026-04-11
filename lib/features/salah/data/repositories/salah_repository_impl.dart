@@ -51,8 +51,12 @@ class SalahRepositoryImpl implements SalahRepository {
     required String userId,
     required String salahName,
   }) async {
-    final id =
-        'salah_${userId}_${salahName}_${DateTime.now().millisecondsSinceEpoch}';
+    final now = DateTime.now();
+    final logicalNow = now.subtract(const Duration(hours: 4));
+    final dateKey =
+        '${logicalNow.year}-${logicalNow.month.toString().padLeft(2, '0')}-${logicalNow.day.toString().padLeft(2, '0')}';
+
+    final id = 'salah_${userId}_${salahName}_$dateKey';
     final salah = SalahModel(
       id: id,
       userId: userId,

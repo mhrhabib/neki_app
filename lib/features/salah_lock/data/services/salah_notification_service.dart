@@ -9,11 +9,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-/// Callback type for when the user taps "   I've prayed   " on a notification.
+/// Callback type for when the user taps "I've prayed" on a notification.
 typedef OnPrayedCallback = void Function(String salahName);
 
-/// Callback type for when the user taps "   not praying   " on a notification.
+/// Callback type for when the user taps "Not praying" on a notification.
 typedef OnSkipCallback = void Function(String salahName);
+
+// ⚠️ iOS action title guidance: keep titles short, no leading/trailing
+// whitespace, ideally no emoji. iOS truncates heavily and action rows
+// with padded titles have been observed to render blank on some devices.
+const String _kPrayedTitle = "I've prayed";
+const String _kSkipTitle = 'Not praying';
 
 class SalahNotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -88,12 +94,12 @@ class SalahNotificationService {
           actions: [
             DarwinNotificationAction.plain(
               _actionIdPrayed,
-              "   I've prayed ✅   ",
+              _kPrayedTitle,
               options: {DarwinNotificationActionOption.foreground},
             ),
             DarwinNotificationAction.plain(
               _actionIdSkip,
-              "   not praying ✕   ",
+              _kSkipTitle,
               // Note: do NOT combine .destructive with .foreground — some
               // iOS versions refuse to render the action when both are set.
               // Keep it destructive (red text) and handle the tap in the
@@ -113,18 +119,79 @@ class SalahNotificationService {
           _onBackgroundNotificationResponse,
     );
 
-    await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.requestNotificationsPermission();
+    // Note: we intentionally DO NOT request user-facing permissions here.
+    // [initialize] runs during DI setup before the app's first frame, and
+    // triggering a system permission dialog at that moment is jarring and
+    // often gets auto-dismissed. Callers should invoke
+    // [requestPermissions] once the UI is ready (e.g. after login or from
+    // the onboarding location page).
+  }
 
-    // Explicitly request iOS notification permissions
-    await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin
-        >()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
+  /// Ensures the app is allowed to post notifications. Safe to call repeatedly
+  /// — the OS only shows the dialog once per install. Returns true if the
+  /// user granted (or previously granted) notification permission.
+  Future<bool> requestPermissions() async {
+    if (Platform.isAndroid) {
+      final android = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      if (android == null) return false;
+      final granted = await android.requestNotificationsPermission() ?? false;
+      debugPrint('🔔 Android POST_NOTIFICATIONS granted=$granted');
+      return granted;
+    }
+    if (Platform.isIOS) {
+      final ios = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      if (ios == null) return false;
+      final granted = await ios.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+            critical: false,
+          ) ??
+          false;
+      debugPrint('🔔 iOS notification permission granted=$granted');
+      return granted;
+    }
+    return true;
+  }
+
+  /// Returns true if the OS currently allows the app to post notifications.
+  /// Does NOT show a dialog. Use this to decide whether to show an in-app
+  /// "please enable notifications" prompt.
+  Future<bool> areNotificationsEnabled() async {
+    if (Platform.isAndroid) {
+      final android = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      final enabled = await android?.areNotificationsEnabled() ?? false;
+      return enabled;
+    }
+    if (Platform.isIOS) {
+      final ios = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      final settings = await ios?.checkPermissions();
+      return settings?.isEnabled ?? false;
+    }
+    return true;
+  }
+
+  /// Prints how many pending notifications the OS currently holds for this
+  /// app. Useful for diagnosing "I never get reminders" bug reports.
+  Future<int> debugLogPending() async {
+    final pending = await _notificationsPlugin.pendingNotificationRequests();
+    debugPrint('🔔 Pending notifications: ${pending.length}');
+    for (final p in pending) {
+      debugPrint('   id=${p.id} title=${p.title} payload=${p.payload}');
+    }
+    return pending.length;
   }
 
   static void _onNotificationResponse(NotificationResponse response) {
@@ -206,12 +273,12 @@ class SalahNotificationService {
           actions: const [
             AndroidNotificationAction(
               _actionIdPrayed,
-              "   I've prayed ✅   ",
+              _kPrayedTitle,
               showsUserInterface: true,
             ),
             AndroidNotificationAction(
               _actionIdSkip,
-              "   not praying ✕   ",
+              _kSkipTitle,
               showsUserInterface: false,
               cancelNotification: true,
             ),
@@ -263,12 +330,12 @@ class SalahNotificationService {
           actions: const [
             AndroidNotificationAction(
               _actionIdPrayed,
-              "   I've prayed ✅   ",
+              _kPrayedTitle,
               showsUserInterface: true,
             ),
             AndroidNotificationAction(
               _actionIdSkip,
-              "   not praying ✕   ",
+              _kSkipTitle,
               showsUserInterface: false,
               cancelNotification: true,
             ),
@@ -394,39 +461,46 @@ class SalahNotificationService {
         continue;
       }
 
+      // Anchor for the first slot. If the prayer time is in the past but
+      // the window is still open (user opened the app mid-prayer), anchor
+      // to "now + 3s" so we still schedule reminders across the remainder
+      // of the window — otherwise a user who opens the app 45+ min after
+      // the adhan would never hear a single reminder for that prayer.
+      final tz.TZDateTime anchor = tzPrayerTime.isBefore(now)
+          ? now.add(const Duration(seconds: 3))
+          : tzPrayerTime;
+
       int slot = 0;
-      tz.TZDateTime fireAt = tzPrayerTime;
+      tz.TZDateTime fireAt = anchor;
 
       while (slot < _maxReminders &&
           fireAt.isBefore(windowEnd) &&
           (Platform.isAndroid || totalScheduled < iosMaxPending)) {
-        if (fireAt.isAfter(now)) {
-          final scheduled = fireAt;
-          final isFirst = slot == 0;
-          await _notificationsPlugin.zonedSchedule(
-            base + slot,
-            '🕌 $name Time',
-            isFirst
-                ? (_prayerMessages[name] ?? 'Time for $name prayer.')
-                : (_reminderMessages[name] ?? 'Reminder: $name prayer.'),
-            scheduled,
-            _notificationDetails(name),
-            payload: name,
-            androidScheduleMode: scheduleMode,
-            uiLocalNotificationDateInterpretation:
-                UILocalNotificationDateInterpretation.absoluteTime,
-          );
-          totalScheduled++;
-          debugPrint(
-            '🔔 $name [slot $slot] scheduled at ${scheduled.toLocal()} (total: $totalScheduled)',
-          );
-        }
+        // By construction fireAt >= now, so no past-time guard needed.
+        final isFirst = slot == 0;
+        await _notificationsPlugin.zonedSchedule(
+          base + slot,
+          '🕌 $name Time',
+          isFirst
+              ? (_prayerMessages[name] ?? 'Time for $name prayer.')
+              : (_reminderMessages[name] ?? 'Reminder: $name prayer.'),
+          fireAt,
+          _notificationDetails(name),
+          payload: name,
+          androidScheduleMode: scheduleMode,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+        totalScheduled++;
+        debugPrint(
+          '🔔 $name [slot $slot] scheduled at ${fireAt.toLocal()} (total: $totalScheduled)',
+        );
         slot++;
-        fireAt = tzPrayerTime.add(_interval * slot);
+        fireAt = anchor.add(_interval * slot);
       }
 
       if (slot == 0) {
-        debugPrint('⏭️ $name — all times passed, skipping');
+        debugPrint('⏭️ $name — window fully passed, skipping');
       }
     }
 
@@ -479,7 +553,11 @@ class SalahNotificationService {
         presentList: true,
         presentSound: true,
         categoryIdentifier: 'salah_prayer_category',
-        interruptionLevel: InterruptionLevel.timeSensitive,
+        // Note: InterruptionLevel.timeSensitive requires the
+        // `com.apple.developer.usernotifications.time-sensitive` entitlement
+        // — without it, iOS silently downgrades the notification and on some
+        // devices fails to render the action row entirely. Stick to the
+        // default interruption level until/unless the entitlement is added.
       ),
     );
   }
@@ -505,12 +583,12 @@ class SalahNotificationService {
           actions: const [
             AndroidNotificationAction(
               _actionIdPrayed,
-              "   I've prayed ✅   ",
+              _kPrayedTitle,
               showsUserInterface: true,
             ),
             AndroidNotificationAction(
               _actionIdSkip,
-              "   not praying ✕   ",
+              _kSkipTitle,
               showsUserInterface: false,
               cancelNotification: true,
             ),
@@ -553,6 +631,139 @@ class SalahNotificationService {
 
   Future<void> cancelAll() async {
     await _notificationsPlugin.cancelAll();
+  }
+
+
+  /// Schedule daily recurring Dhikr notifications.
+  Future<void> scheduleDhikrReminders() async {
+    final location = _tzLocation();
+    final now = tz.TZDateTime.now(location);
+    final scheduleMode = await _canUseExactAlarms()
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+
+    final morningTime =
+        tz.TZDateTime(location, now.year, now.month, now.day, 8, 0);
+    final eveningTime =
+        tz.TZDateTime(location, now.year, now.month, now.day, 16, 0);
+
+    // Morning Dhikr
+    await _notificationsPlugin.zonedSchedule(
+      800,
+      'Time for Morning Dhikr 🌅',
+      'Start your day with remembrance of Allah.',
+      morningTime.isBefore(now)
+          ? morningTime.add(const Duration(days: 1))
+          : morningTime,
+      _dhikrNotificationDetails(),
+      androidScheduleMode: scheduleMode,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+
+    // Evening Dhikr
+    await _notificationsPlugin.zonedSchedule(
+      801,
+      'Time for Evening Dhikr 🌇',
+      'End your day with peace and gratitude.',
+      eveningTime.isBefore(now)
+          ? eveningTime.add(const Duration(days: 1))
+          : eveningTime,
+      _dhikrNotificationDetails(),
+      androidScheduleMode: scheduleMode,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+
+    debugPrint('🔔 Dhikr reminders scheduled: 08:00 and 16:00 daily');
+  }
+
+  NotificationDetails _dhikrNotificationDetails() {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        'dhikr_reminder_channel',
+        'Dhikr Reminders',
+        channelDescription: 'Daily Morning and Evening Dhikr reminders',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBanner: true,
+        presentList: true,
+        presentSound: true,
+      ),
+    );
+  }
+
+  /// Schedule daily recurring Quran notifications.
+  Future<void> scheduleQuranReminders() async {
+    final location = _tzLocation();
+    final now = tz.TZDateTime.now(location);
+    final scheduleMode = await _canUseExactAlarms()
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+
+    final morningTime =
+        tz.TZDateTime(location, now.year, now.month, now.day, 10, 0);
+    final eveningTime =
+        tz.TZDateTime(location, now.year, now.month, now.day, 20, 0);
+
+    // Morning Quran
+    await _notificationsPlugin.zonedSchedule(
+      802,
+      'Time for Quran Recitation 📖',
+      'Illuminate your day with the words of Allah.',
+      morningTime.isBefore(now)
+          ? morningTime.add(const Duration(days: 1))
+          : morningTime,
+      _quranNotificationDetails(),
+      androidScheduleMode: scheduleMode,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+
+    // Evening Quran
+    await _notificationsPlugin.zonedSchedule(
+      803,
+      'Time for Quran Recitation 📖',
+      'Find peace and reflection in the Quran tonight.',
+      eveningTime.isBefore(now)
+          ? eveningTime.add(const Duration(days: 1))
+          : eveningTime,
+      _quranNotificationDetails(),
+      androidScheduleMode: scheduleMode,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+
+    debugPrint('🔔 Quran reminders scheduled: 10:00 and 20:00 daily');
+  }
+
+  NotificationDetails _quranNotificationDetails() {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        'quran_reminder_channel',
+        'Quran Reminders',
+        channelDescription: 'Daily Morning and Evening Quran reminders',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBanner: true,
+        presentList: true,
+        presentSound: true,
+      ),
+    );
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────

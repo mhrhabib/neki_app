@@ -15,10 +15,6 @@ import 'features/challenge/presentation/cubit/challenge_cubit.dart';
 import 'core/location/cubit/location_cubit.dart';
 import 'features/salah_lock/presentation/cubit/salah_lock_cubit.dart';
 import 'features/salah_lock/presentation/widgets/salah_lock_overlay.dart';
-import 'features/salah_lock/domain/repositories/salah_lock_repository.dart';
-import 'features/salah_lock/data/services/salah_notification_service.dart';
-import 'features/salah_lock/data/services/device_management_service.dart';
-import 'features/auth/domain/repositories/premium_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,16 +47,7 @@ class _NekiAppState extends State<NekiApp> {
         BlocProvider.value(value: getIt<PointsCubit>()),
         BlocProvider.value(value: getIt<ChallengeCubit>()),
         BlocProvider.value(value: getIt<LocationCubit>()..fetchLocation()),
-        BlocProvider(
-          create: (context) => SalahLockCubit(
-            repository: getIt<SalahLockRepository>(),
-            notificationService: getIt<SalahNotificationService>(),
-            deviceManager: getIt<DeviceManagementService>(),
-            salahCubit: BlocProvider.of<SalahCubit>(context),
-            locationCubit: BlocProvider.of<LocationCubit>(context),
-            premiumRepository: getIt<PremiumRepository>(),
-          )..init(),
-        ),
+        BlocProvider.value(value: getIt<SalahLockCubit>()..init()),
       ],
       child: BlocBuilder<ThemeCubit, ThemeData>(
         builder: (context, themeData) {

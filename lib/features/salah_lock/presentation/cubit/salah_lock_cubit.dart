@@ -29,6 +29,7 @@ class SalahLockCubit extends Cubit<SalahLockState> {
   Timer? _monitoringTimer;
   StreamSubscription? _locationSubscription;
   StreamSubscription? _salahSubscription;
+  StreamSubscription? _authSubscription;
   SalahLockSettings _settings = SalahLockSettings();
   bool _isGuideDismissed = false;
   List<Map<String, String>> _ayahs = [];
@@ -58,12 +59,32 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     final List<dynamic> jsonList = json.decode(jsonString);
     _ayahs = jsonList.map((e) => Map<String, String>.from(e)).toList();
 
-    // ── Guard: don't start monitoring if no user is logged in ──
-    if (FirebaseAuth.instance.currentUser == null) {
-      debugPrint('⏭️ SalahLock: No user logged in, skipping monitoring');
-      emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
-      return;
-    }
+    // Note: Reconciliation of background-marked prayers (from killed-app
+    // notification actions) happens in the salahSubscription listener below,
+    // once SalahLoaded arrives — not here, because at init time SalahCubit is
+    // still in its Initial state and we'd have nothing to compare against.
+
+    // ── Auth lifecycle ──
+    // On cold start, Firebase Auth restoration can finish AFTER init() runs,
+    // so currentUser may be null here even though the user is about to be
+    // "authenticated" on the very next frame. Instead of early-returning and
+    // leaving the cubit dead, we set up all listeners and rely on this auth
+    // subscription to (re)schedule notifications once the user is available.
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        debugPrint('🔐 SalahLock: user=${user.uid} — starting monitoring');
+        if (locationCubit.state is LocationLoaded) {
+          startMonitoring(
+            userId: user.uid,
+            locationState: locationCubit.state as LocationLoaded,
+          );
+        }
+      } else {
+        debugPrint('🔐 SalahLock: user signed out — cancelling monitoring');
+        _monitoringTimer?.cancel();
+        notificationService.cancelPrayerNotifications();
+      }
+    });
 
     _locationSubscription = locationCubit.stream.listen((locationState) {
       if (locationState is LocationLoaded) {
@@ -79,6 +100,10 @@ class SalahLockCubit extends Cubit<SalahLockState> {
         // so notifications are cancelled for prayers marked complete via the
         // Salah screen or another device.
         await _syncCompletedPrayersFromSalahState();
+        // Also reconcile local → Firestore: if the background notification
+        // handler (or another offline action) marked a prayer done locally
+        // but Firestore doesn't know yet, write it now.
+        await _reconcileLocalPrayersToFirestore(salahState);
         if (locationCubit.state is LocationLoaded) {
           final prayerTimes = _getPrayerTimes(locationCubit.state as LocationLoaded);
           await checkPrayerLock(prayerTimes, '');
@@ -86,10 +111,18 @@ class SalahLockCubit extends Cubit<SalahLockState> {
       }
     });
 
-    if (_settings.isEnabled) {
-      // Ensure alarm + battery permissions are granted silently on startup
-      checkAndRequestBasicPermissions();
-    }
+    // Request notification permission + exact-alarm + battery-opt exemption
+    // unconditionally. Notifications fire regardless of whether the user
+    // has "lock" turned on — they're separate features and we don't want
+    // the user to miss reminders just because they haven't toggled lock yet.
+    // Fire-and-forget: we don't want init() to block on a system dialog.
+    notificationService.requestPermissions().then((granted) async {
+      debugPrint('🔔 SalahLock: notification permission granted=$granted');
+      // Log currently pending notifications for diagnostic purposes —
+      // helps answer "why am I not getting reminders?" bug reports.
+      await notificationService.debugLogPending();
+    });
+    checkAndRequestBasicPermissions();
 
     if (locationCubit.state is LocationLoaded) {
       startMonitoring(userId: '', locationState: locationCubit.state as LocationLoaded);
@@ -136,6 +169,12 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     notificationService.scheduleAllPrayerNotifications(prayerTimes, tomorrowPrayerTimes: tomorrowPrayers, completedPrayers: completed).catchError((e) {
       debugPrint('⚠️ SalahLock: Failed to schedule prayer notifications: $e');
     });
+    notificationService.scheduleDhikrReminders().catchError((e) {
+      debugPrint('⚠️ SalahLock: Failed to schedule dhikr reminders: $e');
+    });
+    notificationService.scheduleQuranReminders().catchError((e) {
+      debugPrint('⚠️ SalahLock: Failed to schedule quran reminders: $e');
+    });
   }
 
   Future<void> _scheduleNotificationsIfNewDay(PrayerTimes prayerTimes) async {
@@ -148,6 +187,12 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     final completed = await _getCompletedPrayers();
     notificationService.scheduleAllPrayerNotifications(prayerTimes, tomorrowPrayerTimes: tomorrowPrayers, completedPrayers: completed).catchError((e) {
       debugPrint('⚠️ SalahLock: Failed to schedule prayer notifications: $e');
+    });
+    notificationService.scheduleDhikrReminders().catchError((e) {
+      debugPrint('⚠️ SalahLock: Failed to schedule dhikr reminders: $e');
+    });
+    notificationService.scheduleQuranReminders().catchError((e) {
+      debugPrint('⚠️ SalahLock: Failed to schedule quran reminders: $e');
     });
   }
 
@@ -246,46 +291,85 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     }
   }
 
-  /// Public entry point used by the Salah screen (and any other UI surface)
-  /// to mark a prayer as prayed. Cancels notifications and updates local
-  /// state immediately so the user doesn't keep getting reminders.
-  Future<void> markPrayerCompletedExternally(String salahName) async {
-    await repository.markSalahCompletedLocally(salahName);
-    await notificationService.cancelPrayerByName(salahName);
-    if (state is SalahLockActive &&
-        (state as SalahLockActive).salahName == salahName) {
-      emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
-    }
-  }
-
-  void _onNotificationPrayed(String salahName) {
+  /// Reconcile local-only completions back to Firestore.
+  ///
+  /// The background notification handler can only persist to SharedPreferences
+  /// (no Firestore access in a background isolate), so when the user taps
+  /// "I've prayed" from a killed-app notification, only the local flag is set.
+  /// Next time the app opens and SalahCubit finishes loading, we look for any
+  /// prayer that is locally marked done but isn't complete in Firestore, and
+  /// write it up so the Salah tracker, points, and leaderboard stay accurate.
+  bool _reconciledOnce = false;
+  Future<void> _reconcileLocalPrayersToFirestore(SalahLoaded salahState) async {
+    // Only reconcile once per SalahCubit reload-cycle — avoid chasing our
+    // tail when markSalahComplete itself triggers another SalahLoaded.
+    if (_reconciledOnce) return;
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    confirmPrayed(uid, salahName);
-  }
+    if (uid.isEmpty) return;
 
-  void _onNotificationSkip(String salahName) {
-    notificationService.cancelPrayerByName(salahName);
-    repository.markSalahCompletedLocally(salahName);
-    if (state is SalahLockActive) {
-      emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
+    const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    bool wrote = false;
+    for (final name in prayers) {
+      final localDone = await repository.isSalahCompletedLocally(name);
+      if (!localDone) continue;
+      final remoteDone = salahState.salahs.any(
+        (s) => s.salahName == name && s.isCompleted,
+      );
+      if (remoteDone) continue;
+      // Local says done, Firestore disagrees → reconcile.
+      debugPrint('♻️ Reconciling $name: local done → Firestore');
+      try {
+        await salahCubit.markSalahComplete(userId: uid, salahName: name);
+        wrote = true;
+      } catch (e) {
+        debugPrint('⚠️ SalahLock: reconcile $name failed: $e');
+      }
+    }
+    _reconciledOnce = true;
+    // If we wrote anything, SalahCubit will emit SalahLoaded again and the
+    // listener will see remoteDone=true for those prayers on the next pass.
+    if (wrote) {
+      debugPrint('♻️ Reconciliation wrote at least one prayer to Firestore');
     }
   }
 
-  Future<void> confirmPrayed(String userId, String salahName) async {
-    // Resolve a real userId if the caller didn't pass one (e.g. notification
-    // action handler). Without this, the Firestore write stores an empty
-    // userId and the Salah screen never sees the prayer as complete.
-    final effectiveUserId = userId.isNotEmpty
+  /// The single unified entry point for marking a prayer as prayed.
+  ///
+  /// Call this from ANY source (overlay, notification action, salah screen).
+  /// It persists locally, cancels notifications for this prayer, writes to
+  /// Firestore via [SalahCubit.markSalahComplete] (which is idempotent), and
+  /// drives the overlay state machine.
+  ///
+  /// [showUnlockAnimation] is true when the caller is the overlay itself so
+  /// the user sees the brief "Unlocked" confirmation before it fades away.
+  Future<void> markPrayed({
+    required String salahName,
+    String? userId,
+    bool showUnlockAnimation = false,
+  }) async {
+    final effectiveUserId = (userId != null && userId.isNotEmpty)
         ? userId
         : (FirebaseAuth.instance.currentUser?.uid ?? '');
 
-    // Mark locally + cancel notifications FIRST so any in-flight
-    // checkPrayerLock call (triggered by SalahCubit reloads) immediately
-    // sees this prayer as done and doesn't re-emit SalahLockActive.
+    final wasAlreadyLocal = await repository.isSalahCompletedLocally(salahName);
+
+    // 1. Persist locally + cancel notifications FIRST so any in-flight
+    //    checkPrayerLock call (triggered by SalahCubit reloads) immediately
+    //    sees this prayer as done and doesn't re-emit SalahLockActive.
     await repository.markSalahCompletedLocally(salahName);
     await notificationService.cancelPrayerByName(salahName);
-    emit(SalahLockUnlocked(_settings, isGuideDismissed: _isGuideDismissed));
 
+    // 2. Drive overlay state machine.
+    if (showUnlockAnimation) {
+      emit(SalahLockUnlocked(_settings, isGuideDismissed: _isGuideDismissed));
+    } else if (state is SalahLockActive &&
+        (state as SalahLockActive).salahName == salahName) {
+      emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
+    }
+
+    // 3. Write to Firestore. SalahCubit.markSalahComplete is idempotent —
+    //    it checks the current SalahLoaded state and skips if the prayer is
+    //    already complete (so points aren't double-credited).
     if (effectiveUserId.isNotEmpty) {
       try {
         await salahCubit.markSalahComplete(
@@ -296,15 +380,55 @@ class SalahLockCubit extends Cubit<SalahLockState> {
         debugPrint('⚠️ SalahLock: markSalahComplete failed: $e');
       }
     } else {
-      debugPrint('⚠️ SalahLock: confirmPrayed called with no userId — '
-          'skipping Firestore write');
+      debugPrint('⚠️ SalahLock: markPrayed called with no userId — '
+          'skipping Firestore write (will reconcile on next login)');
     }
 
-    Future.delayed(const Duration(seconds: 2), () {
-      if (state is SalahLockUnlocked) {
-        emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
-      }
-    });
+    // 4. Auto-return to Idle after the unlock animation.
+    if (showUnlockAnimation) {
+      Future.delayed(const Duration(seconds: 2), () {
+        if (state is SalahLockUnlocked) {
+          emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
+        }
+      });
+    }
+
+    if (wasAlreadyLocal) {
+      debugPrint('ℹ️ $salahName was already locally marked — idempotent path');
+    }
+  }
+
+  /// Public entry point used by the Salah screen (and any other UI surface)
+  /// to mark a prayer as prayed. Thin wrapper around [markPrayed].
+  Future<void> markPrayerCompletedExternally(String salahName) {
+    return markPrayed(salahName: salahName);
+  }
+
+  /// Called from the overlay's "Yes, I prayed" button. Thin wrapper around
+  /// [markPrayed] that plays the unlock animation.
+  Future<void> confirmPrayed(String userId, String salahName) {
+    return markPrayed(
+      salahName: salahName,
+      userId: userId,
+      showUnlockAnimation: true,
+    );
+  }
+
+  void _onNotificationPrayed(String salahName) {
+    // Fire and forget — markPrayed handles the entire flow including
+    // Firestore write, notification cancellation, and overlay transition.
+    markPrayed(salahName: salahName);
+  }
+
+  void _onNotificationSkip(String salahName) {
+    // "Not praying" = silence reminders for this prayer today, but don't
+    // count it as prayed (no Firestore write, no points).
+    notificationService.cancelPrayerByName(salahName);
+    repository.markSalahCompletedLocally(salahName);
+    if (state is SalahLockActive &&
+        (state as SalahLockActive).salahName == salahName) {
+      emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
+    }
   }
 
   Future<void> remindLater(String salahName) async {
@@ -388,6 +512,7 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     _monitoringTimer?.cancel();
     _locationSubscription?.cancel();
     _salahSubscription?.cancel();
+    _authSubscription?.cancel();
     emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
   }
 }

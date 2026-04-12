@@ -1,7 +1,6 @@
 import Flutter
 import UIKit
 import UserNotifications
-import flutter_local_notifications
 import FamilyControls
 import ManagedSettings
 import SwiftUI

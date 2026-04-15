@@ -452,17 +452,21 @@ class SalahNotificationService {
       // Convert prayer time to timezone-aware for consistent comparisons
       var tzPrayerTime = tz.TZDateTime.from(prayerTime, location);
 
-      // If this prayer time has fully passed and it's Fajr, schedule tomorrow's Fajr instead
-      final tz.TZDateTime windowEnd = p + 1 < orderedPrayers.length
-          ? tz.TZDateTime.from(orderedPrayers[p + 1].$2, location)
-          : tz.TZDateTime(
-              location,
-              tzPrayerTime.year,
-              tzPrayerTime.month,
-              tzPrayerTime.day,
-              23,
-              59,
-            );
+      // If this prayer time has fully passed and it's Fajr, schedule tomorrow's Fajr instead.
+      // Fajr's valid window ends at sunrise, not at Dhuhr — the gap between sunrise and
+      // Dhuhr is a forbidden-prayer period, so reminders must not fire there.
+      final tz.TZDateTime windowEnd = name == 'Fajr'
+          ? tz.TZDateTime.from(prayerTimes.sunrise, location)
+          : p + 1 < orderedPrayers.length
+              ? tz.TZDateTime.from(orderedPrayers[p + 1].$2, location)
+              : tz.TZDateTime(
+                  location,
+                  tzPrayerTime.year,
+                  tzPrayerTime.month,
+                  tzPrayerTime.day,
+                  23,
+                  59,
+                );
 
       if (!windowEnd.isAfter(now) &&
           name == 'Fajr' &&

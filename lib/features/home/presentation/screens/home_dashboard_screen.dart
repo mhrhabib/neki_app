@@ -221,6 +221,22 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                     SafeArea(
                       child: MultiBlocListener(
                         listeners: [
+                          BlocListener<LocationCubit, LocationState>(
+                            listenWhen: (prev, curr) =>
+                                curr is LocationLoaded &&
+                                curr.countryCode != null &&
+                                (prev is! LocationLoaded ||
+                                    prev.countryCode != curr.countryCode),
+                            listener: (context, state) {
+                              if (state is LocationLoaded &&
+                                  state.countryCode != null) {
+                                context
+                                    .read<AuthCubit>()
+                                    .authRepository
+                                    .syncCountry(state.countryCode!);
+                              }
+                            },
+                          ),
                           BlocListener<SalahCubit, SalahState>(
                             listenWhen: (previous, current) {
                               if (previous is SalahLoading &&

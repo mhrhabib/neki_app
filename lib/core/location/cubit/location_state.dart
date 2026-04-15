@@ -15,15 +15,17 @@ class LocationLoaded extends LocationState {
   final String address;
   final double latitude;
   final double longitude;
+  final String? countryCode;
 
   const LocationLoaded({
     required this.address,
     required this.latitude,
     required this.longitude,
+    this.countryCode,
   });
 
   @override
-  List<Object?> get props => [address, latitude, longitude];
+  List<Object?> get props => [address, latitude, longitude, countryCode];
 }
 
 class LocationPermissionDenied extends LocationState {

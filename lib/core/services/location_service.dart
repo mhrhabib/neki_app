@@ -6,11 +6,13 @@ class UserLocation {
   final String address;
   final double latitude;
   final double longitude;
+  final String? countryCode;
 
   UserLocation({
     required this.address,
     required this.latitude,
     required this.longitude,
+    this.countryCode,
   });
 }
 
@@ -93,6 +95,7 @@ class LocationService {
 
       String address =
           '${position.latitude.toStringAsFixed(2)}, ${position.longitude.toStringAsFixed(2)}';
+      String? isoCountryCode;
 
       try {
         debugPrint('📍 [LocationService] Starting reverse geocoding...');
@@ -104,8 +107,13 @@ class LocationService {
         if (placemarks.isNotEmpty) {
           Placemark place = placemarks[0];
           debugPrint(
-            '📍 [LocationService] Placemark detail — locality: "${place.locality}", subLocality: "${place.subLocality}", subAdmin: "${place.subAdministrativeArea}", admin: "${place.administrativeArea}", country: "${place.country}"',
+            '📍 [LocationService] Placemark detail — locality: "${place.locality}", subLocality: "${place.subLocality}", subAdmin: "${place.subAdministrativeArea}", admin: "${place.administrativeArea}", country: "${place.country}", iso: "${place.isoCountryCode}"',
           );
+
+          final iso = place.isoCountryCode?.trim();
+          if (iso != null && iso.length == 2) {
+            isoCountryCode = iso.toUpperCase();
+          }
 
           String? nonEmpty(String? v) =>
               (v != null && v.trim().isNotEmpty) ? v.trim() : null;
@@ -140,6 +148,7 @@ class LocationService {
         address: address,
         latitude: position.latitude,
         longitude: position.longitude,
+        countryCode: isoCountryCode,
       );
     } on LocationServiceOffException {
       rethrow;

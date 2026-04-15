@@ -22,6 +22,7 @@ class LocationCubit extends Cubit<LocationState> {
           address: userLocation.address,
           latitude: userLocation.latitude,
           longitude: userLocation.longitude,
+          countryCode: userLocation.countryCode,
         ),
       );
     } on LocationServiceOffException {

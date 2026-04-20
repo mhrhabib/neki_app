@@ -24,13 +24,10 @@ class JourneyScreen extends StatefulWidget {
 }
 
 class _JourneyScreenState extends State<JourneyScreen> {
-  bool _isPremium = false;
-
   @override
   void initState() {
     super.initState();
     _loadData();
-    _checkPremium();
   }
 
   void _loadData() {
@@ -57,18 +54,11 @@ class _JourneyScreenState extends State<JourneyScreen> {
     );
   }
 
-  Future<void> _checkPremium() async {
-    final status = await getIt<PremiumRepository>().isPremium();
-    if (mounted) {
-      setState(() => _isPremium = status);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<bool>(
       stream: getIt<PremiumRepository>().premiumStatusStream,
-      initialData: _isPremium,
+      initialData: getIt<PremiumRepository>().isPremiumSync(),
       builder: (context, snapshot) {
         final isPremium = snapshot.data ?? false;
 

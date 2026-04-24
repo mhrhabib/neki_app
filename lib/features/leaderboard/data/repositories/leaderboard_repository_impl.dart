@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart';
+
 import '../../../../core/services/firestore_service.dart';
 import '../../domain/entities/leaderboard_entry_entity.dart';
 import '../../domain/repositories/leaderboard_repository.dart';
@@ -40,8 +42,8 @@ class LeaderboardRepositoryImpl implements LeaderboardRepository {
       for (final doc in snapshot.docs) {
         entries.add(_fromDoc(doc.data(), doc.id, entries.length + 1));
       }
-      print('Fetched ${entries.length} global leaderboard entries');
-      print('Leaderboard entries: ${entries.map((e) => e.userName).toList()}');
+      debugPrint('Fetched ${entries.length} global leaderboard entries');
+      debugPrint('Leaderboard entries: ${entries.map((e) => e.userName).toList()}');
       return entries;
     } catch (e) {
       throw Exception('Failed to load leaderboard: $e');

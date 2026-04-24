@@ -3,9 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:neki_app/features/salah_lock/domain/entities/salah_lock_settings.dart';
-import '../../../../core/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../components/app_background_widget.dart';
 import '../../../../core/widgets/custom_back_button.dart';
@@ -296,9 +294,8 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
     SalahLockCubit cubit,
     SalahLockSettings settings,
   ) {
+    // Donation mode: all 5 prayers unlocked for everyone.
     final prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
-    final premiumRepo = cubit.premiumRepository;
-    final isPremium = premiumRepo.isPremiumSync();
 
     return Column(
       children: prayers.map((name) {
@@ -310,20 +307,6 @@ class _SalahLockSettingsScreenState extends State<SalahLockSettingsScreen> {
           value: isEnabled,
           onChanged: (val) {
             if (val) {
-              // Check limit for free users
-              if (!isPremium && settings.enabledPrayers.length >= 2) {
-                // Show paywall
-                context.push(RouteNames.premium);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Free version is limited to 2 prayers. Go Pro to unlock all 5! 🔓',
-                    ),
-                    backgroundColor: AppColors.goldAccent,
-                  ),
-                );
-                return;
-              }
               final newList = List<String>.from(settings.enabledPrayers)
                 ..add(name);
               cubit.updateSettings(settings.copyWith(enabledPrayers: newList));

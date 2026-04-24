@@ -28,7 +28,7 @@ class HomeFeatureCards extends StatelessWidget {
                   imagePath: 'assets/images/features/addiction_recovery.png',
                   onTap: () => context.push(
                     _isAddictionActive(state)
-                        ? '${RouteNames.habitBuilding}?type=addiction'
+                        ? RouteNames.addictionTracker
                         : RouteNames.addiction,
                   ),
                   gradient: const [Color(0xFF1E4D35), Color(0xFF0D2818)],

@@ -18,7 +18,7 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   }
 
   @override
-  Future<ChallengeEntity?> getActiveChallenge(String userId, {String? typeKey}) async {
+  Future<ChallengeEntity?> getActiveChallenge(String userId, {String? typeKey, bool allowFallback = true}) async {
     try {
       final docId = _docId(userId, typeKey);
       final doc = await _firestoreService.getDocument(
@@ -28,9 +28,22 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
 
       if (doc != null && doc.exists) {
         final challenge = ChallengeModel.fromJson(doc.data()!);
-        debugPrint('📊 [Challenge] Loaded ($docId): $challenge');
         return challenge;
       }
+
+      // Fallback: If typeKey was normalized (e.g. 'addiction_porn') but the 
+      // doc was saved with an un-normalized ID (e.g. 'userId_addiction_porn_7'),
+      // we try to find it by scanning all active challenges.
+      // We check allowFallback to prevent infinite recursion when called from getAllActiveChallenges.
+      if (typeKey != null && allowFallback) {
+        final all = await getAllActiveChallenges(userId);
+        for (final c in all) {
+          if (ChallengeModel.typeKey(c.challengeType) == typeKey) {
+            return c;
+          }
+        }
+      }
+
       return null;
     } catch (e) {
       debugPrint('❌ [Challenge] Error loading challenge: $e');
@@ -41,21 +54,24 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   @override
   Future<List<ChallengeEntity>> getAllActiveChallenges(String userId) async {
     try {
-      // Check known type keys
-      final typeKeys = ['beat_satan', 'addiction'];
+      final typeKeys = <String>[
+        'beat_satan',
+        ...ChallengeModel.kAddictionTypes,
+        'addiction',
+      ];
       final challenges = <ChallengeEntity>[];
 
       for (final key in typeKeys) {
-        final challenge = await getActiveChallenge(userId, typeKey: key);
+        // Disable fallback here to avoid recursion. We are just probing.
+        final challenge = await getActiveChallenge(userId, typeKey: key, allowFallback: false);
         if (challenge != null) {
           challenges.add(challenge);
         }
       }
 
       // Also check legacy doc (just userId, no suffix)
-      final legacy = await getActiveChallenge(userId);
+      final legacy = await getActiveChallenge(userId, allowFallback: false);
       if (legacy != null) {
-        // Only add if not a duplicate of a typed challenge
         final legacyKey = ChallengeModel.typeKey(legacy.challengeType);
         if (!challenges.any((c) => ChallengeModel.typeKey(c.challengeType) == legacyKey)) {
           challenges.add(legacy);
@@ -141,8 +157,9 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
               userId: userId,
             );
 
+      final isAddiction = model.challengeType?.startsWith('addiction') ?? false;
       final newCompletedDays = model.completedDays + 1;
-      final newStatus = newCompletedDays >= model.durationDays
+      final newStatus = (newCompletedDays >= model.durationDays && !isAddiction)
           ? ChallengeStatus.completed
           : ChallengeStatus.active;
 
@@ -152,7 +169,7 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
       );
 
       await saveChallenge(userId, updatedChallenge);
-      debugPrint('✅ [Challenge] Day $newCompletedDays completed!');
+      debugPrint('✅ [ChallengeRepo] Day $newCompletedDays completed (Status: ${newStatus.name})');
     } catch (e) {
       debugPrint('❌ [Challenge] Error completing today: $e');
       rethrow;
@@ -163,5 +180,81 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   Future<bool> hasActiveChallenge(String userId, {String? typeKey}) async {
     final challenge = await getActiveChallenge(userId, typeKey: typeKey);
     return challenge != null && challenge.status == ChallengeStatus.active;
+  }
+
+  // ────────────────────────── Past attempts ─────────────────────────
+  //
+  // Stored as a FLAT top-level collection so the existing security rule
+  //   match /{collection}/{docId}: allow if docId starts with uid OR
+  //                                resource.data.userId == uid
+  // applies. Sub-collections aren't reachable under that rule, so a
+  // nested layout (e.g. addiction_history/{x}/attempts/{y}) would be
+  // permission-denied for end users.
+  //
+  // Layout:
+  //   collection: addiction_history
+  //   docId:      {uid}_{typeKey}_{startMs}
+  //   fields:     userId, typeKey, startDate, endedAt, daysClean, ...
+
+  String _historyDocId(String userId, String typeKey, DateTime startDate) =>
+      '${userId}_${typeKey}_${startDate.millisecondsSinceEpoch}';
+
+  @override
+  Future<void> archiveAddictionAttempt(
+    String userId,
+    ChallengeEntity attempt,
+  ) async {
+    final typeKey = ChallengeModel.typeKey(attempt.challengeType);
+    if (!typeKey.startsWith('addiction')) return; // only archive addictions
+    try {
+      final model = attempt is ChallengeModel
+          ? attempt
+          : ChallengeModel(
+              durationDays: attempt.durationDays,
+              rewardPoints: attempt.rewardPoints,
+              startDate: attempt.startDate,
+              completedDays: attempt.completedDays,
+              status: ChallengeStatus.failed,
+              challengeType: attempt.challengeType,
+              userId: userId,
+            );
+      final endedAt = DateTime.now();
+      final daysClean = endedAt.difference(model.startDate).inDays;
+      await _firestoreService.setDocument(
+        collectionPath: 'addiction_history',
+        documentId: _historyDocId(userId, typeKey, model.startDate),
+        data: {
+          ...model.toJson(),
+          'userId': userId, // required for security rule + query
+          'typeKey': typeKey, // required for query
+          'endedAt': endedAt.toIso8601String(),
+          'daysClean': daysClean,
+        },
+      );
+      debugPrint('🗂️ [Challenge] Archived attempt ($typeKey, $daysClean days clean)');
+    } catch (e) {
+      // Non-fatal: archival failure shouldn't block the relapse flow.
+      debugPrint('⚠️ [Challenge] Archive failed: $e');
+    }
+  }
+
+  @override
+  Future<List<ChallengeEntity>> getPastAttempts(
+    String userId, {
+    required String typeKey,
+  }) async {
+    try {
+      final snap = await _firestoreService.getCollection(
+        collectionPath: 'addiction_history',
+        queryBuilder: (q) => q
+            .where('userId', isEqualTo: userId)
+            .where('typeKey', isEqualTo: typeKey)
+            .orderBy('startDate', descending: true),
+      );
+      return snap.docs.map((d) => ChallengeModel.fromJson(d.data())).toList();
+    } catch (e) {
+      debugPrint('❌ [Challenge] Error loading past attempts: $e');
+      return [];
+    }
   }
 }

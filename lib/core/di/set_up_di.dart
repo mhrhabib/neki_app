@@ -1,5 +1,7 @@
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../features/addiction/data/services/addiction_notification_service.dart';
 import '../../features/theme/theme_repository.dart';
 import '../../features/theme/theme_cubit.dart';
 import '../services/firebase_storage_service.dart';
@@ -38,10 +40,13 @@ import '../../features/salah_lock/data/repositories/salah_lock_repository_impl.d
 import '../../features/salah_lock/presentation/cubit/salah_lock_cubit.dart';
 import '../../features/auth/domain/repositories/premium_repository.dart';
 import '../../features/auth/data/repositories/premium_repository_impl.dart';
+import '../../features/auth/domain/services/support_trigger_service.dart';
+import '../../features/auth/data/repositories/support_repository_impl.dart';
 import '../services/iap_service.dart';
 import '../../features/leaderboard/domain/repositories/leaderboard_repository.dart';
 import '../../features/leaderboard/data/repositories/leaderboard_repository_impl.dart';
 import '../../features/leaderboard/presentation/cubit/leaderboard_cubit.dart';
+import '../../features/auth/presentation/cubit/support_cubit.dart';
 import '../../core/ux/cubit/user_experience_cubit.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -101,6 +106,9 @@ class SetUpDI {
     getIt.registerLazySingleton<ChallengeRepository>(
       () => ChallengeRepositoryImpl(getIt<FirestoreService>()),
     );
+    getIt.registerLazySingleton<AddictionNotificationService>(
+      () => AddictionNotificationService(FlutterLocalNotificationsPlugin()),
+    );
     getIt.registerLazySingleton<ProfileRepository>(
       () => ProfileRepositoryImpl(
         getIt<FirestoreService>(),
@@ -110,8 +118,20 @@ class SetUpDI {
     getIt.registerLazySingleton<PremiumRepository>(
       () => PremiumRepositoryImpl(getIt<SharedPreferences>()),
     );
+    getIt.registerLazySingleton<SupportRepository>(
+      () => SupportRepositoryImpl(
+        getIt<SharedPreferences>(),
+        getIt<FirestoreService>(),
+      ),
+    );
+    getIt.registerLazySingleton<SupportTriggerService>(
+      () => SupportTriggerService(),
+    );
     getIt.registerLazySingleton<IAPService>(
-      () => IAPService(getIt<PremiumRepository>()),
+      () => IAPService(
+        getIt<SupportRepository>(),
+        getIt<PremiumRepository>(),
+      ),
     );
     getIt.registerLazySingleton<LeaderboardRepository>(
       () => LeaderboardRepositoryImpl(getIt<FirestoreService>()),
@@ -134,6 +154,7 @@ class SetUpDI {
         salahRepository: getIt<SalahRepository>(),
         pointsRepository: getIt<PointsRepository>(),
         challengeRepository: getIt<ChallengeRepository>(),
+        supportCubit: getIt<SupportCubit>(),
       ),
     );
     getIt.registerLazySingleton<PointsCubit>(
@@ -155,6 +176,8 @@ class SetUpDI {
       () => ChallengeCubit(
         getIt<ChallengeRepository>(),
         getIt<PointsRepository>(),
+        getIt<AddictionNotificationService>(),
+        getIt<SupportCubit>(),
       ),
     );
     getIt.registerLazySingleton<ProfileCubit>(
@@ -180,6 +203,12 @@ class SetUpDI {
         salahCubit: getIt<SalahCubit>(),
         locationCubit: getIt<LocationCubit>(),
         premiumRepository: getIt<PremiumRepository>(),
+      ),
+    );
+    getIt.registerLazySingleton<SupportCubit>(
+      () => SupportCubit(
+        getIt<SupportRepository>(),
+        getIt<SupportTriggerService>(),
       ),
     );
     getIt.registerLazySingleton<UserExperienceCubit>(

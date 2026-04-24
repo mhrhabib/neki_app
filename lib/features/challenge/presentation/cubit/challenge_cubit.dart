@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:neki_app/features/auth/presentation/cubit/support_cubit.dart';
 import '../../data/models/challenge_model.dart';
 import '../../domain/entities/challenge_entity.dart';
 import '../../domain/repositories/challenge_repository.dart';
+import '../../../addiction/data/services/addiction_notification_service.dart';
 import '../../../points/domain/repositories/points_repository.dart';
 
 part 'challenge_state.dart';
@@ -10,9 +12,15 @@ part 'challenge_state.dart';
 class ChallengeCubit extends Cubit<ChallengeState> {
   final ChallengeRepository _challengeRepository;
   final PointsRepository _pointsRepository;
+  final AddictionNotificationService _addictionNotifier;
+  final SupportCubit _supportCubit;
 
-  ChallengeCubit(this._challengeRepository, this._pointsRepository)
-      : super(const ChallengeInitial());
+  ChallengeCubit(
+    this._challengeRepository,
+    this._pointsRepository,
+    this._addictionNotifier,
+    this._supportCubit,
+  ) : super(const ChallengeInitial());
 
   // ───────────────────────── helpers ─────────────────────────
 
@@ -81,6 +89,14 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       updated[key] = challenge;
       emit(ChallengeLoaded(updated));
 
+      // Schedule milestone celebration notifications for addiction streaks
+      // (1d, 3d, 7d, 14d, 30d, …). Fire-and-forget — failure is non-fatal.
+      if (key.startsWith('addiction')) {
+        _addictionNotifier
+            .scheduleAllForStreak(typeKey: key, startDate: challenge.startDate)
+            .catchError((e) => debugPrint('⚠️ milestone schedule failed: $e'));
+      }
+
       debugPrint('🎯 [Challenge] Started $key: $durationDays days, $rewardPoints pts');
     } catch (e) {
       debugPrint('❌ [Challenge] Error starting challenge: $e');
@@ -97,11 +113,16 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   }) async {
     try {
       final map = Map<String, ChallengeEntity>.from(_currentMap);
-      final key = typeKey ?? 'default';
+      final key = ChallengeModel.typeKey(typeKey);
       final challenge = map[key];
 
       if (challenge == null || !challenge.isActive) {
         emit(const ChallengeError('No active challenge found'));
+        return;
+      }
+ 
+      if (!challenge.isCheckInWindowOpen) {
+        emit(const ChallengeError('Check-in window opens after 8 PM'));
         return;
       }
 
@@ -120,14 +141,28 @@ class ChallengeCubit extends Cubit<ChallengeState> {
         return;
       }
 
-      final pointsPerDay = challenge.rewardPoints ~/ challenge.durationDays;
-      await _pointsRepository.addPoints(
-        userId: userId,
-        points: pointsPerDay,
-        source: 'challenge_${key}_day_${updated.completedDays}',
-      );
+      // For normal challenges: points per day = total / days.
+      // For addiction (durationDays=0): no daily point bonus, only milestones count.
+      final pointsPerDay = challenge.durationDays > 0
+          ? challenge.rewardPoints ~/ challenge.durationDays
+          : 0;
+      if (pointsPerDay > 0) {
+        await _pointsRepository.addPoints(
+          userId: userId,
+          points: pointsPerDay,
+          source: 'challenge_${key}_day_${updated.completedDays}',
+        );
+      }
 
       map[key] = updated;
+
+      // Check for support/donation milestone if it's an addiction challenge.
+      // For addictions the user-visible streak is the calendar `daysClean`,
+      // not the manual `completedDays` check-in counter — the donation
+      // prompt should follow the calendar streak.
+      if (key.startsWith('addiction')) {
+        _supportCubit.checkAddictionMilestone(updated.daysClean);
+      }
 
       if (updated.isCompleted) {
         debugPrint('🎉 [Challenge] $key COMPLETED!');
@@ -148,7 +183,18 @@ class ChallengeCubit extends Cubit<ChallengeState> {
     try {
       final previousMap = Map<String, ChallengeEntity>.from(_currentMap);
       emit(const ChallengeLoading());
-      final key = typeKey ?? 'default';
+      final key = ChallengeModel.typeKey(typeKey);
+
+      // For addiction types, archive the attempt so the user keeps their
+      // longest-streak history and can see past attempts. For other
+      // challenge types, just clear.
+      final existing = previousMap[key];
+      if (existing != null && key.startsWith('addiction')) {
+        await _challengeRepository.archiveAddictionAttempt(userId, existing);
+        // Cancel the soon-to-be-meaningless milestone notifications.
+        await _addictionNotifier.cancelAllForStreak(typeKey: key);
+      }
+
       await _challengeRepository.clearChallenge(userId, typeKey: key);
 
       final map = Map<String, ChallengeEntity>.from(previousMap);
@@ -159,6 +205,15 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       debugPrint('❌ [Challenge] Error abandoning challenge: $e');
       emit(ChallengeError('Failed to abandon challenge: $e'));
     }
+  }
+
+  /// Past attempts for an addiction type (newest first). Used by the
+  /// tracker screen to render "Longest streak" + history list.
+  Future<List<ChallengeEntity>> getPastAttempts(
+    String userId, {
+    required String typeKey,
+  }) {
+    return _challengeRepository.getPastAttempts(userId, typeKey: typeKey);
   }
 
   // ───────────────────────── reset ─────────────────────────

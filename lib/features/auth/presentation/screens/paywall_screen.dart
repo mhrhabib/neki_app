@@ -7,7 +7,6 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../components/app_background_widget.dart';
 import '../../../../core/di/set_up_di.dart';
 import '../../../../core/services/iap_service.dart';
-import '../../domain/repositories/premium_repository.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -32,39 +31,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 
-  Future<void> _handlePurchase(String productId) async {
+  Future<void> _handleSupport(String productId) async {
     setState(() => _isLoading = true);
     try {
       final product = _iapService.products.firstWhere(
         (p) => p.id == productId,
         orElse: () => _iapService.products.first,
       );
-      await _iapService.buyProduct(product);
+      await _iapService.buySupport(product);
     } catch (_) {}
-    if (mounted) setState(() => _isLoading = false);
-  }
-
-  Future<void> _handleRestore() async {
-    setState(() => _isLoading = true);
-    try {
-      // For trial/demo purposes: Restore temporarily grants premium
-      await getIt<PremiumRepository>().setPremium(true);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Premium Restored successfully!'),
-            backgroundColor: AppColors.primaryGreen,
-          ),
-        );
-        context.pop(); // Go back to see the results
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to restore.')));
-      }
-    }
     if (mounted) setState(() => _isLoading = false);
   }
 
@@ -104,17 +79,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         SizedBox(height: 20.h),
                         _buildHeroSection(),
                         SizedBox(height: 32.h),
-                        _buildComparisonTable(),
+                        _buildMissionCard(),
+                        SizedBox(height: 24.h),
+                        _buildServerGoalBar(),
                         SizedBox(height: 40.h),
-                        _buildPricingOptions(),
-                        SizedBox(height: 32.h),
-                        _buildFeaturesGrid(),
+                        _buildSupportTiers(),
+                        SizedBox(height: 40.h),
+                        _buildWhySupportSection(),
                         SizedBox(height: 40.h),
                       ],
                     ),
                   ),
                 ),
-                _buildFooter(),
               ],
             ),
           ),
@@ -149,22 +125,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             onPressed: () => context.pop(),
             icon: const Icon(Icons.close_rounded, color: Colors.white54),
-          ),
-          TextButton(
-            onPressed: _handleRestore,
-            child: Text(
-              'Restore',
-              style: TextStyle(
-                color: AppColors.goldAccent.withValues(alpha: 0.7),
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
         ],
       ),
@@ -184,14 +148,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
             ),
           ),
           child: Icon(
-            Icons.workspace_premium_rounded,
+            Icons.favorite_rounded,
             size: 48.sp,
             color: AppColors.goldAccent,
           ),
         ),
         SizedBox(height: 24.h),
         Text(
-          'Neki Premium',
+          'Support Neki',
           style: GoogleFonts.sanchez(
             fontSize: 32.sp,
             fontWeight: FontWeight.w900,
@@ -201,14 +165,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ),
         SizedBox(height: 8.h),
         Text(
-          'Elevate your spiritual discipline',
+          'A community-funded mission',
           style: TextStyle(color: Colors.white54, fontSize: 16.sp),
         ),
       ],
     );
   }
 
-  Widget _buildComparisonTable() {
+  Widget _buildMissionCard() {
     return Container(
       padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
@@ -218,51 +182,105 @@ class _PaywallScreenState extends State<PaywallScreen> {
       ),
       child: Column(
         children: [
-          _buildRow('Features', 'Free', 'Premium', isHeader: true),
+          Text(
+            'Everything is Free',
+            style: TextStyle(
+              color: AppColors.goldAccent,
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           SizedBox(height: 12.h),
-          const Divider(color: Colors.white10),
-          _buildRow('Daily Prayer Lock', '2 Prayers', 'All 5'),
-          _buildRow('Habit Challenges', 'Basic', 'Full Access'),
-          _buildRow('Addiction Recovery', '7 Days', 'Unlimited'),
-          _buildRow('Ad-Free Experience', 'No', 'Yes'),
-          _buildRow('Detailed Stats', 'Basic', 'Pro Insights'),
+          Text(
+            'We have removed all paywalls. Neki is now 100% free for everyone, forever. Your support helps us cover server costs, development, and keeping the app ad-free for the entire Ummah.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14.sp,
+              height: 1.5,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildRow(
-    String title,
-    String free,
-    String premium, {
-    bool isHeader = false,
-  }) {
-    final style = TextStyle(
-      fontSize: 13.sp,
-      fontWeight: isHeader ? FontWeight.w900 : FontWeight.w500,
-      color: isHeader ? AppColors.goldAccent : Colors.white70,
-    );
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8.h),
-      child: Row(
+  Widget _buildServerGoalBar() {
+    const double current = 120;
+    const double goal = 300;
+    const double progress = current / goal;
+
+    return Container(
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
         children: [
-          Expanded(flex: 3, child: Text(title, style: style)),
-          Expanded(
-            flex: 2,
-            child: Text(
-              free,
-              style: style.copyWith(color: Colors.white24),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              premium,
-              style: style.copyWith(
-                color: isHeader ? Colors.white70 : AppColors.goldAccent,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Server Goal Progress',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              textAlign: TextAlign.center,
+              Text(
+                '\$${current.toInt()} / \$${goal.toInt()} raised',
+                style: TextStyle(
+                  color: AppColors.goldAccent,
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Stack(
+            children: [
+              Container(
+                height: 10.h,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white10,
+                  borderRadius: BorderRadius.circular(5.r),
+                ),
+              ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return Container(
+                    height: 10.h,
+                    width: constraints.maxWidth * progress,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.goldAccent, Color(0xFFFFD700)],
+                      ),
+                      borderRadius: BorderRadius.circular(5.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.goldAccent.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            'Help us cover this month\'s costs to keep Neki alive!',
+            style: TextStyle(
+              color: Colors.white38,
+              fontSize: 12.sp,
+              fontStyle: FontStyle.italic,
             ),
           ),
         ],
@@ -270,29 +288,48 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
-  Widget _buildPricingOptions() {
+  Widget _buildSupportTiers() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildPricingCard(
-          id: IAPService.yearlyId,
-          title: 'Yearly Plan',
-          price: 'Save 40%',
-          description: 'Best for long-term discipline',
-          isPopular: true,
+        Text(
+          'CHOOSE A SUPPORT TIER (SADAQAH)',
+          style: TextStyle(
+            color: Colors.white38,
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
         ),
         SizedBox(height: 16.h),
-        _buildPricingCard(
-          id: IAPService.monthlyId,
-          title: 'Monthly Plan',
-          price: 'Flexible',
-          description: 'Start your journey',
+        _buildSupportCard(
+          id: IAPService.support5Id,
+          title: 'Supporter',
+          price: '\$5',
+          description: 'Help us grow Neki',
+          isPopular: true,
+        ),
+        SizedBox(height: 12.h),
+        _buildSupportCard(
+          id: IAPService.support1Id,
+          title: 'Buy us a Coffee',
+          price: '\$1',
+          description: 'A small gift to the devs',
+          isPopular: false,
+        ),
+        SizedBox(height: 12.h),
+        _buildSupportCard(
+          id: IAPService.support10Id,
+          title: 'Neki Partner',
+          price: '\$10',
+          description: 'Become a major contributor',
           isPopular: false,
         ),
       ],
     );
   }
 
-  Widget _buildPricingCard({
+  Widget _buildSupportCard({
     required String id,
     required String title,
     required String price,
@@ -300,7 +337,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     required bool isPopular,
   }) {
     return GestureDetector(
-      onTap: () => _handlePurchase(id),
+      onTap: () => _handleSupport(id),
       child: Container(
         padding: EdgeInsets.all(20.w),
         decoration: BoxDecoration(
@@ -321,63 +358,29 @@ class _PaywallScreenState extends State<PaywallScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (isPopular) ...[
-                        SizedBox(width: 8.w),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 8.w,
-                            vertical: 2.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.goldAccent,
-                            borderRadius: BorderRadius.circular(6.r),
-                          ),
-                          child: Text(
-                            'POPULAR',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 9.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   SizedBox(height: 4.h),
                   Text(
                     description,
-                    style: TextStyle(color: Colors.white54, fontSize: 13.sp),
+                    style: TextStyle(color: Colors.white54, fontSize: 12.sp),
                   ),
                 ],
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  price,
-                  style: TextStyle(
-                    color: AppColors.goldAccent,
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  'Get Started',
-                  style: TextStyle(color: Colors.white38, fontSize: 11.sp),
-                ),
-              ],
+            Text(
+              price,
+              style: TextStyle(
+                color: AppColors.goldAccent,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ],
         ),
@@ -385,60 +388,73 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
-  Widget _buildFeaturesGrid() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: 16.w,
-      crossAxisSpacing: 16.w,
-      childAspectRatio: 1.5,
+  Widget _buildWhySupportSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildMiniFeature(Icons.lock_clock, 'Salah Lock', 'Unbreakable focus'),
-        _buildMiniFeature(Icons.auto_graph, 'Pro Stats', 'Visualize growth'),
-        _buildMiniFeature(Icons.shield_moon, 'Addiction', 'Recovery path'),
-        _buildMiniFeature(Icons.groups, 'Groups', 'Coming soon'),
+        Text(
+          'WHERE DOES THE MONEY GO?',
+          style: TextStyle(
+            color: Colors.white38,
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
+        ),
+        SizedBox(height: 20.h),
+        _buildWhyItem(
+          Icons.dns_rounded,
+          'Server & API Costs',
+          'Keeping the app fast and reliable 24/7.',
+        ),
+        _buildWhyItem(
+          Icons.code_rounded,
+          'Continuous Development',
+          'Building new tools for your spiritual growth.',
+        ),
+        _buildWhyItem(
+          Icons.block_rounded,
+          'Zero Ads',
+          'Keeping the experience pure and focused.',
+        ),
       ],
     );
   }
 
-  Widget _buildMiniFeature(IconData icon, String title, String sub) {
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildWhyItem(IconData icon, String title, String sub) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 20.h),
+      child: Row(
         children: [
-          Icon(icon, color: AppColors.goldAccent, size: 18.sp),
-          const Spacer(),
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 13.sp,
-              fontWeight: FontWeight.bold,
+          Container(
+            padding: EdgeInsets.all(10.w),
+            decoration: BoxDecoration(
+              color: AppColors.primaryGreen.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Icon(icon, color: AppColors.primaryGreen, size: 20.sp),
+          ),
+          SizedBox(width: 16.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  sub,
+                  style: TextStyle(color: Colors.white38, fontSize: 12.sp),
+                ),
+              ],
             ),
           ),
-          Text(
-            sub,
-            style: TextStyle(color: Colors.white38, fontSize: 10.sp),
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFooter() {
-    return Padding(
-      padding: EdgeInsets.all(24.h),
-      child: Text(
-        'Cancel anytime in your App Store settings.\nTerms of Service & Privacy Policy.',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: Colors.white24, fontSize: 11.sp),
       ),
     );
   }

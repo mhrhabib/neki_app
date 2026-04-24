@@ -5,17 +5,18 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:neki_app/features/auth/presentation/cubit/auth_cubit.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/custom_icon_button.dart';
-import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../auth/data/models/support_status_model.dart';
+import '../../../auth/data/repositories/support_repository_impl.dart';
+import '../../../../core/di/set_up_di.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../points/domain/entities/neki_points_entity.dart';
 import '../../domain/entities/badge_entity.dart';
 import '../cubit/profile_cubit.dart';
 import '../../../../components/app_background_widget.dart';
-import '../../../../core/di/set_up_di.dart';
-import '../../../auth/domain/repositories/premium_repository.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -243,106 +244,103 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildPremiumCard(BuildContext context) {
-    // Access the PremiumRepository directly via Service Locator
-    final premiumRepo = getIt<PremiumRepository>();
-    final isPremium = premiumRepo.isPremiumSync();
-    final isTrial = premiumRepo.isTrialActiveSync();
-    final daysLeft = premiumRepo.trialDaysRemainingSync();
+    // Access the SupportRepository directly via Service Locator
+    final supportRepo = getIt<SupportRepository>();
+    
+    return StreamBuilder<SupportStatus>(
+      stream: supportRepo.supportStatusStream,
+      initialData: const SupportStatus(), // We'll get real data on first build if loaded
+      builder: (context, snapshot) {
+        final status = snapshot.data ?? const SupportStatus();
+        final isSupporter = status.isSupporter;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: GestureDetector(
-        onTap: isPremium && !isTrial
-            ? null
-            : () => context.push(RouteNames.premium),
-        child: Container(
-          padding: EdgeInsets.all(20.w),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isPremium && !isTrial
-                  ? [
-                      const Color(0xFFD4AF37).withValues(alpha: 0.2),
-                      const Color(0xFFD4AF37).withValues(alpha: 0.1),
-                    ]
-                  : [
-                      AppColors.primaryGreen.withValues(alpha: 0.15),
-                      AppColors.primaryGreen.withValues(alpha: 0.05),
-                    ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(24.r),
-            border: Border.all(
-              color: isPremium && !isTrial
-                  ? AppColors.goldAccent.withValues(alpha: 0.3)
-                  : AppColors.primaryGreen.withValues(alpha: 0.2),
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(12.w),
-                decoration: BoxDecoration(
-                  color: isPremium && !isTrial
-                      ? AppColors.goldAccent.withValues(alpha: 0.15)
-                      : AppColors.primaryGreen.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
+          child: GestureDetector(
+            onTap: () => context.push(RouteNames.premium),
+            child: Container(
+              padding: EdgeInsets.all(20.w),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isSupporter
+                      ? [
+                          const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                          const Color(0xFFD4AF37).withValues(alpha: 0.1),
+                        ]
+                      : [
+                          AppColors.primaryGreen.withValues(alpha: 0.15),
+                          AppColors.primaryGreen.withValues(alpha: 0.05),
+                        ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                child: Icon(
-                  isPremium && !isTrial
-                      ? Icons.workspace_premium_rounded
-                      : Icons.star_rounded,
-                  color: isPremium && !isTrial
-                      ? AppColors.goldAccent
-                      : AppColors.primaryGreen,
-                  size: 24.sp,
+                borderRadius: BorderRadius.circular(24.r),
+                border: Border.all(
+                  color: isSupporter
+                      ? AppColors.goldAccent.withValues(alpha: 0.3)
+                      : AppColors.primaryGreen.withValues(alpha: 0.2),
                 ),
               ),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isPremium && !isTrial
-                          ? 'NEKI PREMIUM'
-                          : isTrial
-                              ? 'PREMIUM TRIAL'
-                              : 'UPGRADE TO PRO',
-                      style: TextStyle(
-                        color: isPremium && !isTrial
-                            ? AppColors.goldAccent
-                            : Colors.white,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                      ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(12.w),
+                    decoration: BoxDecoration(
+                      color: isSupporter
+                          ? AppColors.goldAccent.withValues(alpha: 0.15)
+                          : AppColors.primaryGreen.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
                     ),
-                    SizedBox(height: 2.h),
-                    Text(
-                      isPremium && !isTrial
-                          ? 'Active Member'
-                          : isTrial
-                              ? '$daysLeft days remaining'
-                              : 'Unlock insights & 5x locks',
-                      style: TextStyle(
-                        color: Colors.white60,
-                        fontSize: 12.sp,
-                      ),
+                    child: Icon(
+                      isSupporter
+                          ? Icons.favorite_rounded
+                          : Icons.volunteer_activism_rounded,
+                      color: isSupporter
+                          ? AppColors.goldAccent
+                          : AppColors.primaryGreen,
+                      size: 24.sp,
                     ),
-                  ],
-                ),
+                  ),
+                  SizedBox(width: 16.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isSupporter ? 'NEKI SUPPORTER' : 'SUPPORT NEKI',
+                          style: TextStyle(
+                            color: isSupporter
+                                ? AppColors.goldAccent
+                                : Colors.white,
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          isSupporter
+                              ? 'Thank you for your generosity'
+                              : 'Keep the mission alive with a gift',
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    CupertinoIcons.chevron_right,
+                    color: Colors.white24,
+                    size: 16.sp,
+                  ),
+                ],
               ),
-              if (!isPremium || isTrial)
-                Icon(
-                  CupertinoIcons.chevron_right,
-                  color: Colors.white24,
-                  size: 16.sp,
-                ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
 

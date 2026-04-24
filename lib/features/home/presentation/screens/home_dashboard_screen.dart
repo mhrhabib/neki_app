@@ -28,6 +28,10 @@ import '../../../salah_lock/presentation/widgets/notification_permission_sheet.d
 import '../../../salah/presentation/cubit/salah_cubit.dart';
 import '../../../salah_lock/presentation/cubit/salah_lock_cubit.dart';
 import '../widgets/celebration_overlay.dart';
+import '../../../auth/presentation/cubit/support_cubit.dart';
+import '../widgets/support_request_bottom_sheet.dart';
+import '../../../../core/services/iap_service.dart';
+import '../../../../core/di/set_up_di.dart';
 
 class HomeDashboardScreen extends StatefulWidget {
   const HomeDashboardScreen({super.key});
@@ -237,6 +241,41 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                               }
                             },
                           ),
+                          BlocListener<SupportCubit, SupportState>(
+                            listener: (context, state) {
+                              if (state is! SupportPromptReady) return;
+                              final prompt = state;
+                              final iap = getIt<IAPService>();
+                              final supportCubit =
+                                  context.read<SupportCubit>();
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (sheetCtx) =>
+                                    SupportRequestBottomSheet(
+                                  title: prompt.title,
+                                  message: prompt.message,
+                                  iapService: iap,
+                                  onDonate: (productId) async {
+                                    supportCubit.markPromptShown();
+                                    await iap.buySupportById(productId);
+                                    if (sheetCtx.mounted) {
+                                      Navigator.pop(sheetCtx);
+                                    }
+                                  },
+                                  onMaybeLater: () {
+                                    supportCubit.markMaybeLater();
+                                    Navigator.pop(sheetCtx);
+                                  },
+                                  onUnable: () {
+                                    supportCubit.markDeclined();
+                                    Navigator.pop(sheetCtx);
+                                  },
+                                ),
+                              );
+                            },
+                          ),
                           BlocListener<SalahCubit, SalahState>(
                             listenWhen: (previous, current) {
                               if (previous is SalahLoading &&
@@ -357,9 +396,16 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                                                         bottom: 12.h,
                                                       ),
                                                       child: GestureDetector(
-                                                        onTap: () => context.push(
-                                                          '${RouteNames.habitBuilding}?type=${e.key}',
-                                                        ),
+                                                        onTap: () {
+                                                          final isAddiction = e
+                                                              .key
+                                                              .startsWith(
+                                                            'addiction',
+                                                          );
+                                                          context.push(
+                                                            '${isAddiction ? RouteNames.addictionTracker : RouteNames.habitBuilding}?type=${e.key}',
+                                                          );
+                                                        },
                                                         child:
                                                             ChallengeProgressWidget(
                                                               challenge:

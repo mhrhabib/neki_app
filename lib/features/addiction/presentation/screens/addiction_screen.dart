@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:neki_app/core/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../components/app_background_widget.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../challenge/domain/entities/challenge_entity.dart';
 import '../../../challenge/presentation/cubit/challenge_cubit.dart';
 
 class AddictionScreen extends StatelessWidget {
@@ -17,36 +19,24 @@ class AddictionScreen extends StatelessWidget {
       title: 'Porn Addiction',
       desc: 'Reduce exposure, set blockers, replace with healthy habits.',
       icon: CupertinoIcons.eye_slash_fill,
-      points7: 80,
-      points14: 170,
-      points21: 300,
     ),
     _AddictionItem(
       id: 'smoking',
       title: 'Smoking',
       desc: 'Delay the first cigarette, find replacements, seek support.',
       icon: Icons.smoke_free_rounded,
-      points7: 70,
-      points14: 150,
-      points21: 250,
     ),
     _AddictionItem(
       id: 'alcohol',
       title: 'Alcohol',
       desc: 'Avoid triggers, build sober routines, seek accountability.',
       icon: CupertinoIcons.drop_fill,
-      points7: 90,
-      points14: 180,
-      points21: 320,
     ),
     _AddictionItem(
       id: 'gambling',
       title: 'Gambling',
       desc: 'Self-exclude, block sites, find alternative activities.',
       icon: CupertinoIcons.money_dollar_circle_fill,
-      points7: 60,
-      points14: 130,
-      points21: 220,
     ),
   ];
 
@@ -115,7 +105,7 @@ class AddictionScreen extends StatelessWidget {
                       ),
                       SizedBox(width: 10.w),
                       Text(
-                        'CHOOSE A RECOVERY PLAN',
+                        'PICK SOMETHING TO QUIT',
                         style: TextStyle(
                           fontSize: 12.sp,
                           fontWeight: FontWeight.w900,
@@ -127,14 +117,23 @@ class AddictionScreen extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: ListView.separated(
-                    padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 30.h),
-                    itemCount: _items.length,
-                    separatorBuilder: (context, index) =>
-                        SizedBox(height: 16.h),
-                    itemBuilder: (context, index) {
-                      final item = _items[index];
-                      return _buildCard(context, item, isDark);
+                  child: BlocBuilder<ChallengeCubit, ChallengeState>(
+                    builder: (context, challengeState) {
+                      Map<String, ChallengeEntity> active = const {};
+                      if (challengeState is ChallengeLoaded) {
+                        active = challengeState.challenges;
+                      }
+                      return ListView.separated(
+                        padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 30.h),
+                        itemCount: _items.length,
+                        separatorBuilder: (context, index) =>
+                            SizedBox(height: 16.h),
+                        itemBuilder: (context, index) {
+                          final item = _items[index];
+                          final activeChallenge = active['addiction_${item.id}'];
+                          return _buildCard(context, item, isDark, activeChallenge);
+                        },
+                      );
                     },
                   ),
                 ),
@@ -146,7 +145,12 @@ class AddictionScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCard(BuildContext context, _AddictionItem item, bool isDark) {
+  Widget _buildCard(
+    BuildContext context,
+    _AddictionItem item,
+    bool isDark,
+    ChallengeEntity? active,
+  ) {
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
@@ -192,7 +196,9 @@ class AddictionScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Recovery Program',
+                      active != null && active.isActive
+                          ? 'Tracking · ${active.daysClean} day${active.daysClean == 1 ? '' : 's'} clean'
+                          : 'Recovery Program',
                       style: TextStyle(
                         fontSize: 12.sp,
                         color: AppColors.goldAccent.withValues(alpha: 0.7),
@@ -224,30 +230,51 @@ class AddictionScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: 20.h),
-          Row(
-            children: [
-              _buildPlanButton(context, item, 7, item.points7),
-              SizedBox(width: 10.w),
-              _buildPlanButton(context, item, 14, item.points14),
-              SizedBox(width: 10.w),
-              _buildPlanButton(context, item, 21, item.points21),
-            ],
-          ),
+          if (active != null && active.isActive)
+            _buildOpenButton(context, item)
+          else
+            _buildStartButton(context, item),
         ],
       ),
     );
   }
 
-  Widget _buildPlanButton(
-    BuildContext context,
-    _AddictionItem item,
-    int days,
-    int points,
-  ) {
-    return Expanded(
+  Widget _buildOpenButton(BuildContext context, _AddictionItem item) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => context.push(
+          '${RouteNames.addictionTracker}?type=addiction_${item.id}',
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: EdgeInsets.symmetric(vertical: 14.h),
+          side: BorderSide(
+            color: AppColors.goldAccent.withValues(alpha: 0.4),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14.r),
+          ),
+        ),
+        icon: Icon(Icons.bar_chart_rounded, color: AppColors.goldAccent, size: 20.sp),
+        label: Text(
+          'OPEN TRACKER',
+          style: TextStyle(
+            color: AppColors.goldAccent,
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStartButton(BuildContext context, _AddictionItem item) {
+    return SizedBox(
+      width: double.infinity,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(14.r),
           gradient: LinearGradient(
             colors: [AppColors.primaryGreen, const Color(0xFF1E4D35)],
             begin: Alignment.topLeft,
@@ -256,41 +283,30 @@ class AddictionScreen extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: AppColors.primaryGreen.withValues(alpha: 0.3),
-              blurRadius: 8,
+              blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: ElevatedButton(
-          onPressed: () => _confirmStart(context, item, days, points),
+        child: ElevatedButton.icon(
+          onPressed: () => _confirmStart(context, item),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            padding: EdgeInsets.symmetric(vertical: 8.h),
+            padding: EdgeInsets.symmetric(vertical: 14.h),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.r),
+              borderRadius: BorderRadius.circular(14.r),
             ),
           ),
-          child: Column(
-            children: [
-              Text(
-                '$days',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-              Text(
-                'DAYS',
-                style: TextStyle(
-                  fontSize: 8.sp,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white.withValues(alpha: 0.8),
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
+          icon: Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22.sp),
+          label: Text(
+            'START TRACKING',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+            ),
           ),
         ),
       ),
@@ -369,57 +385,72 @@ class AddictionScreen extends StatelessWidget {
     );
   }
 
-  void _confirmStart(
-    BuildContext context,
-    _AddictionItem item,
-    int days,
-    int points,
-  ) {
+  void _confirmStart(BuildContext context, _AddictionItem item) {
+    // Capture the picker-screen context BEFORE the dialog runs. Inside the
+    // dialog builder, `context` is the dialog's own context — using it for
+    // navigation after `Navigator.pop` would call into a disposed element
+    // and crash.
+    final pickerContext = context;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1C1C1E),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20.r),
           side: BorderSide(color: AppColors.goldAccent.withValues(alpha: 0.2)),
         ),
         title: Text(
-          'Confirm Recovery Plan',
+          'Begin Your Journey',
           style: TextStyle(
             color: AppColors.goldAccent,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
-          'Do you want to start a $days-day recovery plan for ${item.title}? You will earn $points points upon successful completion.',
-          style: TextStyle(color: Colors.white70, fontSize: 14.sp),
+          'Your ${item.title} sobriety counter will start now and run continuously. You\'ll earn Neki points at each milestone (1 day, 7 days, 30 days, and beyond). Only an "I relapsed" tap resets the streak.',
+          style: TextStyle(color: Colors.white70, fontSize: 14.sp, height: 1.5),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text(
               'Cancel',
               style: TextStyle(color: Colors.white24),
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              final authState = context.read<AuthCubit>().state;
-              if (authState is Authenticated) {
-                context.read<ChallengeCubit>().startChallenge(
-                  userId: authState.user.id,
-                  durationDays: days,
-                  rewardPoints: points,
-                  challengeType: 'addiction_${item.id}_$days',
-                );
-                Navigator.pop(context);
-                context.push('/habit-building?type=addiction');
-              } else {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
+            onPressed: () async {
+              final authState = pickerContext.read<AuthCubit>().state;
+              if (authState is! Authenticated) {
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(pickerContext).showSnackBar(
                   const SnackBar(content: Text('Please log in first')),
                 );
+                return;
               }
+
+              try {
+                // Await the start so the Firestore doc exists before navigating.
+                await pickerContext.read<ChallengeCubit>().startChallenge(
+                      userId: authState.user.id,
+                      durationDays: 0, // 0 = unbounded duration for addiction tracking
+                      rewardPoints: 0,
+                      challengeType: 'addiction_${item.id}',
+                    );
+              } catch (e) {
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(pickerContext).showSnackBar(
+                  SnackBar(content: Text('Failed to start tracker: $e')),
+                );
+                return;
+              }
+
+              // Pop FIRST, then navigate using the picker's still-valid
+              // context — never the dialog's context after dismissal.
+              Navigator.pop(dialogContext);
+              pickerContext.push(
+                '${RouteNames.addictionTracker}?type=addiction_${item.id}',
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryGreen,
@@ -428,7 +459,7 @@ class AddictionScreen extends StatelessWidget {
               ),
             ),
             child: const Text(
-              'Start Plan',
+              'Start Tracking',
               style: TextStyle(color: Colors.white),
             ),
           ),
@@ -443,17 +474,11 @@ class _AddictionItem {
   final String title;
   final String desc;
   final IconData icon;
-  final int points7;
-  final int points14;
-  final int points21;
 
   const _AddictionItem({
     required this.id,
     required this.title,
     required this.desc,
     required this.icon,
-    required this.points7,
-    required this.points14,
-    required this.points21,
   });
 }

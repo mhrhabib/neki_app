@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/services/firestore_service.dart';
 import '../../domain/entities/neki_points_entity.dart';
@@ -193,26 +194,26 @@ class PointsRepositoryImpl implements PointsRepository {
     required int points,
     required String source,
   }) async {
-    final currentPoints = await getUserPoints(userId) as NekiPointsModel;
+    // Make sure the doc exists with default values + correct streak rollover
+    // before issuing the atomic increment. getUserPoints handles both.
+    await getUserPoints(userId);
 
-    final updatedPoints = NekiPointsModel(
-      userId: userId,
-      totalPoints: currentPoints.totalPoints + points,
-      todayPoints: currentPoints.todayPoints + points,
-      weekPoints: currentPoints.weekPoints + points,
-      monthPoints: currentPoints.monthPoints + points,
-      currentStreak: currentPoints.currentStreak,
-      longestStreak: currentPoints.longestStreak,
-      lastActiveDate: DateTime.now(), // update last active on activity
-      name: FirebaseAuth.instance.currentUser?.displayName,
-      photoUrl: FirebaseAuth.instance.currentUser?.photoURL,
-    );
+    final docRef = _firestoreService.instance
+        .collection(_collectionPath)
+        .doc(userId);
 
-    await _firestoreService.setDocument(
-      collectionPath: _collectionPath,
-      documentId: userId,
-      data: updatedPoints.toJson(),
-    );
+    final user = FirebaseAuth.instance.currentUser;
+    final updates = <String, dynamic>{
+      'totalPoints': FieldValue.increment(points),
+      'todayPoints': FieldValue.increment(points),
+      'weekPoints': FieldValue.increment(points),
+      'monthPoints': FieldValue.increment(points),
+      'lastActiveDate': DateTime.now().toIso8601String(),
+      if (user?.displayName != null) 'name': user!.displayName,
+      if (user?.photoURL != null) 'photoUrl': user!.photoURL,
+    };
+
+    await docRef.update(updates);
   }
 
   @override

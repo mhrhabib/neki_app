@@ -19,10 +19,9 @@ class PremiumRepositoryImpl implements PremiumRepository {
     return isPremiumSync();
   }
 
+  @override
   bool isPremiumSync() {
-    final isSubscribed = _prefs.getBool(_premiumKey) ?? false;
-    if (isSubscribed) return true;
-    return isTrialActiveSync();
+    return true; // Unlocked for Donation Mode
   }
 
   @override

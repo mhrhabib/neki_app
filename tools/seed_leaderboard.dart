@@ -13,6 +13,8 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
+
 // ─── CONFIG ────────────────────────────────────────────────────────────────
 const String projectId = 'nekiapp-52446';
 
@@ -66,7 +68,7 @@ Future<Map<String, dynamic>> _patch(
 }
 
 Future<Map<String, String>> _signIn(String email, String password) async {
-  print('  Signing in as $email...');
+  debugPrint('  Signing in as $email...');
   final result = await _post(
     'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$webApiKey',
     {'email': email, 'password': password, 'returnSecureToken': true},
@@ -104,19 +106,19 @@ Future<void> _writeDoc({
   if (result.containsKey('error')) {
     throw Exception('Firestore write failed ($collection/$docId): ${result['error']}');
   }
-  print('    ✅ Written $collection/$docId');
+  debugPrint('    ✅ Written $collection/$docId');
 }
 
 Future<void> main() async {
   if (webApiKey == 'YOUR_FIREBASE_WEB_API_KEY') {
-    print('ERROR: Set webApiKey before running.');
-    print('Find it at: Firebase Console > Project Settings > General > Web API key');
+    debugPrint('ERROR: Set webApiKey before running.');
+    debugPrint('Find it at: Firebase Console > Project Settings > General > Web API key');
     exit(1);
   }
 
-  print('=== Leaderboard Seed Script ===');
-  print('Project: $projectId');
-  print('Seeding ${seedUsers.length} user(s)...\n');
+  debugPrint('=== Leaderboard Seed Script ===');
+  debugPrint('Project: $projectId');
+  debugPrint('Seeding ${seedUsers.length} user(s)...\n');
 
   for (final user in seedUsers) {
     final email = user['email'] as String;
@@ -125,7 +127,7 @@ Future<void> main() async {
     final country = user['country'] as String;
     final totalPoints = user['totalPoints'] as int;
 
-    print('Processing: $name ($email)');
+    debugPrint('Processing: $name ($email)');
 
     try {
       final auth = await _signIn(email, password);
@@ -162,12 +164,12 @@ Future<void> main() async {
         idToken: idToken,
       );
 
-      print('  Done: $name\n');
+      debugPrint('  Done: $name\n');
     } catch (e) {
-      print('  ERROR for $name: $e\n');
+      debugPrint('  ERROR for $name: $e\n');
     }
   }
 
-  print('=== Seed complete ===');
+  debugPrint('=== Seed complete ===');
   _httpClient.close();
 }

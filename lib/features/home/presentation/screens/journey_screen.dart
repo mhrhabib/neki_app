@@ -9,8 +9,6 @@ import '../../../../components/app_background_widget.dart';
 import '../../../points/presentation/cubit/points_cubit.dart';
 import '../../../salah/presentation/cubit/salah_cubit.dart';
 import '../../../dhikir/presentation/cubit/dhikir_cubit.dart';
-import '../../../auth/domain/repositories/premium_repository.dart';
-import '../../../../core/di/set_up_di.dart';
 import '../widgets/salah_heatmap_widget.dart';
 import '../widgets/dhikr_velocity_chart.dart';
 import '../widgets/salah_intensity_chart.dart';
@@ -56,57 +54,47 @@ class _JourneyScreenState extends State<JourneyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<bool>(
-      stream: getIt<PremiumRepository>().premiumStatusStream,
-      initialData: getIt<PremiumRepository>().isPremiumSync(),
-      builder: (context, snapshot) {
-        final isPremium = snapshot.data ?? false;
-
-        return Scaffold(
-          body: Stack(
-            children: [
-              appBackgroundWidget(),
-              SafeArea(
-                child: Column(
-                  children: [
-                    _buildAppBar(context),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: EdgeInsets.symmetric(horizontal: 20.w),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: 10.h),
-                            _buildMainStats(),
-                            SizedBox(height: 32.h),
-                            _buildHeatmapSection(),
-                            SizedBox(height: 32.h),
-                            _buildInsightSection(
-                              'Dhikr Velocity',
-                              'Insights into your tasbih consistency over the last week.',
-                              _buildDhikrVelocityChart(),
-                              isPremium,
-                            ),
-                            SizedBox(height: 12.h),
-                            _buildInsightSection(
-                              'Prayer Consistency',
-                              'Frequency of completions vs misses for each prayer.',
-                              _buildSalahIntensityChart(),
-                              isPremium,
-                            ),
-                            SizedBox(height: 100.h),
-                          ],
+    return Scaffold(
+      body: Stack(
+        children: [
+          appBackgroundWidget(),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildAppBar(context),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.symmetric(horizontal: 20.w),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 10.h),
+                        _buildMainStats(),
+                        SizedBox(height: 32.h),
+                        _buildHeatmapSection(),
+                        SizedBox(height: 32.h),
+                        _buildInsightSection(
+                          'Dhikr Velocity',
+                          'Insights into your tasbih consistency over the last week.',
+                          _buildDhikrVelocityChart(),
                         ),
-                      ),
+                        SizedBox(height: 12.h),
+                        _buildInsightSection(
+                          'Prayer Consistency',
+                          'Frequency of completions vs misses for each prayer.',
+                          _buildSalahIntensityChart(),
+                        ),
+                        SizedBox(height: 100.h),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -269,7 +257,6 @@ class _JourneyScreenState extends State<JourneyScreen> {
     String title,
     String subtitle,
     Widget chart,
-    bool isPremium,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,7 +274,7 @@ class _JourneyScreenState extends State<JourneyScreen> {
           style: TextStyle(color: Colors.white38, fontSize: 13.sp),
         ),
         SizedBox(height: 20.h),
-        PremiumLockedGuard(isPremium: isPremium, title: title, child: chart),
+        PremiumLockedGuard(title: title, child: chart),
       ],
     );
   }

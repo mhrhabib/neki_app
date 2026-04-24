@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Light mode splash / launcher icon background — matches app scaffoldBackgroundColor -->
-    <color name="splashBackground">#034210</color>
-	<color name="ic_launcher_background">#034210</color>
+    <color name="splashBackground">#FFFFFF</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
 </resources>

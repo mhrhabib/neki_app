@@ -9,7 +9,6 @@ import '../../features/home/presentation/screens/home_dashboard_screen.dart';
 import '../../features/leaderboard/presentation/screens/leaderboard_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/salah/presentation/screens/salah_screen.dart';
-import '../../features/addiction/presentation/screens/addiction_screen.dart';
 import '../../features/roza/presentation/screens/roza_screen.dart';
 import '../../features/roza/presentation/cubit/roza_cubit.dart';
 import '../../features/zakat/presentation/screens/zakat_screen.dart';
@@ -22,7 +21,11 @@ import '../../features/splash/presentation/screens/splash_screen.dart';
 import '../../features/qibla/presentation/screens/qibla_compass_screen.dart';
 import '../../features/quran/presentation/screens/quran_home_screen.dart';
 import '../../features/quran/presentation/screens/surah_detail_screen.dart';
+import '../../features/addiction/presentation/screens/addiction_tracker_screen.dart';
+import '../../features/addiction/presentation/screens/addiction_screen.dart';
+import '../../features/challenge/presentation/screens/goal_selection_screen.dart';
 import '../../features/salah_lock/presentation/screens/salah_lock_settings_screen.dart';
+
 import '../widgets/main_screen.dart';
 import '../widgets/not_found_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -96,7 +99,8 @@ class AppRouter {
       }
 
       // 4. HOME REDIRECT: If both completed, go home if user is trying to reach splash/login/onboarding
-      if (authState is Authenticated && onboardingState is OnboardingCompleted) {
+      if (authState is Authenticated &&
+          onboardingState is OnboardingCompleted) {
         if (isLogin || isSplash || isOnboarding) {
           debugPrint('🚀 [Router] All clear, redirecting to Home');
           return RouteNames.home;
@@ -213,12 +217,30 @@ class AppRouter {
         ),
       ),
       GoRoute(
+        path: RouteNames.addictionTracker,
+        pageBuilder: (context, state) {
+          final typeKey = state.uri.queryParameters['type'];
+          return _buildPageWithTransition(
+            child: AddictionTrackerScreen(typeKey: typeKey),
+            state: state,
+          );
+        },
+      ),
+      GoRoute(
         path: RouteNames.addiction,
         pageBuilder: (context, state) => _buildPageWithTransition(
           child: const AddictionScreen(),
           state: state,
         ),
       ),
+      GoRoute(
+        path: RouteNames.goalSelection,
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const GoalSelectionScreen(),
+          state: state,
+        ),
+      ),
+
       GoRoute(
         path: RouteNames.goodDeeds,
         pageBuilder: (context, state) => _buildPageWithTransition(

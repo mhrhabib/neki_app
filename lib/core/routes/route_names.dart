@@ -14,6 +14,8 @@ class RouteNames {
   static const String habitBuilding = '/habit-building';
   static const String habitBuildingOnboarding = '/habit-building-onboarding';
   static const String addiction = '/addiction';
+  static const String addictionTracker = '/addiction-tracker';
+
   static const String qibla = '/qibla';
   static const String namesOfAllah = '/namesOfAllah';
   static const String calendar = '/calendar';

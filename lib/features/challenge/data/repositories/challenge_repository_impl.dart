@@ -102,13 +102,20 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
               status: challenge.status,
               challengeType: challenge.challengeType,
               userId: userId,
+              completedAt: challenge.completedAt,
             );
 
-      await _firestoreService.setDocument(
+      // FirestoreService.setDocument swallows errors and returns false. Treat
+      // that as a hard failure here — silently dropping a check-in write was
+      // the root cause of the "incremented in UI, reverts on reload" bug.
+      final ok = await _firestoreService.setDocument(
         collectionPath: _collectionPath,
         documentId: docId,
         data: model.toJson(),
       );
+      if (!ok) {
+        throw Exception('Firestore setDocument returned false for $docId');
+      }
 
       debugPrint('✅ [Challenge] Saved ($docId): $model');
     } catch (e) {
@@ -133,47 +140,57 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   }
 
   @override
-  Future<void> completeTodayChallenge(String userId, {String? typeKey}) async {
-    try {
-      final challenge = await getActiveChallenge(userId, typeKey: typeKey);
-      if (challenge == null) {
-        throw Exception('No active challenge found');
-      }
-
-      if (!challenge.canCompleteToday()) {
-        debugPrint('ℹ️ [Challenge] Already completed for today, skipping update.');
-        return;
-      }
-
-      final model = challenge is ChallengeModel
-          ? challenge
-          : ChallengeModel(
-              durationDays: challenge.durationDays,
-              rewardPoints: challenge.rewardPoints,
-              startDate: challenge.startDate,
-              completedDays: challenge.completedDays,
-              status: challenge.status,
-              challengeType: challenge.challengeType,
-              userId: userId,
-            );
-
-      final isAddiction = model.challengeType?.startsWith('addiction') ?? false;
-      final newCompletedDays = model.completedDays + 1;
-      final newStatus = (newCompletedDays >= model.durationDays && !isAddiction)
-          ? ChallengeStatus.completed
-          : ChallengeStatus.active;
-
-      final updatedChallenge = model.copyWith(
-        completedDays: newCompletedDays,
-        status: newStatus,
-      );
-
-      await saveChallenge(userId, updatedChallenge);
-      debugPrint('✅ [ChallengeRepo] Day $newCompletedDays completed (Status: ${newStatus.name})');
-    } catch (e) {
-      debugPrint('❌ [Challenge] Error completing today: $e');
-      rethrow;
+  Future<ChallengeEntity> completeTodayChallenge(
+    String userId, {
+    String? typeKey,
+  }) async {
+    final challenge = await getActiveChallenge(userId, typeKey: typeKey);
+    if (challenge == null) {
+      throw Exception('No active challenge found');
     }
+
+    // Source of truth: the freshly-fetched Firestore state. If it already
+    // shows today's check-in (memory was stale), throw a typed signal so
+    // the caller can avoid awarding duplicate points.
+    if (!challenge.canCompleteToday()) {
+      debugPrint(
+        'ℹ️ [Challenge] Firestore already has today\'s check-in — signalling skip',
+      );
+      throw ChallengeAlreadyCompletedToday(challenge);
+    }
+
+    final model = challenge is ChallengeModel
+        ? challenge
+        : ChallengeModel(
+            durationDays: challenge.durationDays,
+            rewardPoints: challenge.rewardPoints,
+            startDate: challenge.startDate,
+            completedDays: challenge.completedDays,
+            status: challenge.status,
+            challengeType: challenge.challengeType,
+            userId: userId,
+            completedAt: challenge.completedAt,
+          );
+
+    final isAddiction = model.challengeType?.startsWith('addiction') ?? false;
+    final newCompletedDays = model.completedDays + 1;
+    final justCompleted =
+        newCompletedDays >= model.durationDays && !isAddiction;
+    final newStatus = justCompleted
+        ? ChallengeStatus.completed
+        : ChallengeStatus.active;
+
+    final updatedChallenge = model.copyWith(
+      completedDays: newCompletedDays,
+      status: newStatus,
+      completedAt: justCompleted ? DateTime.now() : model.completedAt,
+    );
+
+    await saveChallenge(userId, updatedChallenge);
+    debugPrint(
+      '✅ [ChallengeRepo] Day $newCompletedDays committed (status: ${newStatus.name})',
+    );
+    return updatedChallenge;
   }
 
   @override
@@ -254,6 +271,77 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
       return snap.docs.map((d) => ChallengeModel.fromJson(d.data())).toList();
     } catch (e) {
       debugPrint('❌ [Challenge] Error loading past attempts: $e');
+      return [];
+    }
+  }
+
+  // ─────────────────────── Completed-challenge trophies ───────────────────────
+  //
+  // Layout mirrors `addiction_history` so the same security rule applies
+  // (top-level collection, docId starts with userId).
+  //
+  //   collection: completed_challenges
+  //   docId:      {uid}_{typeKey}_{startMs}
+  //   fields:     userId, typeKey, startDate, completedAt, durationDays, …
+
+  String _completedDocId(String userId, String typeKey, DateTime startDate) =>
+      '${userId}_${typeKey}_${startDate.millisecondsSinceEpoch}';
+
+  @override
+  Future<void> archiveCompletedChallenge(
+    String userId,
+    ChallengeEntity challenge,
+  ) async {
+    final typeKey = ChallengeModel.typeKey(challenge.challengeType);
+    try {
+      final model = challenge is ChallengeModel
+          ? challenge
+          : ChallengeModel(
+              durationDays: challenge.durationDays,
+              rewardPoints: challenge.rewardPoints,
+              startDate: challenge.startDate,
+              completedDays: challenge.completedDays,
+              status: ChallengeStatus.completed,
+              challengeType: challenge.challengeType,
+              userId: userId,
+              completedAt: challenge.completedAt,
+            );
+
+      await _firestoreService.setDocument(
+        collectionPath: 'completed_challenges',
+        documentId: _completedDocId(userId, typeKey, model.startDate),
+        data: {
+          ...model.toJson(),
+          'userId': userId,
+          'typeKey': typeKey,
+        },
+      );
+
+      // Remove the active challenge doc so home stops rendering it.
+      await clearChallenge(userId, typeKey: typeKey);
+
+      debugPrint(
+        '🏆 [Challenge] Archived completed $typeKey (${model.durationDays}d)',
+      );
+    } catch (e) {
+      // Non-fatal: a failed archive shouldn't block normal flow. The
+      // challenge doc stays in place and we'll retry on next load.
+      debugPrint('⚠️ [Challenge] Archive completed failed: $e');
+    }
+  }
+
+  @override
+  Future<List<ChallengeEntity>> getCompletedChallenges(String userId) async {
+    try {
+      final snap = await _firestoreService.getCollection(
+        collectionPath: 'completed_challenges',
+        queryBuilder: (q) => q
+            .where('userId', isEqualTo: userId)
+            .orderBy('completedAt', descending: true),
+      );
+      return snap.docs.map((d) => ChallengeModel.fromJson(d.data())).toList();
+    } catch (e) {
+      debugPrint('❌ [Challenge] Error loading completed challenges: $e');
       return [];
     }
   }

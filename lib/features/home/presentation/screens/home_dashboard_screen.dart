@@ -243,6 +243,9 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                           ),
                           BlocListener<SupportCubit, SupportState>(
                             listener: (context, state) {
+                              if (state is SupportSuccess) {
+                                _showSupportThankYou(state.amount);
+                              }
                               if (state is! SupportPromptReady) return;
                               final prompt = state;
                               final iap = getIt<IAPService>();
@@ -444,6 +447,72 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
             child: CupertinoActivityIndicator(color: Colors.white),
           );
         },
+      ),
+    );
+  }
+
+  void _showSupportThankYou(double amount) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: BoxDecoration(
+                color: AppColors.goldAccent.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.volunteer_activism_rounded,
+                color: AppColors.goldAccent,
+                size: 40.sp,
+              ),
+            ),
+            SizedBox(height: 24.h),
+            Text(
+              'JazakAllah Khair!',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22.sp,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              'Your support helps us keep Neki free and ad-free for the entire Ummah. May Allah reward your generosity.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14.sp,
+                height: 1.5,
+              ),
+            ),
+            SizedBox(height: 24.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.goldAccent,
+                  foregroundColor: Colors.black,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                ),
+                child: const Text(
+                  'Ameen',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

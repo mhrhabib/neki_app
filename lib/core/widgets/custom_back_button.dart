@@ -52,7 +52,7 @@ class _CustomBackButtonState extends State<CustomBackButton> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(left: 16.w, top: 4.h, bottom: 4.h),
+      padding: EdgeInsets.only(left: 12.w, top: 4.h, bottom: 4.h),
       child: Center(
         child: GestureDetector(
           onTapDown: _onTapDown,
@@ -76,7 +76,7 @@ class _CustomBackButtonState extends State<CustomBackButton> with SingleTickerPr
                     ],
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.only(right: 4.0),
+                    padding: const EdgeInsets.only(right: 2.0),
                     child: Icon(Icons.arrow_back_ios_new, color: widget.color, size: 20.sp),
                   ),
                 ),

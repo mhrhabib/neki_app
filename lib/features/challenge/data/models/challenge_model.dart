@@ -9,6 +9,7 @@ class ChallengeModel extends ChallengeEntity {
     required super.status,
     super.challengeType,
     super.userId,
+    super.completedAt,
   });
 
   /// Convert to JSON for persistence
@@ -21,6 +22,7 @@ class ChallengeModel extends ChallengeEntity {
       'status': status.name,
       'challengeType': challengeType,
       'userId': userId,
+      'completedAt': completedAt?.toIso8601String(),
     };
   }
 
@@ -37,6 +39,9 @@ class ChallengeModel extends ChallengeEntity {
       ),
       challengeType: json['challengeType'] as String?,
       userId: json['userId'] as String?,
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'] as String)
+          : null,
     );
   }
 
@@ -49,6 +54,7 @@ class ChallengeModel extends ChallengeEntity {
     ChallengeStatus? status,
     String? challengeType,
     String? userId,
+    DateTime? completedAt,
   }) {
     return ChallengeModel(
       durationDays: durationDays ?? this.durationDays,
@@ -58,6 +64,7 @@ class ChallengeModel extends ChallengeEntity {
       status: status ?? this.status,
       challengeType: challengeType ?? this.challengeType,
       userId: userId ?? this.userId,
+      completedAt: completedAt ?? this.completedAt,
     );
   }
 

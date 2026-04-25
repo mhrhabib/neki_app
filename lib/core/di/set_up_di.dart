@@ -113,6 +113,7 @@ class SetUpDI {
       () => ProfileRepositoryImpl(
         getIt<FirestoreService>(),
         getIt<FirebaseStorageService>(),
+        getIt<ChallengeRepository>(),
       ),
     );
     getIt.registerLazySingleton<PremiumRepository>(

@@ -3,7 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neki_app/features/auth/presentation/cubit/support_cubit.dart';
 import '../../data/models/challenge_model.dart';
 import '../../domain/entities/challenge_entity.dart';
-import '../../domain/repositories/challenge_repository.dart';
+import '../../domain/repositories/challenge_repository.dart'
+    show ChallengeRepository, ChallengeAlreadyCompletedToday;
 import '../../../addiction/data/services/addiction_notification_service.dart';
 import '../../../points/domain/repositories/points_repository.dart';
 
@@ -44,12 +45,18 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       final map = <String, ChallengeEntity>{};
       for (final c in all) {
         final key = ChallengeModel.typeKey(c.challengeType);
+        // Trophy hand-off: if a completed challenge is older than 24h,
+        // archive it to `completed_challenges` (where it becomes a profile
+        // badge) and skip it here so home stops showing it.
+        if (c.celebrationExpired) {
+          debugPrint('🏆 [Challenge] $key celebration expired — archiving');
+          await _challengeRepository.archiveCompletedChallenge(userId, c);
+          continue;
+        }
         if (c.hasExpired()) {
           debugPrint('⚠️ [Challenge] $key expired — keeping to show missed streak');
-          map[key] = c;
-        } else {
-          map[key] = c;
         }
+        map[key] = c;
       }
 
       emit(ChallengeLoaded(map));
@@ -111,69 +118,77 @@ class ChallengeCubit extends Cubit<ChallengeState> {
     required String userId,
     String? typeKey,
   }) async {
+    final map = Map<String, ChallengeEntity>.from(_currentMap);
+    final key = ChallengeModel.typeKey(typeKey);
+    final challenge = map[key];
+
+    if (challenge == null || !challenge.isActive) {
+      emit(const ChallengeError('No active challenge found'));
+      return;
+    }
+
+    if (!challenge.isCheckInWindowOpen) {
+      emit(const ChallengeError('Check-in window opens after 8 PM'));
+      return;
+    }
+
+    if (!challenge.canCompleteToday()) {
+      emit(const ChallengeError('Challenge already completed today'));
+      return;
+    }
+
+    emit(const ChallengeLoading());
+
+    final ChallengeEntity updated;
     try {
-      final map = Map<String, ChallengeEntity>.from(_currentMap);
-      final key = ChallengeModel.typeKey(typeKey);
-      final challenge = map[key];
-
-      if (challenge == null || !challenge.isActive) {
-        emit(const ChallengeError('No active challenge found'));
-        return;
-      }
- 
-      if (!challenge.isCheckInWindowOpen) {
-        emit(const ChallengeError('Check-in window opens after 8 PM'));
-        return;
-      }
-
-      if (!challenge.canCompleteToday()) {
-        emit(const ChallengeError('Challenge already completed today'));
-        return;
-      }
-
-      emit(const ChallengeLoading());
-
-      await _challengeRepository.completeTodayChallenge(userId, typeKey: key);
-
-      final updated = await _challengeRepository.getActiveChallenge(userId, typeKey: key);
-      if (updated == null) {
-        emit(const ChallengeError('Failed to load updated challenge'));
-        return;
-      }
-
-      // For normal challenges: points per day = total / days.
-      // For addiction (durationDays=0): no daily point bonus, only milestones count.
-      final pointsPerDay = challenge.durationDays > 0
-          ? challenge.rewardPoints ~/ challenge.durationDays
-          : 0;
-      if (pointsPerDay > 0) {
-        await _pointsRepository.addPoints(
-          userId: userId,
-          points: pointsPerDay,
-          source: 'challenge_${key}_day_${updated.completedDays}',
-        );
-      }
-
-      map[key] = updated;
-
-      // Check for support/donation milestone if it's an addiction challenge.
-      // For addictions the user-visible streak is the calendar `daysClean`,
-      // not the manual `completedDays` check-in counter — the donation
-      // prompt should follow the calendar streak.
-      if (key.startsWith('addiction')) {
-        _supportCubit.checkAddictionMilestone(updated.daysClean);
-      }
-
-      if (updated.isCompleted) {
-        debugPrint('🎉 [Challenge] $key COMPLETED!');
-        emit(ChallengeFullyCompleted(updated, challenge.rewardPoints, map));
-      } else {
-        debugPrint('✅ [Challenge] $key day ${updated.completedDays}, $pointsPerDay pts');
-        emit(ChallengeDayCompleted(updated, pointsPerDay, map));
-      }
+      updated = await _challengeRepository.completeTodayChallenge(
+        userId,
+        typeKey: key,
+      );
+    } on ChallengeAlreadyCompletedToday catch (e) {
+      // Cubit's in-memory state was stale — Firestore already records today.
+      // Sync the map back to truth and surface a soft error. NO points awarded.
+      map[key] = e.current;
+      emit(const ChallengeError('Already checked in for today'));
+      emit(ChallengeLoaded(map));
+      return;
     } catch (e) {
       debugPrint('❌ [Challenge] Error completing today: $e');
       emit(ChallengeError('Failed to complete challenge: $e'));
+      return;
+    }
+
+    // For normal challenges: points per day = total / days.
+    // For addiction (durationDays=0): no daily point bonus, only milestones count.
+    final pointsPerDay = challenge.durationDays > 0
+        ? challenge.rewardPoints ~/ challenge.durationDays
+        : 0;
+    if (pointsPerDay > 0) {
+      await _pointsRepository.addPoints(
+        userId: userId,
+        points: pointsPerDay,
+        source: 'challenge_${key}_day_${updated.completedDays}',
+      );
+    }
+
+    map[key] = updated;
+
+    // Check for support/donation milestone if it's an addiction challenge.
+    // For addictions the user-visible streak is the calendar `daysClean`,
+    // not the manual `completedDays` check-in counter — the donation
+    // prompt should follow the calendar streak.
+    if (key.startsWith('addiction')) {
+      _supportCubit.checkAddictionMilestone(updated.daysClean);
+    }
+
+    if (updated.isCompleted) {
+      debugPrint('🎉 [Challenge] $key COMPLETED!');
+      emit(ChallengeFullyCompleted(updated, challenge.rewardPoints, map));
+    } else {
+      debugPrint(
+        '✅ [Challenge] $key day ${updated.completedDays}, $pointsPerDay pts',
+      );
+      emit(ChallengeDayCompleted(updated, pointsPerDay, map));
     }
   }
 

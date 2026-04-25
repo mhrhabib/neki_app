@@ -8,6 +8,9 @@ class ChallengeEntity {
   final ChallengeStatus status;
   final String? challengeType; // e.g., 'beat_satan', 'daily_prayers'
   final String? userId;
+  /// Timestamp when the final day was checked in. `null` until the challenge
+  /// is fully completed. Used to gate the 24h celebration window on home.
+  final DateTime? completedAt;
 
   ChallengeEntity({
     required this.durationDays,
@@ -17,6 +20,7 @@ class ChallengeEntity {
     required this.status,
     this.challengeType,
     this.userId,
+    this.completedAt,
   });
 
   DateTime get endDate => startDate.add(Duration(days: durationDays));
@@ -31,6 +35,21 @@ class ChallengeEntity {
       _isAddiction ? false : completedDays >= durationDays;
 
   bool get isActive => status == ChallengeStatus.active;
+
+  /// While true, the home screen shows the full "Completed" celebration card.
+  /// After 24 hours we archive the challenge and surface it as a profile badge
+  /// instead, so the home screen doesn't keep stale trophies pinned forever.
+  bool get isInCelebrationWindow {
+    if (!isCompleted || completedAt == null) return false;
+    return DateTime.now().difference(completedAt!).inHours < 24;
+  }
+
+  /// Completed challenge whose 24h celebration has elapsed — caller should
+  /// archive it to the user's badge collection and remove it from home.
+  bool get celebrationExpired {
+    if (!isCompleted || completedAt == null) return false;
+    return DateTime.now().difference(completedAt!).inHours >= 24;
+  }
 
   int get remainingDays => durationDays <= 0 ? 0 : durationDays - completedDays;
 

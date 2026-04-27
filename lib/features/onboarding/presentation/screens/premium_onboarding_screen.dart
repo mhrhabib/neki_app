@@ -1,14 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/routes/route_names.dart';
 import '../../../../components/app_background_widget.dart';
 import '../../../../core/di/set_up_di.dart';
-import '../../../../core/services/iap_service.dart';
 import '../../../../core/location/cubit/location_cubit.dart';
 import '../../../beat_satan_chalange/presentation/cubit/onboarding_cubit.dart';
 import '../../../auth/domain/repositories/premium_repository.dart';
@@ -23,16 +20,15 @@ class PremiumOnboardingScreen extends StatefulWidget {
 class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
     with TickerProviderStateMixin {
   final PageController _pageController = PageController();
-  final IAPService _iapService = getIt<IAPService>();
   int _currentPage = 0;
   bool _isLoading = false;
 
   // Flow State
   String? _selectedPrimaryGoal;
-  int _selectedChallengeIndex = 0; 
+  int _selectedChallengeIndex = 0;
   bool _magicMomentFinished = false;
 
-  static const _totalPages = 7;
+  static const _totalPages = 6;
 
   final List<Map<String, dynamic>> _challenges = [
     {
@@ -65,51 +61,15 @@ class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
     'Improve Focus in Salah',
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _initIAP();
-  }
-
-  Future<void> _initIAP() async {
-    await _iapService.initialize();
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _handlePurchase() async {
-    if (_iapService.products.isEmpty) {
-      _completeFlowAndNavigate();
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    try {
-      final product = _iapService.products.firstWhere(
-        (p) => p.id == IAPService.yearlyId,
-        orElse: () => _iapService.products.first,
-      );
-      await _iapService.buyProduct(product);
-    } catch (_) {}
-    if (mounted) setState(() => _isLoading = false);
-  }
-
-  Future<void> _handleRestore() async {
-    setState(() => _isLoading = true);
-    try {
-      await _iapService.restorePurchases();
-    } catch (_) {}
-    if (mounted) setState(() => _isLoading = false);
-  }
-
   void _completeFlowAndNavigate() {
     // Start the 7-day trial automatically upon completing onboarding
     getIt<PremiumRepository>().startTrial();
     context.read<OnboardingCubit>().completeOnboarding();
   }
 
-  void _navigateToLogin() {
-    context.push(RouteNames.login);
-  }
+  // void _navigateToLogin() {
+  //   context.push(RouteNames.login);
+  // }
 
   void _nextPage() {
     if (_currentPage < _totalPages - 1) {
@@ -138,7 +98,9 @@ class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() => _magicMomentFinished = true);
-        _nextPage();
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted) _completeFlowAndNavigate();
+        });
       }
     });
   }
@@ -220,7 +182,6 @@ class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
                       _buildFeaturesPage(),
                       _buildLocationPermissionPage(),
                       _buildMagicMomentPage(),
-                      _buildGetStartedPage(),
                     ],
                   ),
                 ),
@@ -232,30 +193,13 @@ class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildPageIndicator(),
-                      if (_currentPage == _totalPages - 1) ...[
-                        SizedBox(height: 16.h),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildSecondaryButton(
-                              'Restore Purchase',
-                              _handleRestore,
-                            ),
-                            SizedBox(width: 24.w),
-                            _buildSecondaryButton(
-                              'Explore as Guest',
-                              _completeFlowAndNavigate,
-                            ),
-                          ],
-                        ),
-                      ],
-                      if (_currentPage == 0) ...[
-                        SizedBox(height: 12.h),
-                        _buildSecondaryButton(
-                          'Already have an account? Login',
-                          _navigateToLogin,
-                        ),
-                      ],
+                      // if (_currentPage == 0) ...[
+                      //   SizedBox(height: 12.h),
+                      //   _buildSecondaryButton(
+                      //     'Already have an account? Login',
+                      //     _navigateToLogin,
+                      //   ),
+                      // ],
                     ],
                   ),
                 ),
@@ -297,28 +241,50 @@ class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
               child: Image.asset('assets/kabba_1.png', height: 60.h),
             ),
           ),
-          SizedBox(height: 40.h),
+          SizedBox(height: 32.h),
           Text(
-            'Welcome Your\nSpiritual Journey',
+            'نِيَّة',
+            style: GoogleFonts.amiri(
+              fontSize: 36.sp,
+              fontWeight: FontWeight.w700,
+              color: AppColors.goldAccent,
+              height: 1,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            'Niyyah · Begin with intention',
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: AppColors.goldAccent.withValues(alpha: 0.7),
+              letterSpacing: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 24.h),
+          Text(
+            'Five prayers.\nOne streak.',
             style: GoogleFonts.sanchez(
-              fontSize: 30.sp,
+              fontSize: 32.sp,
               fontWeight: FontWeight.w900,
               color: Colors.white,
-              height: 1.2,
+              height: 1.15,
             ),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 16.h),
           Text(
-            'Track your prayers, build lasting habits,\nand earn Neki points.',
+            'Neki turns your salah into a daily\nrhythm you don\'t break.',
             style: TextStyle(
-              fontSize: 16.sp,
+              fontSize: 15.sp,
               color: Colors.white54,
               height: 1.6,
             ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: 48.h),
+          SizedBox(height: 40.h),
           SizedBox(
             width: double.infinity,
             height: 56.h,
@@ -640,22 +606,74 @@ class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.location_on_rounded, size: 80.sp, color: AppColors.goldAccent),
+          Container(
+            width: 100.w,
+            height: 100.w,
+            decoration: BoxDecoration(
+              color: AppColors.goldAccent.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(28.r),
+              border: Border.all(
+                color: AppColors.goldAccent.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Icon(
+              Icons.location_on_rounded,
+              size: 48.sp,
+              color: AppColors.goldAccent,
+            ),
+          ),
           SizedBox(height: 32.h),
           Text(
-            'Enable Location',
-            style: GoogleFonts.sanchez(fontSize: 28.sp, fontWeight: FontWeight.w900, color: Colors.white),
+            'One Tap.\nAccurate Salah Times.',
+            style: GoogleFonts.sanchez(
+              fontSize: 28.sp,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              height: 1.2,
+            ),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 16.h),
           Text(
-            'Accurate Salah times require your location. We will use this to keep your schedule perfect.',
-            style: TextStyle(fontSize: 16.sp, color: Colors.white54, height: 1.5),
+            'Your location keeps Fajr, Dhuhr, Asr,\nMaghrib, and Isha precise to the minute.',
+            style: TextStyle(
+              fontSize: 15.sp,
+              color: Colors.white54,
+              height: 1.6,
+            ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: 32.h),
+          SizedBox(height: 28.h),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 14.h),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(14.r),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.lock_outline_rounded,
+                  size: 14.sp,
+                  color: Colors.white38,
+                ),
+                SizedBox(width: 8.w),
+                Text(
+                  'Used only on-device. Never shared.',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.white54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 40.h),
           SizedBox(
             width: double.infinity,
+            height: 56.h,
             child: ElevatedButton(
               onPressed: () async {
                 setState(() => _isLoading = true);
@@ -668,11 +686,17 @@ class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.goldAccent,
                 foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
               ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 14.h),
-                child: Text('Allow Location'.toUpperCase(), style: GoogleFonts.sanchez(fontWeight: FontWeight.w900)),
+              child: Text(
+                'ALLOW LOCATION',
+                style: GoogleFonts.sanchez(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                ),
               ),
             ),
           ),
@@ -684,6 +708,11 @@ class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
   // ─── Step 6: Magic Moment ──────────────────────────────────────────────
 
   Widget _buildMagicMomentPage() {
+    final challenge = _challenges[_selectedChallengeIndex];
+    final int days = challenge['days'] as int;
+    final int points = challenge['points'] as int;
+    final String goal = _selectedPrimaryGoal ?? 'your daily prayers';
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 32.w),
       child: Column(
@@ -703,115 +732,74 @@ class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
                     strokeWidth: 6.r,
                   ),
           ),
-          SizedBox(height: 48.h),
+          SizedBox(height: 40.h),
           Text(
             _magicMomentFinished
-                ? 'Your Plan is Ready!'
-                : 'Personalizing Your Path',
+                ? 'Your $days-Day Path\nis Ready'
+                : 'Building Your Path',
             style: GoogleFonts.sanchez(
-              fontSize: 24.sp,
+              fontSize: 26.sp,
               fontWeight: FontWeight.w900,
               color: Colors.white,
+              height: 1.2,
             ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: 16.h),
-          Text(
-            _magicMomentFinished
-                ? 'We have tailored the Neki point system to your personal goals.'
-                : 'Designing a custom experience based on your habits...',
-            style: TextStyle(
-              fontSize: 15.sp,
-              color: Colors.white54,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─── Step 7: Paywall ──────────────────────────────────────────────────
-
-  Widget _buildGetStartedPage() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 32.w),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.workspace_premium_rounded, size: 80.sp, color: AppColors.goldAccent),
-            SizedBox(height: 32.h),
-            Text(
-              'Unlock Full\nDiscipline',
-              style: GoogleFonts.sanchez(fontSize: 30.sp, fontWeight: FontWeight.w900, color: Colors.white, height: 1.2),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 16.h),
-            _buildComparisonTable(),
-            SizedBox(height: 24.h),
-            SizedBox(
-              width: double.infinity,
-              height: 56.h,
-              child: ElevatedButton(
-                onPressed: _handlePurchase,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.goldAccent,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16.r),
-                  ),
+          SizedBox(height: 20.h),
+          if (_magicMomentFinished) ...[
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 14.h),
+              decoration: BoxDecoration(
+                color: AppColors.goldAccent.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(14.r),
+                border: Border.all(
+                  color: AppColors.goldAccent.withValues(alpha: 0.25),
                 ),
-                child: Text(
-                  'START FREE TRIAL',
-                  style: GoogleFonts.sanchez(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'GOAL',
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      letterSpacing: 1.6,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.goldAccent.withValues(alpha: 0.8),
+                    ),
                   ),
-                ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    goal,
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
             SizedBox(height: 16.h),
-            Text('Try Premium free for 7 days. Cancel anytime.', style: TextStyle(fontSize: 12.sp, color: Colors.white24)),
-            SizedBox(height: 24.h),
-            _buildSecondaryButton('MAYBE LATER, EXPLORE FIRST', _completeFlowAndNavigate),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildComparisonTable() {
-    return Container(
-      padding: EdgeInsets.all(20.w),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        children: [
-          _buildCompactRow('Feature', 'Free', 'Pro', isHeader: true),
-          Divider(color: Colors.white.withValues(alpha: 0.06), height: 24.h),
-          _buildCompactRow('Prayer Locks', '2', 'All 5'),
-          _buildCompactRow('Streak Tracking', '—', '✓'),
-          _buildCompactRow('Ad-Free', '—', '✓'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompactRow(String feature, String free, String pro, {bool isHeader = false}) {
-    final baseStyle = TextStyle(fontSize: 13.sp, fontWeight: isHeader ? FontWeight.w800 : FontWeight.w500);
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6.h),
-      child: Row(
-        children: [
-          Expanded(flex: 3, child: Text(feature, style: baseStyle.copyWith(color: isHeader ? AppColors.goldAccent : Colors.white70))),
-          Expanded(flex: 1, child: Text(free, style: baseStyle.copyWith(color: Colors.white24), textAlign: TextAlign.center)),
-          Expanded(flex: 1, child: Text(pro, style: baseStyle.copyWith(color: isHeader ? Colors.white70 : AppColors.goldAccent), textAlign: TextAlign.center)),
+            Text(
+              'We\'ve mapped $points Neki points across\n$days days. Let\'s begin.',
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.white54,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ] else
+            Text(
+              'Calibrating reminders, points,\nand your $days-day rhythm…',
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.white54,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
         ],
       ),
     );
@@ -837,13 +825,13 @@ class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
   }
 
 
-  Widget _buildSecondaryButton(String text, VoidCallback onPressed) {
-    return CupertinoButton(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-      onPressed: onPressed,
-      child: Text(text, style: TextStyle(color: Colors.white30, fontSize: 12.sp, decoration: TextDecoration.underline, decorationColor: Colors.white30)),
-    );
-  }
+  // Widget _buildSecondaryButton(String text, VoidCallback onPressed) {
+  //   return CupertinoButton(
+  //     padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+  //     onPressed: onPressed,
+  //     child: Text(text, style: TextStyle(color: Colors.white30, fontSize: 12.sp, decoration: TextDecoration.underline, decorationColor: Colors.white30)),
+  //   );
+  // }
 }
 
 class _FeatureItem {

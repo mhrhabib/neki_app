@@ -126,20 +126,6 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> signInWithFacebook() async {
-    try {
-      emit(AuthLoading(loadingProvider: 'facebook'));
-      debugPrint('🔵 Starting Facebook Login...');
-      final user = await authRepository.signInWithFacebook();
-      debugPrint('✅ Facebook Login successful: ${user.email}');
-      emit(Authenticated(user: user));
-    } catch (e) {
-      debugPrint('❌ Facebook Login ERROR: $e');
-      debugPrint('❌ Error type: ${e.runtimeType}');
-      emit(AuthError(message: e.toString()));
-    }
-  }
-
   Future<void> signInWithApple() async {
     try {
       emit(AuthLoading(loadingProvider: 'apple'));

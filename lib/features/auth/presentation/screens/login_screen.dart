@@ -18,10 +18,6 @@ class LoginScreen extends StatelessWidget {
     context.read<AuthCubit>().signInWithGoogle();
   }
 
-  void _handleFacebookSignIn(BuildContext context) {
-    context.read<AuthCubit>().signInWithFacebook();
-  }
-
   void _handleAppleSignIn(BuildContext context) {
     context.read<AuthCubit>().signInWithApple();
   }
@@ -89,17 +85,6 @@ class LoginScreen extends StatelessWidget {
                         isLoading: authLoading?.loadingProvider == 'google',
                       ),
                       SizedBox(height: 16.h),
-
-                      // Continue with Facebook Button
-                      _buildAuthButton(
-                        context: context,
-                        icon: '📱',
-                        label: 'Continue with Facebook',
-                        onPressed: isAnyLoading
-                            ? () {}
-                            : () => _handleFacebookSignIn(context),
-                        isLoading: authLoading?.loadingProvider == 'facebook',
-                      ),
 
                       // Show Apple Sign-In only on iOS or macOS
                       if (Platform.isIOS || Platform.isMacOS) ...[

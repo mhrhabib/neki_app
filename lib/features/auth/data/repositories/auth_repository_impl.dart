@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
@@ -23,7 +22,6 @@ class AuthRepositoryImpl implements AuthRepository {
     serverClientId: '327642350514-4lcqmvbq71fa8ojuilcd8uklm2lua0q8.apps.googleusercontent.com',
     scopes: ['email', 'profile'],
   );
-  final FacebookAuth _facebookAuth = FacebookAuth.instance;
 
   AuthRepositoryImpl({required FirestoreService firestoreService})
       : _firestoreService = firestoreService;
@@ -116,50 +114,6 @@ class AuthRepositoryImpl implements AuthRepository {
       debugPrint('❌ [GoogleSignIn] ERROR: $e');
       debugPrint('❌ [GoogleSignIn] Stack trace: $stackTrace');
       throw Exception('Google sign-in failed: $e');
-    }
-  }
-
-  @override
-  Future<UserEntity> signInWithFacebook() async {
-    try {
-      debugPrint('🔵 [FacebookAuth] Starting login flow...');
-
-      // Trigger the Facebook Sign-In flow
-      final LoginResult result = await _facebookAuth.login();
-      debugPrint('🔵 [FacebookAuth] Login status: ${result.status}');
-
-      if (result.status != LoginStatus.success) {
-        debugPrint('⚠️ [FacebookAuth] Login failed or cancelled: ${result.status}');
-        throw Exception('Facebook sign-in was cancelled or failed');
-      }
-
-      // Get the access token
-      final accessToken = result.accessToken;
-      if (accessToken == null) {
-        debugPrint('❌ [FacebookAuth] Access token is null');
-        throw Exception('Failed to get Facebook access token');
-      }
-      debugPrint('🔵 [FacebookAuth] Access token: ${accessToken.token.substring(0, 20)}...');
-
-      // Create a credential from the access token
-      final credential = fb_auth.FacebookAuthProvider.credential(accessToken.token);
-      debugPrint('🔵 [FacebookAuth] Credential created, signing in to Firebase...');
-
-      // Sign in to Firebase with the Facebook credential
-      final userCredential = await _firebaseAuth.signInWithCredential(credential);
-      debugPrint('✅ [FacebookAuth] Firebase sign-in successful!');
-
-      final user = userCredential.user;
-      if (user != null) await _ensureFirestoreDocs(user);
-      final mapped = _mapFirebaseUser(user);
-      if (mapped == null) throw Exception('Failed to sign in with Facebook');
-
-      debugPrint('✅ [FacebookAuth] User mapped: ${mapped.email}');
-      return mapped;
-    } catch (e, stackTrace) {
-      debugPrint('❌ [FacebookAuth] ERROR: $e');
-      debugPrint('❌ [FacebookAuth] Stack trace: $stackTrace');
-      throw Exception('Facebook sign-in failed: $e');
     }
   }
 
@@ -328,14 +282,6 @@ class AuthRepositoryImpl implements AuthRepository {
         debugPrint('✅ [Logout] Google signed out');
       } catch (e) {
         debugPrint('⚠️ [Logout] Google sign out skipped: $e');
-      }
-
-      // Try to sign out from Facebook (ignore errors if not signed in with Facebook)
-      try {
-        await _facebookAuth.logOut();
-        debugPrint('✅ [Logout] Facebook signed out');
-      } catch (e) {
-        debugPrint('⚠️ [Logout] Facebook logout skipped: $e');
       }
 
       debugPrint('✅ [Logout] Logout completed successfully');

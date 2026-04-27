@@ -45,6 +45,17 @@ class RozaRepositoryImpl implements RozaRepository {
   }
 
   @override
+  Future<void> unmarkFasted({required String userId, required DateTime date}) async {
+    final docId = '${userId}_${date.toIso8601String().split('T')[0]}';
+    debugPrint('🍽️ [Roza] Unmarking date: $docId');
+    final ok = await _firestoreService.deleteDocument(
+      collectionPath: _collectionPath,
+      documentId: docId,
+    );
+    if (!ok) throw Exception('Failed to unmark Roza date');
+  }
+
+  @override
   Future<List<RozaEntity>> getRozaHistory({
     required String userId,
     required DateTime startDate,
@@ -108,62 +119,4 @@ class RozaRepositoryImpl implements RozaRepository {
     return await getRozaHistory(userId: userId, startDate: startDate, endDate: endDate);
   }
 
-  @override
-  Future<void> markMultipleDatesFasted({required String userId, required List<DateTime> dates, String? notes}) async {
-    try {
-      debugPrint('🍽️ [Roza] Marking multiple dates as fasted: ${dates.length} dates');
-
-      // First mark all selected dates as fasted
-      for (final date in dates) {
-        await markFasted(userId: userId, date: date, notes: notes);
-      }
-
-      // Then mark skipped dates as broken fasts
-      await _markSkippedDatesAsBroken(userId: userId, selectedDates: dates);
-
-      debugPrint('✅ [Roza] Successfully marked multiple dates as fasted');
-    } catch (e) {
-      debugPrint('❌ [Roza] Error marking multiple dates as fasted: $e');
-      rethrow;
-    }
-  }
-
-  /// Mark skipped dates as broken fasts when there are gaps in fasting
-  Future<void> _markSkippedDatesAsBroken({required String userId, required List<DateTime> selectedDates}) async {
-    if (selectedDates.length < 2) return;
-
-    // Sort dates
-    selectedDates.sort();
-
-    for (int i = 0; i < selectedDates.length - 1; i++) {
-      final currentDate = selectedDates[i];
-      final nextDate = selectedDates[i + 1];
-
-      // Check if there's a gap between dates
-      final daysDifference = nextDate.difference(currentDate).inDays;
-
-      if (daysDifference > 1) {
-        // Mark all dates between current and next as broken fasts
-        for (int j = 1; j < daysDifference; j++) {
-          final skippedDate = currentDate.add(Duration(days: j));
-          final skippedRecord = RozaModel(
-            id: '${userId}_${skippedDate.toIso8601String().split('T')[0]}',
-            userId: userId,
-            date: skippedDate,
-            isFasted: false, // Mark as broken fast
-            pointsEarned: 0,
-            notes: 'Skipped - Broken fast',
-          );
-
-          await _firestoreService.setDocument(
-            collectionPath: _collectionPath,
-            documentId: skippedRecord.id,
-            data: skippedRecord.toJson(),
-          );
-
-          debugPrint('🍽️ [Roza] Marked skipped date as broken: ${skippedDate.toIso8601String()}');
-        }
-      }
-    }
-  }
 }

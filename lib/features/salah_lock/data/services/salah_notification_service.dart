@@ -39,12 +39,13 @@ class SalahNotificationService {
     'Isha': 500,
   };
 
-  // How many 5-minute-interval notifications to schedule per prayer.
-  // 10 × 5 min = 50 minutes of reminders max.
-  // ⚠️ iOS has a hard limit of 64 pending local notifications per app.
-  // 5 prayers × 10 slots = 50 total, safely under the 64 limit.
-  static const int _maxReminders = 10;
-  static const Duration _interval = Duration(minutes: 5);
+  // How many notifications to schedule per prayer (initial + follow-ups).
+  // ⚠️ Keep this small. Android's `exactAllowWhileIdle` queues every past-due
+  // alarm and fires them all at boot, so a phone that was powered off will
+  // dump every pending reminder into the user's tray at once. Capping at 2
+  // means the worst-case flood is 5 prayers × 2 = 10, not 50.
+  static const int _maxReminders = 2;
+  static const Duration _interval = Duration(minutes: 15);
 
   static const String _actionIdPrayed = 'action_prayed';
   static const String _actionIdSkip = 'action_skip';

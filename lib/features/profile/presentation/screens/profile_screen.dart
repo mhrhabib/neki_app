@@ -8,7 +8,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:neki_app/features/auth/presentation/cubit/auth_cubit.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../../core/widgets/custom_icon_button.dart';
 import '../../../auth/data/models/support_status_model.dart';
 import '../../../auth/data/repositories/support_repository_impl.dart';
 import '../../../../core/di/set_up_di.dart';
@@ -71,15 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                       ),
-                      actions: [
-                        CustomIconButton(
-                          icon: CupertinoIcons.settings,
-                          onPressed: () {},
-                          baseColor: AppColors.primaryGreen,
-                          size: 44,
-                          padding: EdgeInsets.only(right: 16.w),
-                        ),
-                      ],
+                     
                     ),
                     SliverToBoxAdapter(
                       child: Column(
@@ -154,80 +145,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildProfileSection(BuildContext context, UserEntity user) {
     return Column(
       children: [
-        GestureDetector(
-          onTap: () => _showImageSourcePicker(context, user.id),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 110.w,
-                height: 110.w,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.goldAccent.withValues(alpha: 0.3), width: 2.w),
-                ),
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 110.w,
+              height: 110.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.goldAccent.withValues(alpha: 0.3), width: 2.w),
               ),
-              BlocBuilder<ProfileCubit, ProfileState>(
-                buildWhen: (prev, curr) =>
-                    curr is ProfileLoading || curr is ProfilePhotoUpdated || curr is ProfileLoaded,
-                builder: (context, state) {
-                  final isLoading = state is ProfileLoading;
-                  String? updatedPhotoUrl;
-                  if (state is ProfilePhotoUpdated) {
-                    updatedPhotoUrl = state.photoUrl;
-                  }
-
-                  return Container(
-                    width: 95.w,
-                    height: 95.w,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
-                      shape: BoxShape.circle,
-                      image: (updatedPhotoUrl ?? user.photoUrl) != null
-                          ? DecorationImage(image: NetworkImage(updatedPhotoUrl ?? user.photoUrl!), fit: BoxFit.cover)
-                          : null,
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 2.w),
-                    ),
-                    child: (updatedPhotoUrl ?? user.photoUrl) == null
-                        ? Center(
-                            child: isLoading
-                                ? const CupertinoActivityIndicator(color: Colors.white)
-                                : Text(
-                                    user.name.isNotEmpty ? user.name[0].toUpperCase() : '👤',
-                                    style: TextStyle(
-                                      fontSize: 35.sp,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white24,
-                                    ),
-                                  ),
-                          )
-                        : (isLoading
-                              ? Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Center(child: CupertinoActivityIndicator(color: Colors.grey)),
-                                )
-                              : null),
-                  );
-                },
-              ),
-              Positioned(
-                bottom: 5.h,
-                right: 5.w,
-                child: Container(
-                  padding: EdgeInsets.all(6.w),
+            ),
+            BlocBuilder<ProfileCubit, ProfileState>(
+              buildWhen: (prev, curr) =>
+                  curr is ProfileLoading || curr is ProfilePhotoUpdated || curr is ProfileLoaded,
+              builder: (context, state) {
+                final isLoading = state is ProfileLoading;
+                String? updatedPhotoUrl;
+                if (state is ProfilePhotoUpdated) {
+                  updatedPhotoUrl = state.photoUrl;
+                }
+        
+                return Container(
+                  width: 95.w,
+                  height: 95.w,
                   decoration: BoxDecoration(
-                    color: AppColors.primaryGreen,
+                    color: Colors.white.withValues(alpha: 0.05),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.black, width: 2.w),
+                    image: (updatedPhotoUrl ?? user.photoUrl) != null
+                        ? DecorationImage(image: NetworkImage(updatedPhotoUrl ?? user.photoUrl!), fit: BoxFit.cover)
+                        : null,
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 2.w),
                   ),
-                  child: Icon(CupertinoIcons.camera_fill, color: Colors.white, size: 14.sp),
-                ),
-              ),
-            ],
-          ),
+                  child: (updatedPhotoUrl ?? user.photoUrl) == null
+                      ? Center(
+                          child: isLoading
+                              ? const CupertinoActivityIndicator(color: Colors.white)
+                              : Text(
+                                  user.name.isNotEmpty ? user.name[0].toUpperCase() : '👤',
+                                  style: TextStyle(
+                                    fontSize: 35.sp,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white24,
+                                  ),
+                                ),
+                        )
+                      : (isLoading
+                            ? Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.3),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Center(child: CupertinoActivityIndicator(color: Colors.grey)),
+                              )
+                            : null),
+                );
+              },
+            ),
+         
+            
+          ],
         ),
         SizedBox(height: 16.h),
         Text(

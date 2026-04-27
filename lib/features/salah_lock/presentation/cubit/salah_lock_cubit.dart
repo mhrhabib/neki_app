@@ -166,9 +166,52 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     repository.saveLastNotificationDate(dateKey).catchError((_) {});
     final tomorrowPrayers = _getTomorrowPrayerTimes();
     final completed = await _getCompletedPrayers();
-    notificationService.scheduleAllPrayerNotifications(prayerTimes, tomorrowPrayerTimes: tomorrowPrayers, completedPrayers: completed).catchError((e) {
+
+    int missedCount = 0;
+    bool isPerfectStreak = false;
+
+    // Calculate behavior stats if history is available
+    if (salahCubit.state is SalahLoaded) {
+      final history = (salahCubit.state as SalahLoaded).history;
+      if (history != null && history.isNotEmpty) {
+        // Simple logic for Fajr missed count in last 3 days
+        final last3Days = history.where((s) => 
+          s.salahName == 'Fajr' && 
+          s.timestamp.isAfter(DateTime.now().subtract(const Duration(days: 3)))
+        ).toList();
+        missedCount = last3Days.where((s) => !s.isCompleted).length;
+        
+        // Also check if any prayers were completed today
+        isPerfectStreak = completed.length >= 3;
+      }
+    }
+
+    notificationService.scheduleAllPrayerNotifications(
+      prayerTimes, 
+      tomorrowPrayerTimes: tomorrowPrayers, 
+      completedPrayers: completed,
+      missedCount: missedCount,
+      isPerfectStreak: isPerfectStreak,
+    ).catchError((e) {
       debugPrint('⚠️ SalahLock: Failed to schedule prayer notifications: $e');
     });
+
+    // --- iOS Specific: Schedule background device activity ---
+    if (Platform.isIOS) {
+      final names = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+      final times = names.map((name) {
+        final time = prayerTimes.timeForPrayer(_getPrayerFromLabel(name))?.millisecondsSinceEpoch.toDouble();
+        return time;
+      }).whereType<double>().toList();
+      
+      final validNames = names.where((name) => prayerTimes.timeForPrayer(_getPrayerFromLabel(name)) != null).toList();
+
+      deviceManager.schedulePrayerAlarmsIOS(
+        prayerTimes: times,
+        prayerNames: validNames,
+      );
+    }
+
     notificationService.scheduleDhikrReminders().catchError((e) {
       debugPrint('⚠️ SalahLock: Failed to schedule dhikr reminders: $e');
     });
@@ -183,17 +226,9 @@ class SalahLockCubit extends Cubit<SalahLockState> {
     if (_lastScheduledDate == dateKey) return;
     _lastScheduledDate = dateKey;
     repository.saveLastNotificationDate(dateKey).catchError((_) {});
-    final tomorrowPrayers = _getTomorrowPrayerTimes();
-    final completed = await _getCompletedPrayers();
-    notificationService.scheduleAllPrayerNotifications(prayerTimes, tomorrowPrayerTimes: tomorrowPrayers, completedPrayers: completed).catchError((e) {
-      debugPrint('⚠️ SalahLock: Failed to schedule prayer notifications: $e');
-    });
-    notificationService.scheduleDhikrReminders().catchError((e) {
-      debugPrint('⚠️ SalahLock: Failed to schedule dhikr reminders: $e');
-    });
-    notificationService.scheduleQuranReminders().catchError((e) {
-      debugPrint('⚠️ SalahLock: Failed to schedule quran reminders: $e');
-    });
+    
+    // Use the same logic for periodic background rescheduling
+    _forceScheduleNotifications(prayerTimes);
   }
 
   Future<Set<String>> _getCompletedPrayers() async {
@@ -235,11 +270,15 @@ class SalahLockCubit extends Cubit<SalahLockState> {
         emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
       }
       return;
+    }    final prayerName = _getPrayerName(currentPrayer);
+    if (!_settings.enabledPrayers.contains(prayerName)) {
+      if (state is SalahLockActive) {
+        emit(SalahLockIdle(_settings, isGuideDismissed: _isGuideDismissed));
+      }
+      return;
     }
 
-    final prayerName = _getPrayerName(currentPrayer);
     final bool isDone = await repository.isSalahCompletedLocally(prayerName);
-
     // ✅ Avoid flashing the overlay before SalahCubit has finished its first
     // load. Without this, the lock briefly shows SalahLockActive on cold start
     // and then disappears once SalahLoaded arrives and reveals the prayer is
@@ -499,6 +538,30 @@ class SalahLockCubit extends Cubit<SalahLockState> {
       Prayer.maghrib => 'Maghrib',
       Prayer.isha => 'Isha',
       _ => 'Salah',
+    };
+  }
+
+  Future<bool> requestIOSAuthorization() async {
+    final granted = await deviceManager.requestIOSAuthorization();
+    return granted;
+  }
+
+  Future<bool> checkIOSAuthorization() async {
+    return await deviceManager.checkIOSAuthorization();
+  }
+
+  Future<bool> selectBlockedApps() async {
+    return await deviceManager.selectBlockedApps();
+  }
+
+  Prayer _getPrayerFromLabel(String label) {
+    return switch (label) {
+      'Fajr' => Prayer.fajr,
+      'Dhuhr' => Prayer.dhuhr,
+      'Asr' => Prayer.asr,
+      'Maghrib' => Prayer.maghrib,
+      'Isha' => Prayer.isha,
+      _ => Prayer.none,
     };
   }
 

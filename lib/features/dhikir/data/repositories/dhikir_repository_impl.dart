@@ -192,6 +192,58 @@ class DhikirRepositoryImpl implements DhikirRepository {
   }
 
   @override
+  Future<List<DhikirEntity>> getDhikirHistoryInRange({
+    required String userId,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      final normalizedStart = DateTime(
+        startDate.year,
+        startDate.month,
+        startDate.day,
+      ).toIso8601String();
+      final normalizedEnd = DateTime(
+        endDate.year,
+        endDate.month,
+        endDate.day,
+        23,
+        59,
+        59,
+      ).toIso8601String();
+
+      debugPrint(
+        '📿 [Dhikir] Getting history range: $normalizedStart to $normalizedEnd',
+      );
+
+      final querySnapshot = await _firestoreService.getCollection(
+        collectionPath: _collectionPath,
+        queryBuilder: (query) => query.where('userId', isEqualTo: userId),
+      );
+
+      final sessions = querySnapshot.docs
+          .map((doc) => DhikirModel.fromJson(doc.data()))
+          .where((session) {
+            final sessionDate = session.date.toIso8601String();
+            return sessionDate.compareTo(normalizedStart) >= 0 &&
+                sessionDate.compareTo(normalizedEnd) <= 0;
+          })
+          .toList();
+
+      // Sort in memory
+      sessions.sort((a, b) => b.date.compareTo(a.date));
+
+      debugPrint(
+        '✅ [Dhikir] Range history retrieved: ${sessions.length} sessions',
+      );
+      return sessions;
+    } catch (e) {
+      debugPrint('❌ [Dhikir] Error getting range history: $e');
+      rethrow;
+    }
+  }
+
+  @override
   Future<void> completeDhikirSession(String sessionId) async {
     try {
       debugPrint('📿 [Dhikir] Completing session: $sessionId');

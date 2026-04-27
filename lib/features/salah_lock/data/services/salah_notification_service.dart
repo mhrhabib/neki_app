@@ -53,20 +53,67 @@ class SalahNotificationService {
   static const String _reminderChannelId = 'salah_lock_channel';
   static const String _reminderChannelName = 'Salah Lock Reminders';
 
-  static const Map<String, String> _prayerMessages = {
-    'Fajr': 'Rise and shine! Start your day with the blessings of Fajr. 🌅',
-    'Dhuhr': 'Take a break and reconnect — it\'s Dhuhr time. ☀️',
-    'Asr': 'The afternoon prayer awaits. May Allah bless your efforts. 🌤️',
-    'Maghrib': 'The sun has set. Pray Maghrib and give thanks. 🌇',
-    'Isha': 'End your day beautifully with Isha prayer. 🌙',
+  static const Map<String, List<String>> _prayerMessages = {
+    'Fajr': [
+      'Rise and shine! Start your day with the blessings of Fajr. 🌅',
+      'Fajr time is here. A beautiful start to a blessed day. ✨',
+      'The world is quiet. Reconnect with your Creator in Fajr. 🕯️',
+    ],
+    'Dhuhr': [
+      'Take a break and reconnect — it\'s Dhuhr time. ☀️',
+      'Pause your worldly work for Dhuhr. Success comes from Him. 💼',
+      'Dhuhr time. Refresh your soul and continue your day with Barakah. ⛅',
+    ],
+    'Asr': [
+      'The afternoon prayer awaits. May Allah bless your efforts. 🌤️',
+      'Asr time is here. Don\'t let the day slip away without prayer. ⏳',
+      'Pause for Asr. Protect your afternoon with remembrance. 🕌',
+    ],
+    'Maghrib': [
+      'The sun has set. Pray Maghrib and give thanks. 🌇',
+      'Maghrib time. End the daylight with gratitude and prayer. ✨',
+      'A moment of peace as the day ends. It\'s Maghrib time. 🌃',
+    ],
+    'Isha': [
+      'End your day beautifully with Isha prayer. 🌙',
+      'Isha time. Find rest in the words of your Lord before sleep. 🕯️',
+      'Isha call. Prepare for a peaceful night with your final prayer. ✨',
+    ],
   };
 
-  static const Map<String, String> _reminderMessages = {
-    'Fajr': 'Fajr time is passing — don\'t miss your morning prayer! 🌅',
-    'Dhuhr': 'Dhuhr is still waiting for you. Take a moment to pray. ☀️',
-    'Asr': 'Asr reminder — the time is running. Please pray. 🌤️',
-    'Maghrib': 'Maghrib reminder — pray before the time passes! 🌇',
-    'Isha': 'Isha reminder — end your night with prayer. 🌙',
+  static const Map<String, List<String>> _reminderMessages = {
+    'Fajr': [
+      'Fajr time is passing — don\'t miss your morning prayer! 🌅',
+      'Still in bed? Fajr is the best start for your productivity. 🚀',
+      'Fajr reminder: The time is short. Pray now and win the day. ⏳',
+    ],
+    'Dhuhr': [
+      'Dhuhr is still waiting for you. Take a moment to pray. ☀️',
+      'Don\'t forget Dhuhr! A 5-minute break for a lifetime of rewards. ✨',
+      'Work can wait, Dhuhr cannot. Reconnect now. 💼',
+    ],
+    'Asr': [
+      'Asr reminder — the time is running. Please pray. 🌤️',
+      'Asr is passing soon. Secure your afternoon prayer now. ⏳',
+      'Mid-day rush? Don\'t let it cost you your Asr. 🕌',
+    ],
+    'Maghrib': [
+      'Maghrib reminder — pray before the time passes! 🌇',
+      'The Maghrib window is short. Pray now to keep your streak. 🔥',
+      'Maghrib time is flying. Reconnect with Allah right now. ✨',
+    ],
+    'Isha': [
+      'Isha reminder — end your night with prayer. 🌙',
+      'Reflect on your day through Isha. It\'s not too late. 🕯️',
+      'Isha is still waiting. Sleep better knowing you prayed. ✨',
+    ],
+  };
+
+  // Behavior-aware nudges
+  static const Map<String, String> _motivationNudges = {
+    'miss_streak': 'You\'ve missed a few recently. Let\'s make today different! 💪',
+    'perfect_streak': 'You are on a roll! Keep that perfect streak alive. 🔥',
+    'morning_miss': 'Morning prayers give you the most Barakah. Try your best today! 🌅',
   };
 
   Future<void> initialize() async {
@@ -365,6 +412,8 @@ class SalahNotificationService {
     PrayerTimes prayerTimes, {
     PrayerTimes? tomorrowPrayerTimes,
     Set<String> completedPrayers = const {},
+    int missedCount = 0,
+    bool isPerfectStreak = false,
   }) async {
     await cancelPrayerNotifications();
 
@@ -403,17 +452,21 @@ class SalahNotificationService {
       // Convert prayer time to timezone-aware for consistent comparisons
       var tzPrayerTime = tz.TZDateTime.from(prayerTime, location);
 
-      // If this prayer time has fully passed and it's Fajr, schedule tomorrow's Fajr instead
-      final tz.TZDateTime windowEnd = p + 1 < orderedPrayers.length
-          ? tz.TZDateTime.from(orderedPrayers[p + 1].$2, location)
-          : tz.TZDateTime(
-              location,
-              tzPrayerTime.year,
-              tzPrayerTime.month,
-              tzPrayerTime.day,
-              23,
-              59,
-            );
+      // If this prayer time has fully passed and it's Fajr, schedule tomorrow's Fajr instead.
+      // Fajr's valid window ends at sunrise, not at Dhuhr — the gap between sunrise and
+      // Dhuhr is a forbidden-prayer period, so reminders must not fire there.
+      final tz.TZDateTime windowEnd = name == 'Fajr'
+          ? tz.TZDateTime.from(prayerTimes.sunrise, location)
+          : p + 1 < orderedPrayers.length
+              ? tz.TZDateTime.from(orderedPrayers[p + 1].$2, location)
+              : tz.TZDateTime(
+                  location,
+                  tzPrayerTime.year,
+                  tzPrayerTime.month,
+                  tzPrayerTime.day,
+                  23,
+                  59,
+                );
 
       if (!windowEnd.isAfter(now) &&
           name == 'Fajr' &&
@@ -438,9 +491,13 @@ class SalahNotificationService {
             await _notificationsPlugin.zonedSchedule(
               base + slot,
               '🕌 $name Time',
-              isFirst
-                  ? (_prayerMessages[name] ?? 'Time for $name prayer.')
-                  : (_reminderMessages[name] ?? 'Reminder: $name prayer.'),
+              _getRotatingMessage(
+                name,
+                slot,
+                isFirst: isFirst,
+                missedCount: missedCount,
+                isPerfectStreak: isPerfectStreak,
+              ),
               fireAt,
               _notificationDetails(name),
               payload: name,
@@ -481,9 +538,13 @@ class SalahNotificationService {
         await _notificationsPlugin.zonedSchedule(
           base + slot,
           '🕌 $name Time',
-          isFirst
-              ? (_prayerMessages[name] ?? 'Time for $name prayer.')
-              : (_reminderMessages[name] ?? 'Reminder: $name prayer.'),
+          _getRotatingMessage(
+            name,
+            slot,
+            isFirst: isFirst,
+            missedCount: missedCount,
+            isPerfectStreak: isPerfectStreak,
+          ),
           fireAt,
           _notificationDetails(name),
           payload: name,
@@ -507,6 +568,27 @@ class SalahNotificationService {
     debugPrint(
       '📊 Total notifications scheduled: $totalScheduled (iOS limit: $iosMaxPending)',
     );
+  }
+
+  String _getRotatingMessage(
+    String name,
+    int slot, {
+    bool isFirst = false,
+    int missedCount = 0,
+    bool isPerfectStreak = false,
+  }) {
+    // 1. Check for behavior nudges first (only on first notification)
+    if (isFirst) {
+      if (missedCount >= 3) return _motivationNudges['miss_streak']!;
+      if (isPerfectStreak) return _motivationNudges['perfect_streak']!;
+    }
+
+    // 2. Pick from rotating list
+    final list = isFirst ? _prayerMessages[name] : _reminderMessages[name];
+    if (list == null || list.isEmpty) return 'Time for $name prayer.';
+
+    // Use slot to rotate so reminders change over the window
+    return list[slot % list.length];
   }
 
   /// Returns true if the device supports and has granted exact alarm permission.

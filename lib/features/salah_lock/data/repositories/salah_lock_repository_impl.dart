@@ -10,6 +10,7 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
   static const String _keyAutoUnlockMins = 'salah_lock_auto_unlock_mins';
   static const String _keyCompletionsPrefix = 'salah_lock_done_';
   static const String _keyGuideDismissed = 'salah_lock_guide_dismissed';
+  static const String _keyEnabledPrayers = 'salah_lock_enabled_prayers';
   static const String _keyLastNotificationDate = 'salah_lock_last_notif_date';
 
   SalahLockRepositoryImpl(this.prefs);
@@ -20,6 +21,8 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
       isEnabled: prefs.getBool(_keyEnabled) ?? true,
       streakTracking: prefs.getBool(_keyStreakTracking) ?? true,
       autoUnlockMinutes: prefs.getInt(_keyAutoUnlockMins) ?? 120,
+      enabledPrayers: prefs.getStringList(_keyEnabledPrayers) ??
+          const ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'],
     );
   }
 
@@ -28,6 +31,7 @@ class SalahLockRepositoryImpl implements SalahLockRepository {
     await prefs.setBool(_keyEnabled, settings.isEnabled);
     await prefs.setBool(_keyStreakTracking, settings.streakTracking);
     await prefs.setInt(_keyAutoUnlockMins, settings.autoUnlockMinutes);
+    await prefs.setStringList(_keyEnabledPrayers, settings.enabledPrayers);
   }
 
   @override

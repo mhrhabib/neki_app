@@ -23,6 +23,9 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
     (index) => index + 1,
   );
 
+  /// Tracks which surah is currently being navigated to (shows tap loader).
+  int? _navigatingToSurah;
+
   @override
   void initState() {
     super.initState();
@@ -54,10 +57,19 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
     });
   }
 
+  /// Navigates to a surah detail screen with a brief loading indicator.
+  Future<void> _navigateToSurah(int surahNumber) async {
+    if (_navigatingToSurah != null) return; // prevent double-tap
+    setState(() => _navigatingToSurah = surahNumber);
+    // Let the UI render the loading state before pushing the heavy screen.
+    await Future.delayed(const Duration(milliseconds: 50));
+    if (!mounted) return;
+    await context.push('${RouteNames.quran}/$surahNumber');
+    if (mounted) setState(() => _navigatingToSurah = null);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return BlocProvider(
       create: (context) => QuranCubit(),
       child: Stack(
@@ -82,101 +94,137 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
             ),
             body: BlocBuilder<QuranCubit, QuranState>(
               builder: (context, state) {
-                return Column(
+                return Stack(
                   children: [
-                    if (state.lastReadSurah != null)
-                      _buildLastReadCard(context, state.lastReadSurah!, isDark),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20.w,
-                        vertical: 10.h,
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14.sp,
+                    Column(
+                      children: [
+                        // ── Last Read Card ───────────────────────────────────
+                        // Show only once settings have loaded (lastReadSurah is
+                        // populated from SharedPreferences asynchronously).
+                        if (state.lastReadSurah != null)
+                          _buildLastReadCard(context, state.lastReadSurah!),
+
+                        // ── Search Bar ───────────────────────────────────────
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20.w,
+                            vertical: 10.h,
                           ),
-                          decoration: InputDecoration(
-                            hintText: 'Search Surah...',
-                            hintStyle: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
-                              fontSize: 14.sp,
-                            ),
-                            prefixIcon: Icon(
-                              Icons.search,
-                              color: AppColors.goldAccent,
-                              size: 20.sp,
-                            ),
-                            filled: true,
-                            fillColor: Colors.white.withValues(alpha: 0.08),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 20.w,
-                              vertical: 15.h,
-                            ),
-                            border: OutlineInputBorder(
+                          child: Container(
+                            decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(15.r),
-                              borderSide: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.1),
-                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15.r),
-                              borderSide: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.1),
+                            child: TextField(
+                              controller: _searchController,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14.sp,
                               ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15.r),
-                              borderSide: const BorderSide(
-                                color: AppColors.goldAccent,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: _filteredSurahIndices.isEmpty
-                          ? Center(
-                              child: Text(
-                                'No Surahs found',
-                                style: TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 16.sp,
+                              decoration: InputDecoration(
+                                hintText: 'Search Surah...',
+                                hintStyle: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  fontSize: 14.sp,
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  color: AppColors.goldAccent,
+                                  size: 20.sp,
+                                ),
+                                filled: true,
+                                fillColor: Colors.white.withValues(alpha: 0.08),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 20.w,
+                                  vertical: 15.h,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15.r),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.1),
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15.r),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.1),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15.r),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.goldAccent,
+                                  ),
                                 ),
                               ),
-                            )
-                          : ListView.separated(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 20.w,
-                                vertical: 10.h,
-                              ),
-                              itemCount: _filteredSurahIndices.length,
-                              separatorBuilder: (context, index) =>
-                                  SizedBox(height: 12.h),
-                              itemBuilder: (context, index) {
-                                final surahNumber =
-                                    _filteredSurahIndices[index];
-                                return _buildSurahCard(
-                                  context,
-                                  surahNumber,
-                                  isDark,
-                                );
-                              },
                             ),
+                          ),
+                        ),
+
+                        // ── Surah List ───────────────────────────────────────
+                        Expanded(
+                          child: _filteredSurahIndices.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    'No Surahs found',
+                                    style: TextStyle(
+                                      color: Colors.white38,
+                                      fontSize: 16.sp,
+                                    ),
+                                  ),
+                                )
+                              : ListView.separated(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 20.w,
+                                    vertical: 10.h,
+                                  ),
+                                  itemCount: _filteredSurahIndices.length,
+                                  separatorBuilder: (context, index) =>
+                                      SizedBox(height: 12.h),
+                                  itemBuilder: (context, index) {
+                                    final surahNumber =
+                                        _filteredSurahIndices[index];
+                                    return _buildSurahCard(
+                                      context,
+                                      surahNumber,
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
                     ),
+
+                    // ── Tap-loading overlay ──────────────────────────────────
+                    // Shown while the heavy SurahDetailScreen is being pushed.
+                    if (_navigatingToSurah != null)
+                      Container(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CircularProgressIndicator(
+                                color: AppColors.goldAccent,
+                                strokeWidth: 2.5,
+                              ),
+                              SizedBox(height: 16.h),
+                              Text(
+                                'Opening ${quran.getSurahName(_navigatingToSurah!)}…',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13.sp,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 );
               },
@@ -187,13 +235,9 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
     );
   }
 
-  Widget _buildLastReadCard(
-    BuildContext context,
-    int surahNumber,
-    bool isDark,
-  ) {
+  Widget _buildLastReadCard(BuildContext context, int surahNumber) {
     return GestureDetector(
-      onTap: () => context.push('${RouteNames.quran}/$surahNumber'),
+      onTap: () => _navigateToSurah(surahNumber),
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
         decoration: BoxDecoration(
@@ -295,15 +339,20 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
     );
   }
 
-  Widget _buildSurahCard(BuildContext context, int surahNumber, bool isDark) {
+  Widget _buildSurahCard(BuildContext context, int surahNumber) {
+    final isNavigating = _navigatingToSurah == surahNumber;
     return GestureDetector(
-      onTap: () => context.push('${RouteNames.quran}/$surahNumber'),
+      onTap: () => _navigateToSurah(surahNumber),
       child: Container(
         padding: EdgeInsets.all(16.w),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: Colors.white.withValues(alpha: isNavigating ? 0.10 : 0.05),
           borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(
+            color: isNavigating
+                ? AppColors.goldAccent.withValues(alpha: 0.4)
+                : Colors.white.withValues(alpha: 0.08),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.1),
@@ -322,14 +371,23 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
                   color: AppColors.goldAccent.withValues(alpha: 0.2),
                   size: 44.sp,
                 ),
-                Text(
-                  surahNumber.toString(),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14.sp,
-                  ),
-                ),
+                isNavigating
+                    ? SizedBox(
+                        width: 18.w,
+                        height: 18.w,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          color: AppColors.goldAccent,
+                        ),
+                      )
+                    : Text(
+                        surahNumber.toString(),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14.sp,
+                        ),
+                      ),
               ],
             ),
             SizedBox(width: 16.w),
@@ -363,8 +421,7 @@ class _QuranHomeScreenState extends State<QuranHomeScreen> {
               style: TextStyle(
                 fontSize: 22.sp,
                 fontWeight: FontWeight.bold,
-                fontFamily:
-                    'Amiri', // Ensure this font is available or fallback
+                fontFamily: 'Amiri',
                 color: AppColors.goldAccent,
               ),
             ),

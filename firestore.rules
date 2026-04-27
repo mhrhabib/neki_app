@@ -6,6 +6,16 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId;
+
+      // Owner-only: private metadata (support/donation status).
+      match /meta/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+
+        // Immutable donation ledger entries.
+        match /donations/{txId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
     }
 
     // Any authenticated user can READ all points docs (leaderboard orderBy query)

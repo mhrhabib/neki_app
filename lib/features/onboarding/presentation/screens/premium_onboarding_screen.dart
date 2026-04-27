@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -12,6 +11,7 @@ import '../../../../core/di/set_up_di.dart';
 import '../../../../core/services/iap_service.dart';
 import '../../../../core/location/cubit/location_cubit.dart';
 import '../../../beat_satan_chalange/presentation/cubit/onboarding_cubit.dart';
+import '../../../auth/domain/repositories/premium_repository.dart';
 
 class PremiumOnboardingScreen extends StatefulWidget {
   const PremiumOnboardingScreen({super.key});
@@ -102,6 +102,8 @@ class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
   }
 
   void _completeFlowAndNavigate() {
+    // Start the 7-day trial automatically upon completing onboarding
+    getIt<PremiumRepository>().startTrial();
     context.read<OnboardingCubit>().completeOnboarding();
   }
 
@@ -773,6 +775,8 @@ class _PremiumOnboardingScreenState extends State<PremiumOnboardingScreen>
             ),
             SizedBox(height: 16.h),
             Text('Try Premium free for 7 days. Cancel anytime.', style: TextStyle(fontSize: 12.sp, color: Colors.white24)),
+            SizedBox(height: 24.h),
+            _buildSecondaryButton('MAYBE LATER, EXPLORE FIRST', _completeFlowAndNavigate),
           ],
         ),
       ),

@@ -9,6 +9,7 @@ class ChallengeModel extends ChallengeEntity {
     required super.status,
     super.challengeType,
     super.userId,
+    super.completedAt,
   });
 
   /// Convert to JSON for persistence
@@ -21,6 +22,7 @@ class ChallengeModel extends ChallengeEntity {
       'status': status.name,
       'challengeType': challengeType,
       'userId': userId,
+      'completedAt': completedAt?.toIso8601String(),
     };
   }
 
@@ -37,6 +39,9 @@ class ChallengeModel extends ChallengeEntity {
       ),
       challengeType: json['challengeType'] as String?,
       userId: json['userId'] as String?,
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'] as String)
+          : null,
     );
   }
 
@@ -49,6 +54,7 @@ class ChallengeModel extends ChallengeEntity {
     ChallengeStatus? status,
     String? challengeType,
     String? userId,
+    DateTime? completedAt,
   }) {
     return ChallengeModel(
       durationDays: durationDays ?? this.durationDays,
@@ -58,16 +64,38 @@ class ChallengeModel extends ChallengeEntity {
       status: status ?? this.status,
       challengeType: challengeType ?? this.challengeType,
       userId: userId ?? this.userId,
+      completedAt: completedAt ?? this.completedAt,
     );
   }
 
-  /// Normalised key used as the Firestore document-ID suffix.
-  /// beat_satan → 'beat_satan', addiction_porn_7 → 'addiction'.
+  /// Normalised key used as the Firestore document-ID suffix and the
+  /// in-memory map key.
+  /// - beat_satan → 'beat_satan'
+  /// - addiction_porn_7 → 'addiction_porn' (legacy, drops duration suffix)
+  /// - addiction_porn → 'addiction_porn'  (new model, no duration)
+  ///
+  /// Each addiction type is its own key so users can quit smoking AND porn
+  /// in parallel without one overwriting the other.
   static String typeKey(String? challengeType) {
     if (challengeType == null) return 'default';
-    if (challengeType.startsWith('addiction')) return 'addiction';
+    if (challengeType.startsWith('addiction_')) {
+      // Strip any trailing duration suffix from legacy types
+      // ("addiction_porn_7" → "addiction_porn").
+      final parts = challengeType.split('_');
+      if (parts.length >= 2) return 'addiction_${parts[1]}';
+      return challengeType;
+    }
     return challengeType;
   }
+
+  /// All known addiction sub-types — used by the repository to enumerate
+  /// which Firestore docs to look up.
+  static const List<String> kAddictionTypes = [
+    'addiction_porn',
+    'addiction_smoking',
+    'addiction_alcohol',
+    'addiction_gambling',
+  ];
 
   @override
   String toString() {

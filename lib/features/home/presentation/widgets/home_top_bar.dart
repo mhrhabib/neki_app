@@ -8,6 +8,7 @@ import '../../../../core/location/cubit/location_cubit.dart';
 import '../../../../core/location/cubit/location_state.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../salah_lock/presentation/cubit/salah_lock_cubit.dart';
+import '../../../points/presentation/cubit/points_cubit.dart';
 
 /// Top app bar showing the user's location pill on the left
 /// and a circular profile icon on the right.
@@ -18,7 +19,93 @@ class HomeTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [_LocationPill(), _SettingsIcon()]),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(child: _LocationPill()),
+          SizedBox(width: 4.w),
+          // _PointsPill(),
+          SizedBox(width: 4.w),
+          _SettingsIcon(),
+        ],
+      ),
+    );
+  }
+}
+
+class _PointsPill extends StatefulWidget {
+  @override
+  State<_PointsPill> createState() => _PointsPillState();
+}
+
+class _PointsPillState extends State<_PointsPill>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.elasticOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<PointsCubit, PointsState>(
+      listener: (context, state) {
+        if (state is PointsLoaded) {
+          _pulseController.forward(from: 0.0);
+        }
+      },
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+          decoration: BoxDecoration(
+            color: AppColors.goldAccent.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(
+              color: AppColors.goldAccent.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('🌟', style: TextStyle(fontSize: 14.sp)),
+              SizedBox(width: 4.w),
+              BlocBuilder<PointsCubit, PointsState>(
+                builder: (context, state) {
+                  int points = 0;
+                  if (state is PointsLoaded) {
+                    points = state.points.totalPoints;
+                  }
+                  return Text(
+                    points.toString(),
+                    style: TextStyle(
+                      color: AppColors.goldAccent,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -32,7 +119,8 @@ class _LocationPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<LocationCubit, LocationState>(
       builder: (context, state) {
-        final isError = state is LocationError ||
+        final isError =
+            state is LocationError ||
             state is LocationPermissionDenied ||
             state is LocationServiceDisabled;
         final locationText = switch (state) {
@@ -74,17 +162,23 @@ class _LocationPill extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  isError ? CupertinoIcons.location_slash_fill : CupertinoIcons.location_fill,
+                  isError
+                      ? CupertinoIcons.location_slash_fill
+                      : CupertinoIcons.location_fill,
                   color: isError ? Colors.redAccent : Colors.white70,
                   size: 12.sp,
                 ),
                 SizedBox(width: 4.w),
-                Text(
-                  locationText,
-                  style: TextStyle(
-                    color: isError ? Colors.redAccent : Colors.white,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Text(
+                    locationText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isError ? Colors.redAccent : Colors.white,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -137,7 +231,10 @@ class _SettingsIcon extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.goldAccent,
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF0D2818), width: 2.r),
+                      border: Border.all(
+                        color: const Color(0xFF0D2818),
+                        width: 2.r,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.goldAccent.withValues(alpha: 0.5),

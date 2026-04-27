@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:neki_app/core/ux/cubit/user_experience_cubit.dart';
 import '../../../../components/app_background_widget.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/location/cubit/location_cubit.dart';
@@ -23,8 +24,14 @@ import '../widgets/home_user_stats_card.dart';
 import '../widgets/home_prayer_times_row.dart';
 import '../widgets/home_top_bar.dart';
 import '../widgets/home_setup_guide_card.dart';
+import '../../../salah_lock/presentation/widgets/notification_permission_sheet.dart';
 import '../../../salah/presentation/cubit/salah_cubit.dart';
 import '../../../salah_lock/presentation/cubit/salah_lock_cubit.dart';
+import '../widgets/celebration_overlay.dart';
+import '../../../auth/presentation/cubit/support_cubit.dart';
+import '../widgets/support_request_bottom_sheet.dart';
+import '../../../../core/services/iap_service.dart';
+import '../../../../core/di/set_up_di.dart';
 
 class HomeDashboardScreen extends StatefulWidget {
   const HomeDashboardScreen({super.key});
@@ -67,12 +74,35 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
     }
   }
 
+  void _checkNotificationsPermission() async {
+    final salahLockCubit = context.read<SalahLockCubit>();
+    final isEnabled = await salahLockCubit.notificationService
+        .areNotificationsEnabled();
+
+    if (!isEnabled && mounted) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => NotificationPermissionSheet(
+          onGrant: () => salahLockCubit.checkAndRequestBasicPermissions(),
+        ),
+      );
+    }
+  }
+
   void _triggerDataLoads(String userId) {
     if (_initialLoadDone) return;
     _initialLoadDone = true;
+    _checkNotificationsPermission();
     context.read<PointsCubit>().loadUserPoints(userId);
     context.read<SalahCubit>().loadTodaysSalahs(userId);
-    
+    context.read<SalahCubit>().loadSalahHistory(
+      userId: userId,
+      startDate: DateTime.now().subtract(const Duration(days: 7)),
+      endDate: DateTime.now(),
+    );
+
     // Load challenge and auto-start if needed
     final challengeCubit = context.read<ChallengeCubit>();
     challengeCubit.loadChallenge(userId).then((_) async {
@@ -80,19 +110,56 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
       if (state is ChallengeLoaded && !state.hasAnyChallenge) {
         // No active challenge, check if there's an onboarding goal to start
         final onboardingCubit = context.read<OnboardingCubit>();
-        final goal = await onboardingCubit.onboardingRepository.getChallengeGoal();
-        
+        final goal = await onboardingCubit.onboardingRepository
+            .getChallengeGoal();
+
         if (goal != null && mounted) {
           debugPrint('🚀 [Home] Auto-starting boarding goal challenge: $goal');
           await challengeCubit.startChallenge(
             userId: userId,
             durationDays: goal['days'] as int,
             rewardPoints: goal['points'] as int,
-            challengeType: 'beat_satan',
+            challengeType: goal['type'] as String,
           );
+
+          if (mounted) {
+            _showCelebration(
+              title: 'Challenge Started!',
+              subtitle:
+                  'You\'ve taken the first step on your ${goal['type']} journey. Keep it up!',
+              points: '50', // Bonus for starting
+            );
+          }
         }
       }
     });
+  }
+
+  void _showCelebration({
+    required String title,
+    required String subtitle,
+    required String points,
+  }) {
+    final uxCubit = context.read<UserExperienceCubit>();
+    if (uxCubit.state.hasCelebratedFirstWin) return;
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return CelebrationOverlay(
+          title: title,
+          subtitle: subtitle,
+          points: points,
+          onClaim: () {
+            uxCubit.markFirstWinCelebrated();
+            Navigator.of(context).pop();
+          },
+        );
+      },
+    );
   }
 
   /// Reload all data — called on app resume and pull-to-refresh.
@@ -116,6 +183,11 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
     await Future.wait([
       context.read<PointsCubit>().loadUserPoints(userId),
       context.read<SalahCubit>().loadTodaysSalahs(userId),
+      context.read<SalahCubit>().loadSalahHistory(
+        userId: userId,
+        startDate: DateTime.now().subtract(const Duration(days: 7)),
+        endDate: DateTime.now(),
+      ),
       context.read<ChallengeCubit>().loadChallenge(userId),
     ]);
   }
@@ -151,88 +223,217 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                   children: [
                     appBackgroundWidget(),
                     SafeArea(
-                      child: RefreshIndicator(
-                        onRefresh: _refreshAllData,
-                        color: const Color(0xFF4ADE80),
-                        backgroundColor: const Color(0xFF1A3D26),
-                        child: CustomScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(
-                            parent: BouncingScrollPhysics(),
+                      child: MultiBlocListener(
+                        listeners: [
+                          BlocListener<LocationCubit, LocationState>(
+                            listenWhen: (prev, curr) =>
+                                curr is LocationLoaded &&
+                                curr.countryCode != null &&
+                                (prev is! LocationLoaded ||
+                                    prev.countryCode != curr.countryCode),
+                            listener: (context, state) {
+                              if (state is LocationLoaded &&
+                                  state.countryCode != null) {
+                                context
+                                    .read<AuthCubit>()
+                                    .authRepository
+                                    .syncCountry(state.countryCode!);
+                              }
+                            },
                           ),
-                          slivers: [
-                            SliverToBoxAdapter(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const HomeTopBar(),
-                                  SizedBox(height: 8.h),
-                                  HomeCurrentPrayerSection(
-                                    prayerTimes: prayerTimes,
-                                  ),
-                                  SizedBox(height: 16.h),
-                                  HomePrayerTimesRow(prayerTimes: prayerTimes),
-                                  SizedBox(height: 16.h),
-
-                                  // Location permission / error prompt
-                                  if (locationState is LocationPermissionDenied)
-                                    _buildLocationPermissionCard(
-                                      context,
-                                      locationState,
-                                    )
-                                  else if (locationState
-                                      is LocationServiceDisabled)
-                                    _buildLocationServiceCard(context)
-                                  else if (locationState is LocationError ||
-                                      locationState is LocationInitial)
-                                    _buildFriendlyLocationPrompt(context),
-
-                                  const HomeUserStatsCard(),
-                                  const HomeSetupGuideCard(),
-                                  SizedBox(height: 20.h),
-                                  BlocBuilder<ChallengeCubit, ChallengeState>(
-                                    builder: (context, challengeState) {
-                                      if (challengeState is ChallengeLoaded &&
-                                          challengeState.hasAnyChallenge) {
-                                        return Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 20.w,
-                                          ),
-                                          child: Column(
-                                            children: challengeState
-                                                .challenges
-                                                .entries
-                                                .map(
-                                                  (e) => Padding(
-                                                    padding: EdgeInsets.only(
-                                                      bottom: 12.h,
-                                                    ),
-                                                    child: GestureDetector(
-                                                      onTap: () => context.push(
-                                                        '${RouteNames.habitBuilding}?type=${e.key}',
-                                                      ),
-                                                      child:
-                                                          ChallengeProgressWidget(
-                                                            challenge: e.value,
-                                                          ),
-                                                    ),
-                                                  ),
-                                                )
-                                                .toList(),
-                                          ),
-                                        );
-                                      }
-                                      return const SizedBox.shrink();
-                                    },
-                                  ),
-                                  SizedBox(height: 20.h),
-                                  const HomeAllMenuSection(),
-                                  SizedBox(height: 20.h),
-                                  const HomeFeatureCards(),
-                                  SizedBox(height: 100.h),
-                                ],
-                              ),
+                          BlocListener<SupportCubit, SupportState>(
+                            listener: (context, state) {
+                              if (state is SupportSuccess) {
+                                _showSupportThankYou(state.amount);
+                              }
+                              if (state is! SupportPromptReady) return;
+                              final prompt = state;
+                              final iap = getIt<IAPService>();
+                              final supportCubit =
+                                  context.read<SupportCubit>();
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (sheetCtx) =>
+                                    SupportRequestBottomSheet(
+                                  title: prompt.title,
+                                  message: prompt.message,
+                                  iapService: iap,
+                                  onDonate: (productId) async {
+                                    supportCubit.markPromptShown();
+                                    await iap.buySupportById(productId);
+                                    if (sheetCtx.mounted) {
+                                      Navigator.pop(sheetCtx);
+                                    }
+                                  },
+                                  onMaybeLater: () {
+                                    supportCubit.markMaybeLater();
+                                    Navigator.pop(sheetCtx);
+                                  },
+                                  onUnable: () {
+                                    supportCubit.markDeclined();
+                                    Navigator.pop(sheetCtx);
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                          BlocListener<SalahCubit, SalahState>(
+                            listenWhen: (previous, current) {
+                              if (previous is SalahLoading &&
+                                  current is SalahLoaded) {
+                                // If we just loaded and a prayer was marked complete...
+                                return true;
+                              }
+                              return false;
+                            },
+                            listener: (context, state) {
+                              if (state is SalahLoaded) {
+                                final hasCompletedAny = state.salahs.any(
+                                  (s) => s.isCompleted,
+                                );
+                                final uxCubit = context
+                                    .read<UserExperienceCubit>();
+                                if (hasCompletedAny &&
+                                    !uxCubit.state.hasCelebratedFirstWin) {
+                                  _showCelebration(
+                                    title: 'Your First Prayer!',
+                                    subtitle:
+                                        'Mabrook! You\'ve just recorded your first prayer on Neki. May Allah accept it.',
+                                    points:
+                                        '100', // Major bonus for first prayer
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        ],
+                        child: RefreshIndicator(
+                          onRefresh: _refreshAllData,
+                          color: const Color(0xFF4ADE80),
+                          backgroundColor: const Color(0xFF1A3D26),
+                          child: CustomScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(
+                              parent: BouncingScrollPhysics(),
                             ),
-                          ],
+                            slivers: [
+                              SliverToBoxAdapter(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const HomeTopBar(),
+                                    SizedBox(height: 8.h),
+                                    HomeCurrentPrayerSection(
+                                      prayerTimes: prayerTimes,
+                                    ),
+                                    SizedBox(height: 16.h),
+                                    HomePrayerTimesRow(
+                                      prayerTimes: prayerTimes,
+                                    ),
+                                    SizedBox(height: 16.h),
+
+                                    // Location permission / error prompt
+                                    if (locationState
+                                        is LocationPermissionDenied)
+                                      _buildLocationPermissionCard(
+                                        context,
+                                        locationState,
+                                      )
+                                    else if (locationState
+                                        is LocationServiceDisabled)
+                                      _buildLocationServiceCard(context)
+                                    else if (locationState is LocationError ||
+                                        locationState is LocationInitial)
+                                      _buildFriendlyLocationPrompt(context),
+
+                                    const HomeUserStatsCard(),
+                                    const HomeSetupGuideCard(),
+                                    SizedBox(height: 20.h),
+                                    BlocBuilder<ChallengeCubit, ChallengeState>(
+                                      builder: (context, challengeState) {
+                                        if (challengeState
+                                                is ChallengeLoading ||
+                                            challengeState
+                                                is ChallengeInitial) {
+                                          return Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 20.w,
+                                            ),
+                                            child: Container(
+                                              height: 100.h,
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.03,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(24.r),
+                                                border: Border.all(
+                                                  color: Colors.white
+                                                      .withValues(alpha: 0.05),
+                                                ),
+                                              ),
+                                              child: const Center(
+                                                child:
+                                                    CupertinoActivityIndicator(
+                                                      color: Colors.white24,
+                                                    ),
+                                              ),
+                                            ),
+                                          );
+                                        }
+
+                                        if (challengeState is ChallengeLoaded &&
+                                            challengeState.hasAnyChallenge) {
+                                          return Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 20.w,
+                                            ),
+                                            child: Column(
+                                              children: challengeState
+                                                  .challenges
+                                                  .entries
+                                                  .map(
+                                                    (e) => Padding(
+                                                      padding: EdgeInsets.only(
+                                                        bottom: 12.h,
+                                                      ),
+                                                      child: GestureDetector(
+                                                        onTap: () {
+                                                          final isAddiction = e
+                                                              .key
+                                                              .startsWith(
+                                                            'addiction',
+                                                          );
+                                                          context.push(
+                                                            '${isAddiction ? RouteNames.addictionTracker : RouteNames.habitBuilding}?type=${e.key}',
+                                                          );
+                                                        },
+                                                        child:
+                                                            ChallengeProgressWidget(
+                                                              challenge:
+                                                                  e.value,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  )
+                                                  .toList(),
+                                            ),
+                                          );
+                                        }
+                                        return const _NoActiveChallengeCard();
+                                      },
+                                    ),
+                                    SizedBox(height: 20.h),
+                                    const HomeAllMenuSection(),
+                                    SizedBox(height: 20.h),
+                                    const HomeFeatureCards(),
+                                    SizedBox(height: 100.h),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -246,6 +447,72 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
             child: CupertinoActivityIndicator(color: Colors.white),
           );
         },
+      ),
+    );
+  }
+
+  void _showSupportThankYou(double amount) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: BoxDecoration(
+                color: AppColors.goldAccent.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.volunteer_activism_rounded,
+                color: AppColors.goldAccent,
+                size: 40.sp,
+              ),
+            ),
+            SizedBox(height: 24.h),
+            Text(
+              'JazakAllah Khair!',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22.sp,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              'Your support helps us keep Neki free and ad-free for the entire Ummah. May Allah reward your generosity.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14.sp,
+                height: 1.5,
+              ),
+            ),
+            SizedBox(height: 24.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.goldAccent,
+                  foregroundColor: Colors.black,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                ),
+                child: const Text(
+                  'Ameen',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -451,6 +718,97 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                 padding: EdgeInsets.symmetric(horizontal: 12.w),
               ),
               child: const Text('Refresh'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NoActiveChallengeCard extends StatelessWidget {
+  const _NoActiveChallengeCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: Container(
+        padding: EdgeInsets.all(24.w),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF1E4D35).withValues(alpha: 0.1),
+              Colors.white.withValues(alpha: 0.03),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(28.r),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.goldAccent.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text('🚀', style: TextStyle(fontSize: 24.sp)),
+                ),
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ignite Your Journey',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'Start a challenge to build consistency and earn Neki points.',
+                        style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 13.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 24.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => context.push(RouteNames.goalSelection),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.goldAccent,
+                  foregroundColor: Colors.black,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  'START CHALLENGE',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
             ),
           ],
         ),

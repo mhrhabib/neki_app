@@ -14,11 +14,15 @@ class RouteNames {
   static const String habitBuilding = '/habit-building';
   static const String habitBuildingOnboarding = '/habit-building-onboarding';
   static const String addiction = '/addiction';
+  static const String addictionTracker = '/addiction-tracker';
+
   static const String qibla = '/qibla';
   static const String namesOfAllah = '/namesOfAllah';
   static const String calendar = '/calendar';
   static const String quran = '/quran';
   static const String salahLockSettings = '/salah-lock-settings';
   static const String premiumOnboarding = '/premium-onboarding';
+  static const String premium = '/premium';
+  static const String journey = '/journey';
   static const String locationPermission = '/location-permission';
 }

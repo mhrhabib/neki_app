@@ -44,8 +44,12 @@ class DhikirSessionCompleted extends DhikirState {
 
 class DhikirHistoryLoaded extends DhikirState {
   final List<Map<String, dynamic>> sessions;
-
   DhikirHistoryLoaded({required this.sessions});
+}
+
+class DhikirInsightsLoaded extends DhikirState {
+  final Map<String, int> dailyCounts;
+  DhikirInsightsLoaded({required this.dailyCounts});
 }
 
 class DhikirError extends DhikirState {

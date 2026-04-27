@@ -5,15 +5,23 @@ import '../../domain/repositories/salah_repository.dart';
 import '../../../points/domain/repositories/points_repository.dart';
 import '../../../challenge/domain/repositories/challenge_repository.dart';
 
+import '../../../auth/presentation/cubit/support_cubit.dart';
+
 part 'salah_state.dart';
 
 class SalahCubit extends Cubit<SalahState> {
   final SalahRepository salahRepository;
   final PointsRepository pointsRepository;
   final ChallengeRepository challengeRepository;
+  final SupportCubit _supportCubit;
 
-  SalahCubit({required this.salahRepository, required this.pointsRepository, required this.challengeRepository})
-    : super(SalahInitial());
+  SalahCubit({
+    required this.salahRepository, 
+    required this.pointsRepository, 
+    required this.challengeRepository,
+    required SupportCubit supportCubit,
+  }) : _supportCubit = supportCubit, 
+       super(SalahInitial());
 
   Future<void> loadTodaysSalahs(String userId) async {
     if (userId.isEmpty) return;
@@ -21,6 +29,34 @@ class SalahCubit extends Cubit<SalahState> {
       emit(SalahLoading());
       final salahs = await salahRepository.getTodaysSalahs(userId);
       emit(SalahLoaded(salahs: salahs));
+    } catch (e) {
+      emit(SalahError(message: e.toString()));
+    }
+  }
+
+  Future<void> loadSalahHistory({
+    required String userId,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    if (userId.isEmpty) return;
+    try {
+      // If already loaded today's, we just want to ADD history.
+      final currentState = state;
+      List<SalahEntity> currentSalahs = [];
+      if (currentState is SalahLoaded) {
+        currentSalahs = currentState.salahs;
+      } else {
+        emit(SalahLoading());
+        currentSalahs = await salahRepository.getTodaysSalahs(userId);
+      }
+
+      final history = await salahRepository.getSalahHistory(
+        userId: userId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+      emit(SalahLoaded(salahs: currentSalahs, history: history));
     } catch (e) {
       emit(SalahError(message: e.toString()));
     }
@@ -63,6 +99,9 @@ class SalahCubit extends Cubit<SalahState> {
 
       // Add points for salah
       await pointsRepository.addPoints(userId: userId, points: salah.pointsEarned, source: 'salah_$salahName');
+
+      // Check for support/donation milestone
+      _supportCubit.checkSalahMilestone();
 
       // Check if user has an active challenge and complete today's challenge progress
       final activeChallenge = await challengeRepository.getActiveChallenge(userId);

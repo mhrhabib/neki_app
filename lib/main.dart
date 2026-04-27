@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'core/di/set_up_di.dart';
 import 'core/routes/app_router.dart';
+import 'core/services/iap_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/theme/theme_cubit.dart';
 import 'features/beat_satan_chalange/presentation/cubit/onboarding_cubit.dart';
@@ -15,11 +18,17 @@ import 'features/challenge/presentation/cubit/challenge_cubit.dart';
 import 'core/location/cubit/location_cubit.dart';
 import 'features/salah_lock/presentation/cubit/salah_lock_cubit.dart';
 import 'features/salah_lock/presentation/widgets/salah_lock_overlay.dart';
+import 'core/ux/cubit/user_experience_cubit.dart';
+import 'features/dhikir/presentation/cubit/dhikir_cubit.dart';
+import 'features/auth/presentation/cubit/support_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await SetUpDI.init();
+  // Fire-and-forget: store availability varies by device and we don't want
+  // to block first paint if the user is offline.
+  unawaited(getIt<IAPService>().initialize());
   runApp(const NekiApp());
 }
 
@@ -48,6 +57,9 @@ class _NekiAppState extends State<NekiApp> {
         BlocProvider.value(value: getIt<ChallengeCubit>()),
         BlocProvider.value(value: getIt<LocationCubit>()..fetchLocation()),
         BlocProvider.value(value: getIt<SalahLockCubit>()..init()),
+        BlocProvider.value(value: getIt<UserExperienceCubit>()),
+        BlocProvider.value(value: getIt<DhikirCubit>()),
+        BlocProvider.value(value: getIt<SupportCubit>()),
       ],
       child: BlocBuilder<ThemeCubit, ThemeData>(
         builder: (context, themeData) {
@@ -66,12 +78,7 @@ class _NekiAppState extends State<NekiApp> {
                 routerConfig: AppRouter.router,
                 debugShowCheckedModeBanner: false,
                 builder: (context, child) {
-                  return Stack(
-                    children: [
-                      ?child,
-                      const SalahLockOverlay(),
-                    ],
-                  );
+                  return Stack(children: [?child, const SalahLockOverlay()]);
                 },
               );
             },

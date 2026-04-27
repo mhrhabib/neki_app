@@ -50,7 +50,9 @@ class ChallengeProgressWidget extends StatelessWidget {
                   ),
                   SizedBox(height: 4.h),
                   Text(
-                    '${challenge.durationDays} Day Challenge',
+                    challenge.durationDays == 0
+                        ? 'Continuous Sobriety' // Addiction tracking (unbounded)
+                        : '${challenge.durationDays} Day Challenge',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 20.sp,
@@ -173,7 +175,9 @@ class ChallengeProgressWidget extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Day ${challenge.completedDays} of ${challenge.durationDays}',
+                      challenge.durationDays == 0
+                          ? 'Days Clean: ${challenge.daysClean}'
+                          : 'Day ${challenge.completedDays} of ${challenge.durationDays}',
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 14.sp,
@@ -181,7 +185,9 @@ class ChallengeProgressWidget extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${(challenge.progress * 100).toInt()}%',
+                      challenge.durationDays == 0
+                          ? '∞' // Unbounded addiction streak
+                          : '${(challenge.progress * 100).toInt()}%',
                       style: TextStyle(
                         color: AppColors.goldAccent,
                         fontSize: 14.sp,

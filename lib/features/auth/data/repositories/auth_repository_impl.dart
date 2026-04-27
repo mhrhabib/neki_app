@@ -363,4 +363,33 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<bool> isLoggedIn() async {
     return _firebaseAuth.currentUser != null;
   }
+
+  @override
+  Future<void> syncCountry(String countryCode) async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) return;
+    final code = countryCode.trim().toUpperCase();
+    if (code.length != 2) return;
+
+    final existing = await _firestoreService.getDocument(
+      collectionPath: 'users',
+      documentId: user.uid,
+    );
+    final current = existing?.data()?['country'] as String?;
+    if (current == code) return;
+
+    debugPrint('🌍 [syncCountry] Updating country: $current -> $code');
+    await Future.wait([
+      _firestoreService.updateDocument(
+        collectionPath: 'users',
+        documentId: user.uid,
+        data: {'country': code},
+      ),
+      _firestoreService.updateDocument(
+        collectionPath: 'users_points',
+        documentId: user.uid,
+        data: {'country': code},
+      ),
+    ]);
+  }
 }

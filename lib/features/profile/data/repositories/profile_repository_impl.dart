@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/services/firebase_storage_service.dart';
 import '../../../../core/services/firestore_service.dart';
+import '../../../challenge/data/models/challenge_model.dart';
+import '../../../challenge/domain/repositories/challenge_repository.dart';
 import '../../../points/data/models/neki_points_model.dart';
 import '../../../points/domain/entities/neki_points_entity.dart';
 import '../../domain/entities/badge_entity.dart';
@@ -12,8 +14,13 @@ import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 class ProfileRepositoryImpl implements ProfileRepository {
   final FirestoreService _firestoreService;
   final FirebaseStorageService _storageService;
+  final ChallengeRepository _challengeRepository;
 
-  ProfileRepositoryImpl(this._firestoreService, this._storageService);
+  ProfileRepositoryImpl(
+    this._firestoreService,
+    this._storageService,
+    this._challengeRepository,
+  );
 
   static const _badgeDefinitions = [
     _BadgeDef(
@@ -147,7 +154,53 @@ class ProfileRepositoryImpl implements ProfileRepository {
       );
     }
 
+    // Trophies for every fully-completed challenge (7/14/21-day Beat Satan
+    // runs, etc.). Once a completed challenge is archived after its 24h
+    // celebration window, it lives here permanently.
+    final completed = await _challengeRepository.getCompletedChallenges(userId);
+    for (final c in completed) {
+      final typeKey = ChallengeModel.typeKey(c.challengeType);
+      badges.add(
+        BadgeEntity(
+          id: 'completed_${typeKey}_${c.startDate.millisecondsSinceEpoch}',
+          name: '${c.durationDays}-Day ${_challengeBadgeLabel(typeKey)}',
+          description:
+              'Completed a ${c.durationDays}-day challenge for +${c.rewardPoints} Neki.',
+          iconUrl: _challengeBadgeIcon(c.durationDays),
+          requiredPoints: 0,
+          isEarned: true,
+          earnedAt: c.completedAt,
+        ),
+      );
+    }
+
     return badges;
+  }
+
+  String _challengeBadgeLabel(String typeKey) {
+    if (typeKey == 'beat_satan') return 'Beat Satan';
+    if (typeKey.startsWith('addiction_')) {
+      final parts = typeKey.split('_');
+      if (parts.length >= 2) {
+        switch (parts[1]) {
+          case 'porn':
+            return 'Porn Recovery';
+          case 'smoking':
+            return 'Smoking Recovery';
+          case 'alcohol':
+            return 'Alcohol Recovery';
+          case 'gambling':
+            return 'Gambling Recovery';
+        }
+      }
+    }
+    return 'Challenge';
+  }
+
+  String _challengeBadgeIcon(int days) {
+    if (days >= 21) return '💎';
+    if (days >= 14) return '🔥';
+    return '🌱';
   }
 
   @override

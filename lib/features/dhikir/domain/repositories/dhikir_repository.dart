@@ -10,6 +10,11 @@ abstract class DhikirRepository {
   Future<DhikirEntity> incrementDhikirCount(String sessionId);
   Future<DhikirEntity> getCurrentSession(String userId);
   Future<List<DhikirEntity>> getDhikirHistory(String userId, {DateTime? date});
+  Future<List<DhikirEntity>> getDhikirHistoryInRange({
+    required String userId,
+    required DateTime startDate,
+    required DateTime endDate,
+  });
   Future<void> completeDhikirSession(String sessionId);
   Future<void> deleteDhikirSession(String sessionId);
 

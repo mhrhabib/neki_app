@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+import 'package:neki_app/core/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../salah_lock/presentation/cubit/salah_lock_cubit.dart';
 
@@ -78,9 +80,8 @@ class HomeSetupGuideCard extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        // Navigate to settings - usually via the profile icon but here we can trigger it directly
-                        // Or we can just enable it directly if that's easier, but settings is better for full config
-                        Navigator.of(context).pushNamed('/salah-lock-settings');
+                        // Navigate to settings using GoRouter
+                        context.push(RouteNames.salahLockSettings);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.goldAccent,

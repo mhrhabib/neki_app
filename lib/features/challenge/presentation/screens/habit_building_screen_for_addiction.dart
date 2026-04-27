@@ -21,8 +21,9 @@ class HabitBuildingScreenForAddiction extends StatelessWidget {
   /// otherwise falls back to the first active challenge.
   ChallengeEntity? _resolveChallenge(ChallengeState state) {
     if (state is ChallengeLoaded) {
-      if (typeKey != null && state.challenges.containsKey(typeKey)) {
-        final c = state.challenges[typeKey]!;
+      final key = ChallengeModel.typeKey(typeKey);
+      if (state.challenges.containsKey(key)) {
+        final c = state.challenges[key]!;
         return c.isActive ? c : null;
       }
       final active = state.challenges.values.where((c) => c.isActive);
@@ -456,17 +457,20 @@ class HabitBuildingScreenForAddiction extends StatelessWidget {
         ],
       ),
       child: ElevatedButton(
-        onPressed: () {
-          final authState = context.read<AuthCubit>().state;
-          if (authState is Authenticated) {
-            context.read<ChallengeCubit>().completeTodayChallenge(
-              userId: authState.user.id,
-              typeKey: ChallengeModel.typeKey(challenge.challengeType),
-            );
-          }
-        },
+        onPressed: challenge.isCheckInWindowOpen
+            ? () {
+                final authState = context.read<AuthCubit>().state;
+                if (authState is Authenticated) {
+                  context.read<ChallengeCubit>().completeTodayChallenge(
+                        userId: authState.user.id,
+                        typeKey: ChallengeModel.typeKey(challenge.challengeType),
+                      );
+                }
+              }
+            : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.goldAccent,
+          disabledBackgroundColor: Colors.white.withValues(alpha: 0.05),
           foregroundColor: Colors.black,
           padding: EdgeInsets.symmetric(vertical: 20.h),
           shape: RoundedRectangleBorder(
@@ -475,7 +479,9 @@ class HabitBuildingScreenForAddiction extends StatelessWidget {
           elevation: 0,
         ),
         child: Text(
-          'Mark Today as Complete ✓',
+          challenge.isCheckInWindowOpen
+              ? 'Mark Today as Complete ✓'
+              : 'Available after 8 PM',
           style: TextStyle(
             fontSize: 16.sp,
             fontWeight: FontWeight.w900,

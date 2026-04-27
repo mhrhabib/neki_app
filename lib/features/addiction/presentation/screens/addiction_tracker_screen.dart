@@ -74,11 +74,20 @@ class _AddictionTrackerScreenState extends State<AddictionTrackerScreen> {
   @override
   void initState() {
     super.initState();
-    // Load challenges from Firestore to ensure we have the latest data
+    // The home dashboard already populates the cubit before this screen
+    // is reachable — re-fetching here would emit ChallengeLoading, blank
+    // the screen, and run 6 sequential Firestore reads (one per typeKey).
+    // Only refresh when we genuinely have nothing to show.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final cubit = context.read<ChallengeCubit>();
+      final state = cubit.state;
+      final hasAddiction =
+          state is ChallengeLoaded && _resolveAddiction(state.challenges) != null;
+      if (hasAddiction) return;
       final authState = context.read<AuthCubit>().state;
       if (authState is Authenticated) {
-        context.read<ChallengeCubit>().loadChallenge(authState.user.id);
+        cubit.loadChallenge(authState.user.id);
       }
     });
     _checkInitialStatus();

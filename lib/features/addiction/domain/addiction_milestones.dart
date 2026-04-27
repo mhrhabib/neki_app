@@ -29,6 +29,17 @@ AddictionMilestone? nextMilestoneFor(int daysClean) {
   return null;
 }
 
+/// The milestone the user is currently working toward — same as
+/// [nextMilestoneFor] but **inclusive** of milestones whose threshold equals
+/// today's [daysClean]. Used by the home progress card so a user who just
+/// hit Day 7 sees "Day 7 of 7 (100%)" before the target rolls forward to 14.
+AddictionMilestone? currentMilestoneFor(int daysClean) {
+  for (final m in kAddictionMilestones) {
+    if (m.days >= daysClean) return m;
+  }
+  return null;
+}
+
 /// All milestones the user has reached but not yet been rewarded for, given
 /// their current [daysClean] and the highest day already awarded.
 Iterable<AddictionMilestone> unawardedMilestones(

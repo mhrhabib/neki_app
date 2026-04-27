@@ -50,9 +50,7 @@ class ChallengeProgressWidget extends StatelessWidget {
                   ),
                   SizedBox(height: 4.h),
                   Text(
-                    challenge.durationDays == 0
-                        ? 'Continuous Sobriety' // Addiction tracking (unbounded)
-                        : '${challenge.durationDays} Day Challenge',
+                    _headlineFor(challenge),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 20.sp,
@@ -61,7 +59,7 @@ class ChallengeProgressWidget extends StatelessWidget {
                   ),
                 ],
               ),
-           if (challenge.isCompleted)
+           if (challenge.isCompleted || challenge.isAtMilestone)
                 Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: 14.w,
@@ -175,9 +173,9 @@ class ChallengeProgressWidget extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      challenge.durationDays == 0
-                          ? 'Days Clean: ${challenge.daysClean}'
-                          : 'Day ${challenge.completedDays} of ${challenge.durationDays}',
+                      challenge.effectiveDuration > 0
+                          ? 'Day ${challenge.progressDays} of ${challenge.effectiveDuration}'
+                          : 'Days Clean: ${challenge.daysClean}',
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 14.sp,
@@ -185,9 +183,9 @@ class ChallengeProgressWidget extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      challenge.durationDays == 0
-                          ? '∞' // Unbounded addiction streak
-                          : '${(challenge.progress * 100).toInt()}%',
+                      challenge.effectiveDuration > 0
+                          ? '${(challenge.progress * 100).toInt()}%'
+                          : '∞', // Past every milestone — celebrate forever
                       style: TextStyle(
                         color: AppColors.goldAccent,
                         fontSize: 14.sp,
@@ -239,7 +237,7 @@ class ChallengeProgressWidget extends StatelessWidget {
                   child: _buildStatItem(
                     icon: Icons.local_fire_department,
                     label: 'Streak',
-                    value: '${challenge.completedDays}',
+                    value: '${challenge.isAddictionType ? challenge.daysClean : challenge.completedDays}',
                     color: Colors.orangeAccent,
                   ),
                 ),
@@ -248,7 +246,7 @@ class ChallengeProgressWidget extends StatelessWidget {
                   child: _buildStatItem(
                     icon: Icons.stars_rounded,
                     label: 'Neki Pts',
-                    value: '${challenge.rewardPoints}',
+                    value: '${challenge.currentMilestone?.points ?? challenge.rewardPoints}',
                     color: AppColors.goldAccent,
                   ),
                 ),
@@ -267,6 +265,17 @@ class ChallengeProgressWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Big-text headline shown above the progress bar.
+  /// - Fixed challenges (Beat Satan, legacy `_7`): "{N} Day Challenge"
+  /// - Unbounded addictions with a current milestone: e.g. "1 Week Clean"
+  /// - Unbounded addictions past every milestone: "Continuous Sobriety"
+  String _headlineFor(ChallengeEntity c) {
+    if (c.durationDays > 0) return '${c.durationDays} Day Challenge';
+    final m = c.currentMilestone;
+    if (m != null) return m.title;
+    return 'Continuous Sobriety';
   }
 
   String _challengeLabel(String? type) {
